@@ -115,6 +115,28 @@ public class DittoClientBuilder {
                 .build();
 
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         dittoClient.twin().create(thingId).handle((createdThing, throwable) -> {
             if(createdThing != null){
                 System.out.println("Created new thing: " + createdThing);

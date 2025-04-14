@@ -11,6 +11,7 @@ import org.eclipse.ditto.client.messaging.AuthenticationProviders;
 import org.eclipse.ditto.client.messaging.MessagingProvider;
 import org.eclipse.ditto.client.messaging.MessagingProviders;
 import org.eclipse.ditto.json.JsonObject;
+import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.*;
 
 import java.awt.*;
@@ -18,7 +19,10 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
+
 public class DittoClientBuilder {
 
     public DittoClient dittoClient;
@@ -116,27 +120,6 @@ public class DittoClientBuilder {
 
 */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         dittoClient.twin().create(thingId).handle((createdThing, throwable) -> {
             if(createdThing != null){
                 System.out.println("Created new thing: " + createdThing);
@@ -161,5 +144,28 @@ public class DittoClientBuilder {
     };
 
 
+    public double getFuelTankValue() throws InterruptedException, ExecutionException {
+        CompletableFuture<Double> fuelAmount = new CompletableFuture<>();
 
-}
+        dittoClient.twin().forId(ThingId.of("org.test:LKW-1"))
+                    .retrieve()
+                    .thenCompose(thing -> {
+                        JsonValue feature = thing.getFeatures().
+                                flatMap(features -> features.getFeature("fuelTank")).
+                                flatMap(Feature::getProperties).
+                                flatMap(fuelTank -> fuelTank.getValue("amount"))
+                                .get();
+
+                        fuelAmount.complete(feature.asDouble());
+                        return CompletableFuture.completedFuture(null);
+                    });
+
+
+        System.out.println(fuelAmount.get());
+        return fuelAmount.get();
+        }
+
+    }
+
+
+

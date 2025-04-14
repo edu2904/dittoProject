@@ -15,7 +15,7 @@ public class Main {
         // IntelliJ IDEA suggests fixing it.
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         dittoClientBuilder.createFirstThing();
-
+        dittoClientBuilder.getFuelTankValue();
 
 
     }

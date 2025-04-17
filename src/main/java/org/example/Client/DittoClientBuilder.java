@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DittoClientBuilder {
 
     public DittoClient dittoClient;
-    Feature fuelTankFeature;
 
     public DittoClientBuilder() throws ExecutionException, InterruptedException {
         var authentication = AuthenticationProviders.basic(BasicAuthenticationConfiguration

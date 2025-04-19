@@ -1,28 +1,14 @@
 package org.example.Client;
-import com.eclipsesource.json.Json;
 import org.eclipse.ditto.client.DisconnectedDittoClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.client.configuration.BasicAuthenticationConfiguration;
-import org.eclipse.ditto.client.configuration.ClientCredentialsAuthenticationConfiguration;
-import org.eclipse.ditto.client.configuration.MessagingConfiguration;
 import org.eclipse.ditto.client.DittoClients;
 import org.eclipse.ditto.client.configuration.WebSocketMessagingConfiguration;
 import org.eclipse.ditto.client.messaging.AuthenticationProviders;
 import org.eclipse.ditto.client.messaging.MessagingProvider;
 import org.eclipse.ditto.client.messaging.MessagingProviders;
-import org.eclipse.ditto.client.options.Option;
-import org.eclipse.ditto.json.JsonObject;
-import org.eclipse.ditto.json.JsonValue;
-import org.eclipse.ditto.things.model.*;
 
-import java.awt.*;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class DittoClientBuilder {
 

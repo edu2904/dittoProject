@@ -24,8 +24,9 @@ public class LKW {
     public ThingId thingId = ThingId.of("org.test:LKW-1");
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    public LKW getLKW() {
-        return this;
+    public LKW() {
+
+
     }
 
     public void createLKWThing(DittoClient dittoClient) throws ExecutionException, InterruptedException {
@@ -55,7 +56,7 @@ public class LKW {
                 .build();
 
         JsonObject velocityProperties = JsonObject.newBuilder()
-                .set("amount", 20)
+                .set("amount", 0)
                 .set("unit", "km/h")
                 .build();
 
@@ -111,10 +112,15 @@ public class LKW {
         this.weight = weight;
     }
 
+
+
     public double getAmountFromFeature(Feature feature){
         return feature.getProperties().flatMap(properties -> properties.getValue("amount")).map(JsonValue::asDouble).orElse(0.0);
     }
 
+    public String getFuelFeatureID(){
+        return fuelTankFeature.getId();
+    }
     public double getFuelAmount(){
         return getAmountFromFeature(fuelTankFeature);
     }
@@ -128,15 +134,18 @@ public class LKW {
     }
 
 
+    public String getVelocityFeatureID(){
+        return velocityFeature.getId();
+    }
     public double getVelocityAmount(){
         return getAmountFromFeature(velocityFeature);
     }
 
     public void setVelocityAmount(double velocityAmount) {
-        JsonObject updatedProperties = fuelTankFeature.getProperties()
+        JsonObject updatedProperties = velocityFeature.getProperties()
                 .get().toBuilder().set("amount", velocityAmount)
                 .build();
-        fuelTankFeature = fuelTankFeature.toBuilder()
+        velocityFeature = velocityFeature.toBuilder()
                 .properties(updatedProperties)
                 .build();
     }
@@ -145,31 +154,58 @@ public class LKW {
         return getAmountFromFeature(progressFeature);
     }
 
+    public String getProgressFeatureID(){
+        return progressFeature.getId();
+    }
     public void setProgressFeature(double progressAmount){
-        JsonObject updatedProperties = fuelTankFeature.getProperties()
+        JsonObject updatedProperties = progressFeature.getProperties()
                 .get().toBuilder().set("amount", progressAmount)
                 .build();
-        fuelTankFeature = fuelTankFeature.toBuilder()
+        progressFeature = progressFeature.toBuilder()
                 .properties(updatedProperties)
                 .build();
 
     }
 
+    public String getTirePressureFeatureID(){
+        return tirePressureFeature.getId();
+    }
     public double getTirePressure(){
         return getAmountFromFeature(tirePressureFeature);
     }
     public void setTirePressureFeature(double tirePressureAmount){
-        JsonObject updatedProperties = fuelTankFeature.getProperties()
+        JsonObject updatedProperties = tirePressureFeature.getProperties()
                 .get().toBuilder().set("amount", tirePressureAmount)
                 .build();
-        fuelTankFeature = fuelTankFeature.toBuilder()
+        tirePressureFeature = tirePressureFeature.toBuilder()
                 .properties(updatedProperties)
                 .build();
     }
 
 
     public void featureSimulation(){
+         double maxProgress = 100.0;
 
+         scheduler.scheduleAtFixedRate(() -> {
+             double currentFuelTank = getFuelAmount();
+             double currentVelocity = getVelocityAmount();
+             double currentProgress = getProgress();
+
+             if(currentProgress >= maxProgress || currentFuelTank <= 0){
+                 setVelocityAmount(0);
+                 System.out.println("Fahrt Beendet");
+                 scheduler.shutdown();
+             }
+
+             System.out.println("fahrt läuft");
+             System.out.println(currentProgress);
+             System.out.println(currentFuelTank);
+             setVelocityAmount(75 + Math.random() * 10);
+             setFuelAmount(currentFuelTank - 0.5);
+             setProgressFeature(currentProgress + 5);
+
+
+         }, 0, 3, TimeUnit.SECONDS);
 
     }
 }

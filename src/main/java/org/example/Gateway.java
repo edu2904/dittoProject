@@ -9,19 +9,18 @@ import org.example.Things.LKW;
 import java.util.concurrent.*;
 
 public class Gateway {
-    public LKW lkw = new LKW();
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
 
 
-    public void updateFuelTankValue(DittoClient dittoClient) throws ExecutionException, InterruptedException {
+    public void updateLKWFeatureValue(DittoClient dittoClient, String featureID, double featureAmount, ThingId thingId) throws ExecutionException, InterruptedException {
         dittoClient.twin().startConsumption().toCompletableFuture();
 
         dittoClient.twin()
-                .forFeature(lkw.getThingId(), "fuelTank")
-                .mergeProperty("amount", lkw.getFuelTankValue(dittoClient))
+                .forFeature(thingId, featureID)
+                .mergeProperty("amount", featureAmount)
                 .whenComplete(((adaptable, throwable) -> {
                     if (throwable != null) {
                         System.out.println("Received error while sending MergeThing: '{}' " + throwable.getMessage());
@@ -31,10 +30,14 @@ public class Gateway {
                 }));
 
     }
-    public void startUpdatingFuel(DittoClient dittoClient){
+    public void startUpdatingFuel(DittoClient dittoClient, LKW lkw){
         Runnable updateTask = () -> {
             try {
-                updateFuelTankValue(dittoClient);
+                updateLKWFeatureValue(dittoClient, lkw.getVelocityFeatureID(), lkw.getVelocityAmount(), lkw.getThingId());
+
+                updateLKWFeatureValue(dittoClient, lkw.getProgressFeatureID(), lkw.getProgress(), lkw.getThingId());
+                updateLKWFeatureValue(dittoClient, lkw.getFuelFeatureID(), lkw.getFuelAmount(), lkw.getThingId());
+
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -44,10 +47,10 @@ public class Gateway {
 
 
 
-    public double getFuelTankValueFromDitto(DittoClient dittoClient) throws InterruptedException, ExecutionException {
+    public double getFuelTankValueFromDitto(DittoClient dittoClient, ThingId thingId) throws InterruptedException, ExecutionException {
         CompletableFuture<Double> fuelAmount = new CompletableFuture<>();
 
-        dittoClient.twin().forId(lkw.getThingId())
+        dittoClient.twin().forId(thingId)
                 .retrieve()
                 .thenCompose(thing -> {
                     JsonValue feature = thing.getFeatures().
@@ -63,6 +66,10 @@ public class Gateway {
 
         System.out.println(fuelAmount.get());
         return fuelAmount.get();
+    }
+
+    public void startGateway(DittoClient dittoClient, LKW lkw) throws ExecutionException, InterruptedException {
+        startUpdatingFuel(dittoClient, lkw);
     }
 
 }

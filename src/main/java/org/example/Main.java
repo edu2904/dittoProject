@@ -17,6 +17,9 @@ public class Main {
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
         LKW lkw = new LKW();
         lkw.createLKWThing(dittoClient);
+        lkw.featureSimulation();
+        Gateway gateway = new Gateway();
+        gateway.startGateway(dittoClient, lkw);
 
         // lkw.getFuelTankValue(dittoClient);
        // lkw.startUpdatingFuel(dittoClient, 0.5);

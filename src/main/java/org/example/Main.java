@@ -7,11 +7,14 @@ import org.eclipse.ditto.things.model.ThingsModelFactory;
 import org.example.Client.DittoClientBuilder;
 import org.example.Things.LKW;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.concurrent.ExecutionException;
 
 
 public class Main {
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
+    public static void main(String[] args) throws ExecutionException, InterruptedException, IOException {
 
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
@@ -20,7 +23,11 @@ public class Main {
         String lkwPolicy = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/lkwpolicy";
         String LKWWOT = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/LKW/lkwMain";
        // System.out.println(lkw.thingExist(dittoClient, String.valueOf(ThingId.of("mytest:LKW-10000000000000000000000000000000000000000"))).get());
-        lkw.createTwinWithWOT(dittoClient, LKWWOT, lkwPolicy);
+        if(!(lkw.policyExists(dittoClient, lkw.getPolicyFromURL(lkwPolicy).get()).get())){
+            lkw.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy);
+        }else {
+            lkw.updateTwinDefinition(dittoClient, LKWWOT);
+        }
         //lkw.createLKWThing(dittoClient);
         //lkw.featureSimulation();
         //Gateway gateway = new Gateway();

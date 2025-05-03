@@ -1,29 +1,22 @@
 package org.example.Things;
 
-import com.eclipsesource.json.Json;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonFactory;
 import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.json.JsonValue;
+import org.eclipse.ditto.policies.model.PolicyId;
 import org.eclipse.ditto.things.model.Feature;
 import org.eclipse.ditto.things.model.ThingId;
 import org.eclipse.ditto.things.model.ThingsModelFactory;
-import org.eclipse.ditto.things.model.signals.commands.query.RetrieveThing;
-import org.example.Client.DittoClientBuilder;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.util.Scanner;
 import java.util.concurrent.*;
 
 public class LKW {
@@ -36,7 +29,7 @@ public class LKW {
     private String status;
     private int weight;
 
-    public ThingId thingId = ThingId.of("mytest:LKW-1ijhoiuhuijohiuzftzdrztdtzrt80oz9iz");
+    public ThingId thingId = ThingId.of("mytest:LKW-1");
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public LKW() {
@@ -67,30 +60,64 @@ public class LKW {
                                 return null;
                             });
                 });
-
         return future;
+
     }
 
-    public String getPolicyFromURL(String policyURL) throws IOException {
-       try(InputStream inputStream = new URL(policyURL).openStream();
-           Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8)){
-           String jsonText = scanner.useDelimiter("\\A").next();
-   //        JsonObject jsonObject = new JSONObject(jsonText);
-       }
-       return "";
+    public CompletableFuture<String> getPolicyFromURL(String policyURL) {
+        return CompletableFuture.supplyAsync(() ->{
+            URL url = null;
+            try {
+                url = new URL(policyURL);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+            try (InputStream input = url.openStream()) {
+            InputStreamReader isr = new InputStreamReader(input);
+            BufferedReader reader = new BufferedReader(isr);
+            StringBuilder json = new StringBuilder();
+            int c;
+            while ((c = reader.read()) != -1) {
+                json.append((char) c);
+            }
+            String search = "\"policyId\"";
+            int startIndex = json.indexOf(search);
+            if(startIndex == -1){
+                System.out.println("keine Policy gefunden");
+            }
+            int cIndex = json.indexOf(":", startIndex);
+            int start = json.indexOf("\"", cIndex + 1);
+            int end = json.indexOf("\"", start + 1);
+
+            return json.substring(start + 1, end);
+        } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletableFuture<Boolean> policyExists(DittoClient dittoClient, String policy){
+        return dittoClient
+                .policies()
+                .retrieve(PolicyId.of(policy))
+                .thenApply(pol -> true)
+                .exceptionally(ex -> false).toCompletableFuture();
     }
 
 
-    public CompletableFuture<Boolean> createTwinWithWOT(DittoClient client, String wotTDDefinitionURL, String policyURL) {
+    public CompletableFuture<Boolean> createTwinWithWOT(DittoClient client, String wotTDDefinitionURL, String policyURL) throws ExecutionException, InterruptedException {
+
+
+        String policy = getPolicyFromURL(policyURL).get();
         var future = new CompletableFuture<Boolean>();
 
-        createPolicyFromURL(client, policyURL);
+
 
         //String json =
         var o = JsonObject.newBuilder()
                 .set("thingId", thingId.toString()) //ThingId, need to adhere to rules (entityID in Ditto)
                 .set("definition", wotTDDefinitionURL) //WoT definition (in GUI WoT TD)
-                //.set("policyId", thingId.toString())
+                .set("policyId", policy)
                 .build();
 
         client.twin().create(o).handle((createdThing, throwable) -> {
@@ -106,12 +133,38 @@ public class LKW {
                     future.completeExceptionally(t);
                     return null;
                 });
+
         return future;
-    }
-
-    public CompletableFuture<Boolean> policyExists(DittoClient dittoClient){
 
     }
+
+    public CompletableFuture<Boolean> createTwinAndPolicy(DittoClient dittoClient, String thingURL, String policyURL){
+        return createPolicyFromURL(dittoClient, policyURL).thenCompose(x -> {
+            try {
+                return createTwinWithWOT(dittoClient, thingURL, policyURL);
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletableFuture<Boolean> updateTwinDefinition(DittoClient dittoClient, String thingWOTURL){
+        var future = new CompletableFuture<Boolean>();
+        var newDef = JsonObject.newBuilder().set("definition", thingWOTURL).build();
+        dittoClient.twin().merge(thingId, newDef).handle((createdThing, throwable) -> {
+                    System.out.println("Thing could not be created due to: " + throwable.getMessage());
+                    return null;
+                }).toCompletableFuture()
+                .thenRun(() -> future.complete(true))
+                .exceptionally((t) -> {
+                    future.completeExceptionally(t);
+                    return null;
+                });
+
+        return future;
+
+    }
+
 
 
     public void createLKWThing(DittoClient dittoClient) throws ExecutionException, InterruptedException {

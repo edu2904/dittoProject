@@ -75,8 +75,9 @@ public class LKW {
        try(InputStream inputStream = new URL(policyURL).openStream();
            Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8)){
            String jsonText = scanner.useDelimiter("\\A").next();
-           JsonObject jsonObject = new JSONObject(jsonText);
+   //        JsonObject jsonObject = new JSONObject(jsonText);
        }
+       return "";
     }
 
 

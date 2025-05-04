@@ -5,9 +5,7 @@ import org.eclipse.ditto.json.JsonFactory;
 import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.policies.model.PolicyId;
-import org.eclipse.ditto.things.model.Feature;
-import org.eclipse.ditto.things.model.ThingId;
-import org.eclipse.ditto.things.model.ThingsModelFactory;
+import org.eclipse.ditto.things.model.*;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -114,13 +112,17 @@ public class LKW {
 
 
         //String json =
-        var o = JsonObject.newBuilder()
-                .set("thingId", thingId.toString()) //ThingId, need to adhere to rules (entityID in Ditto)
-                .set("definition", wotTDDefinitionURL) //WoT definition (in GUI WoT TD)
-                .set("policyId", policy)
-                .build();
+      //  var o = JsonObject.newBuilder()
+       //         .set("thingId", thingId.toString()) //ThingId, need to adhere to rules (entityID in Ditto)
+       //         .set("definition", wotTDDefinitionURL) //WoT definition (in GUI WoT TD)
+       //         .set("policyId", policy)
+       //         .build();
 
-        client.twin().create(o).handle((createdThing, throwable) -> {
+        ThingDefinition thingDefinition = ThingsModelFactory.newDefinition(wotTDDefinitionURL);
+        Thing thing = ThingsModelFactory.newThingBuilder()
+                .setId(thingId).setDefinition(thingDefinition).setPolicyId(PolicyId.of(policy)).build();
+
+        client.twin().create(thing).handle((createdThing, throwable) -> {
                     if (createdThing != null) {
                         System.out.println("Created new thing: " + createdThing);
                     } else {
@@ -148,19 +150,43 @@ public class LKW {
         });
     }
 
-    public CompletableFuture<Boolean> updateTwinDefinition(DittoClient dittoClient, String thingWOTURL){
+    public CompletableFuture<Boolean> updateTwinDefinition(DittoClient dittoClient, String thingWOTURL, String policy){
+        var o = JsonObject.newBuilder()
+                .set("thingId", thingId.toString()) //ThingId, need to adhere to rules (entityID in Ditto)
+                .set("definition", thingWOTURL) //WoT definition (in GUI WoT TD)
+                .set("policyId", policy)
+                .build();
+        ThingDefinition thingDefinition = ThingsModelFactory.newDefinition(thingWOTURL);
+        Thing thing = ThingsModelFactory.newThingBuilder()
+                .setId(thingId).setDefinition(thingDefinition).setPolicyId(PolicyId.of(policy)).build();
         var future = new CompletableFuture<Boolean>();
         var newDef = JsonObject.newBuilder().set("definition", thingWOTURL).build();
-        dittoClient.twin().merge(thingId, newDef).handle((createdThing, throwable) -> {
-                    System.out.println("Thing could not be created due to: " + throwable.getMessage());
-                    return null;
-                }).toCompletableFuture()
+
+        dittoClient.twin().put(thing).thenAccept(createdThing -> System.out.println("Thing updated")).exceptionally(err -> {
+            System.out.println("Error ");
+            return null;
+
+        }).toCompletableFuture()
                 .thenRun(() -> future.complete(true))
                 .exceptionally((t) -> {
                     future.completeExceptionally(t);
                     return null;
                 });
 
+     /*
+        dittoClient.twin().merge(thingId, thing).whenComplete((createdThing, throwable) -> {
+            if(throwable != null) {
+                System.out.println("Error thing creation: " + throwable);
+            }else {
+                System.out.println("Success" + createdThing);
+            }
+                }).toCompletableFuture()
+                .thenRun(() -> future.complete(true))
+                .exceptionally((t) -> {
+                    future.completeExceptionally(t);
+                    return null;
+                });
+*/
         return future;
 
     }

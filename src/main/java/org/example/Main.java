@@ -22,11 +22,12 @@ public class Main {
         String officialWoTExampleUrl = "https://eclipse-ditto.github.io/ditto-examples/wot/models/floor-lamp-1.0.0.tm.jsonld";
         String lkwPolicy = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/lkwpolicy";
         String LKWWOT = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/LKW/lkwMain";
+        String policyID = lkw.getPolicyFromURL(lkwPolicy).get();
        // System.out.println(lkw.thingExist(dittoClient, String.valueOf(ThingId.of("mytest:LKW-10000000000000000000000000000000000000000"))).get());
-        if(!(lkw.policyExists(dittoClient, lkw.getPolicyFromURL(lkwPolicy).get()).get())){
-            lkw.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy);
+        if(!(lkw.policyExists(dittoClient, policyID).get())){
+            lkw.createTwinAndPolicy(dittoClient, LKWWOT, policyID);
         }else {
-            lkw.updateTwinDefinition(dittoClient, LKWWOT);
+            lkw.updateTwinDefinition(dittoClient, LKWWOT,policyID);
         }
         //lkw.createLKWThing(dittoClient);
         //lkw.featureSimulation();

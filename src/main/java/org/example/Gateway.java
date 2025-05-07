@@ -1,9 +1,11 @@
+
 package org.example;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.Feature;
 import org.eclipse.ditto.things.model.ThingId;
+import org.example.Things.LKW;
 
 import java.util.concurrent.*;
 
@@ -14,12 +16,13 @@ public class Gateway {
 
 
 
-    public void updateLKWFeatureValue(DittoClient dittoClient, String featureID, double featureAmount, ThingId thingId) throws ExecutionException, InterruptedException {
+
+    public void updateLKWFeatureValue(DittoClient dittoClient, String featureID, String propertyName, double featureAmount, ThingId thingId) throws ExecutionException, InterruptedException {
         dittoClient.twin().startConsumption().toCompletableFuture();
 
         dittoClient.twin()
                 .forFeature(thingId, featureID)
-                .mergeProperty("amount", featureAmount)
+                .mergeProperty(propertyName, featureAmount)
                 .whenComplete(((adaptable, throwable) -> {
                     if (throwable != null) {
                         System.out.println("Received error while sending MergeThing: '{}' " + throwable.getMessage());
@@ -29,13 +32,13 @@ public class Gateway {
                 }));
 
     }
-    public void startUpdatingFuel(DittoClient dittoClient, ThingHandler lkw){
+    public void startUpdatingFuel(DittoClient dittoClient, LKW lkw){
         Runnable updateTask = () -> {
             try {
-                updateLKWFeatureValue(dittoClient, lkw.getVelocityFeatureID(), lkw.getVelocityAmount(), lkw.getThingId());
+                updateLKWFeatureValue(dittoClient, "Velocity", "amount", lkw.getVelocity(), ThingId.of(lkw.getThingId()));
 
-                updateLKWFeatureValue(dittoClient, lkw.getProgressFeatureID(), lkw.getProgress(), lkw.getThingId());
-                updateLKWFeatureValue(dittoClient, lkw.getFuelFeatureID(), lkw.getFuelAmount(), lkw.getThingId());
+                updateLKWFeatureValue(dittoClient, "Progress","amount", lkw.getProgress(), ThingId.of(lkw.getThingId()));
+                updateLKWFeatureValue(dittoClient, "FuelTank","amount", lkw.getFuel(), ThingId.of(lkw.getThingId()));
 
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
@@ -67,8 +70,10 @@ public class Gateway {
         return fuelAmount.get();
     }
 
-    public void startGateway(DittoClient dittoClient, ThingHandler lkw) throws ExecutionException, InterruptedException {
+    public void startGateway(DittoClient dittoClient, LKW lkw) throws ExecutionException, InterruptedException {
         startUpdatingFuel(dittoClient, lkw);
     }
 
 }
+
+

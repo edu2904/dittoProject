@@ -2,6 +2,7 @@ package org.example;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Client.DittoClientBuilder;
+import org.example.Things.LKW;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -12,17 +13,42 @@ public class Main {
 
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
-        ThingHandler lkw = new ThingHandler();
+
+
+        ThingHandler lkwThing = new ThingHandler();
+
+        LKW lkw1 = new LKW();
+        lkw1.featureSimulation();
+
+        System.out.println(lkw1.getThingId());
+        Gateway gateway = new Gateway();
+
+
         String officialWoTExampleUrl = "https://eclipse-ditto.github.io/ditto-examples/wot/models/floor-lamp-1.0.0.tm.jsonld";
         String lkwPolicy = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/lkwpolicy";
         String LKWWOT = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/LKW/lkwMain?cb=" + System.currentTimeMillis();
-        String policyID = lkw.getPolicyFromURL(lkwPolicy).get();
-       // System.out.println(lkw.thingExist(dittoClient, String.valueOf(ThingId.of("mytest:LKW-10000000000000000000000000000000000000000"))).get());
-        if(!(lkw.policyExists(dittoClient, policyID).get())){
-            lkw.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy);
+        String policyID = lkwThing.getPolicyFromURL(lkwPolicy).get();
+
+
+
+
+        if(!(lkwThing.policyExists(dittoClient, policyID).get())){
+            lkwThing.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy, lkw1.getThingId()).thenRun(() -> {
+                try {
+                    gateway.startGateway(dittoClient, lkw1);
+                } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }else {
-            lkw.deleteThingandPolicy(dittoClient, lkw.getThingId().toString(), policyID);
-            lkw.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy);
+            lkwThing.deleteThingandPolicy(dittoClient,  policyID, lkw1.getThingId());
+            lkwThing.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy, lkw1.getThingId());
+            gateway.startGateway(dittoClient, lkw1);
         }
+
+
+
     }
+
+
 }

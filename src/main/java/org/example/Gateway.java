@@ -4,7 +4,6 @@ import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.Feature;
 import org.eclipse.ditto.things.model.ThingId;
-import org.example.Things.LKW;
 
 import java.util.concurrent.*;
 
@@ -30,7 +29,7 @@ public class Gateway {
                 }));
 
     }
-    public void startUpdatingFuel(DittoClient dittoClient, LKW lkw){
+    public void startUpdatingFuel(DittoClient dittoClient, ThingHandler lkw){
         Runnable updateTask = () -> {
             try {
                 updateLKWFeatureValue(dittoClient, lkw.getVelocityFeatureID(), lkw.getVelocityAmount(), lkw.getThingId());
@@ -68,7 +67,7 @@ public class Gateway {
         return fuelAmount.get();
     }
 
-    public void startGateway(DittoClient dittoClient, LKW lkw) throws ExecutionException, InterruptedException {
+    public void startGateway(DittoClient dittoClient, ThingHandler lkw) throws ExecutionException, InterruptedException {
         startUpdatingFuel(dittoClient, lkw);
     }
 

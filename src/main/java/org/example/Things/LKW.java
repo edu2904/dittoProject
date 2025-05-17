@@ -2,6 +2,8 @@ package org.example.Things;
 
 import org.eclipse.ditto.things.model.ThingId;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class LKW {
@@ -13,10 +15,11 @@ public class LKW {
     private double tirePressure;
     private double progress;
     private double fuel;
+    private List<LKW> truckList;
+
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    public LKW(){
-        setStarterVaules();
+    public LKW() {
 
     }
 
@@ -76,17 +79,17 @@ public class LKW {
         return fuel;
     }
 
-    public void setStarterVaules(){
-        setThingId("mytest:LKW-1");
+    public void setStarterVaules(int truckNumber) {
+        setThingId("mytest:LKW-" + truckNumber);
         setStatus(LKWStatus.IDLE);
         setWeight(7500);
         setVelocity(0);
         setTirePressure(7000);
         setProgress(0);
-        setFuel(50);
+        setFuel(51);
     }
 
-    public void featureSimulation(){
+    public void featureSimulation1() {
         double maxProgress = 100.0;
 
         scheduler.scheduleAtFixedRate(() -> {
@@ -94,21 +97,57 @@ public class LKW {
             double currentVelocity = getVelocity();
             double currentProgress = getProgress();
 
-            if(currentProgress > maxProgress || currentFuelTank <= 0){
+            if (currentVelocity > 0) {
+                setStatus(LKWStatus.DRIVING);
+            }
+            if (currentProgress == maxProgress || currentFuelTank <= 0) {
                 setVelocity(0);
                 System.out.println("Fahrt Beendet");
                 scheduler.shutdown();
-            }
+            } else {
+                System.out.println("fahrt läuft");
+               // System.out.println(currentProgress);
+               // System.out.println(currentFuelTank);
+                setTirePressure(9000);
+                setVelocity(75 + Math.random() * 10);
+                setFuel(currentFuelTank - 0.5);
+                setProgress(currentProgress + 5);
 
-            System.out.println("fahrt läuft");
-            System.out.println(currentProgress);
-            System.out.println(currentFuelTank);
-            setVelocity(75 + Math.random() * 10);
-            setFuel(currentFuelTank - 0.5);
-            setProgress(currentProgress + 5);
+            }
 
 
         }, 0, 3, TimeUnit.SECONDS);
 
+
+    }
+
+    public void featureSimulation2() {
+        double maxProgress = 100.0;
+
+        scheduler.scheduleAtFixedRate(() -> {
+            double currentFuelTank = getFuel();
+            double currentVelocity = getVelocity();
+            double currentProgress = getProgress();
+
+            if (currentVelocity > 0) {
+                setStatus(LKWStatus.DRIVING);
+            }
+            if (currentProgress == maxProgress || currentFuelTank <= 0) {
+                setVelocity(0);
+                System.out.println("Fahrt Beendet");
+                scheduler.shutdown();
+            } else {
+                System.out.println("fahrt läuft");
+                //System.out.println(currentProgress);
+                //System.out.println(currentFuelTank);
+                setTirePressure(9000);
+                setVelocity(75 + Math.random() * 10);
+                setFuel(currentFuelTank - 1);
+                setProgress(currentProgress + 2);
+
+            }
+
+
+        }, 0, 3, TimeUnit.SECONDS);
     }
 }

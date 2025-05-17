@@ -8,6 +8,7 @@ import org.eclipse.ditto.client.messaging.AuthenticationProviders;
 import org.eclipse.ditto.client.messaging.MessagingProvider;
 import org.eclipse.ditto.client.messaging.MessagingProviders;
 
+import java.util.List;
 import java.util.concurrent.*;
 
 public class DittoClientBuilder {
@@ -15,6 +16,7 @@ public class DittoClientBuilder {
     public DittoClient dittoClient;
 
     public DittoClientBuilder() throws ExecutionException, InterruptedException {
+        List<String> endpoints = List.of("ws://localhost:8080");
         var authentication = AuthenticationProviders.basic(BasicAuthenticationConfiguration
                 .newBuilder()
                 .username("ditto")
@@ -24,7 +26,7 @@ public class DittoClientBuilder {
         MessagingProvider messagingProvider = MessagingProviders.webSocket(
                 WebSocketMessagingConfiguration
                         .newBuilder()
-                        .endpoint("ws://localhost:8080")
+                        .endpoint("ws://localhost:8080/ws/2")
                         .build(), authentication);
 
         DisconnectedDittoClient disconnectedDittoClient = DittoClients.newInstance(messagingProvider);

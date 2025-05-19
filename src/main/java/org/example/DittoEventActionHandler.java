@@ -1,23 +1,20 @@
 package org.example;
 
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.sse.EventSource;
-import okhttp3.sse.EventSourceListener;
-import okhttp3.sse.EventSources;
-import org.jetbrains.annotations.NotNull;
+import org.example.Client.DittoClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Base64;
 
-public class DittoLogger {
+public class DittoEventActionHandler {
+    private final Logger logger = LoggerFactory.getLogger(DittoEventActionHandler.class);
 
-    public DittoLogger(){
+
+    public DittoEventActionHandler(){
 
     }
 
@@ -48,7 +45,7 @@ public class DittoLogger {
                         String data = inputLine.substring(5).trim();
 
                         if(!data.isEmpty()) {
-                            System.out.println("Empfangenes Event: " + inputLine + " for " + thingID);
+                            logger.info("Received Event: {} for {}", inputLine, thingID);
                             fileWriter.write("New Event: " + inputLine + "\n");
                             fileWriter.newLine();
                         };
@@ -92,7 +89,7 @@ public class DittoLogger {
                         String data = inputLine.substring(5).trim();
 
                         if(!data.isEmpty()) {
-                            System.out.println("Empfangene Action: " + inputLine + " for " + thingID);
+                            logger.info("Received Action: {} for {}", inputLine, thingID);
                             fileWriter.write("New Action: " + inputLine + "\n");
                             fileWriter.newLine();
                         };

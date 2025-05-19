@@ -7,11 +7,16 @@ import org.eclipse.ditto.client.configuration.WebSocketMessagingConfiguration;
 import org.eclipse.ditto.client.messaging.AuthenticationProviders;
 import org.eclipse.ditto.client.messaging.MessagingProvider;
 import org.eclipse.ditto.client.messaging.MessagingProviders;
+import org.example.ThingHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.*;
 
 public class DittoClientBuilder {
+    private final Logger logger = LoggerFactory.getLogger(DittoClientBuilder.class);
+
 
     public DittoClient dittoClient;
 
@@ -36,11 +41,11 @@ public class DittoClientBuilder {
         disconnectedDittoClient.connect()
                 .thenAccept(dittoClient -> {
                     dittoClientCompletableFuture.complete(dittoClient);
-                    System.out.println("Verbunden");
+                    logger.info("DittoClient connected");
                 })
                 .exceptionally(error -> {
                     dittoClientCompletableFuture.completeExceptionally(error);
-                    System.out.println("Nicht Verbunden");
+                    logger.error("Errer connecting to DittoClient");
                     return null;
                 }).toCompletableFuture().get();
 

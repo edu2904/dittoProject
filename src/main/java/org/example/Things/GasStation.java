@@ -1,10 +1,15 @@
 package org.example.Things;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class GasStation {
+    private final Logger logger = LoggerFactory.getLogger(GasStation.class);
+
     private String thingId;
     private GasStationStatus gasStationStatus;
     private double fuelAmount;

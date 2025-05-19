@@ -1,12 +1,17 @@
 package org.example.Things;
 
 import org.eclipse.ditto.things.model.ThingId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.logging.Level;
 
 public class LKW {
+
+    private final Logger logger = LoggerFactory.getLogger(LKW.class);
 
     private String thingId;
     private LKWStatus lkwStatus;
@@ -102,12 +107,13 @@ public class LKW {
             }
             if (currentProgress == maxProgress || currentFuelTank <= 0) {
                 setVelocity(0);
-                System.out.println("Fahrt Beendet");
+                logger.warn("Drive ended for Truck1");
                 scheduler.shutdown();
             } else {
-                System.out.println("fahrt läuft");
-               // System.out.println(currentProgress);
-               // System.out.println(currentFuelTank);
+
+                logger.info("Truck1 driving");
+                logger.debug("current Progress Truck1: {}", currentProgress);
+                logger.debug("current FuelTank Truck1: {}", currentFuelTank);
                 setTirePressure(9000);
                 setVelocity(75 + Math.random() * 10);
                 setFuel(currentFuelTank - 0.5);
@@ -134,12 +140,12 @@ public class LKW {
             }
             if (currentProgress == maxProgress || currentFuelTank <= 0) {
                 setVelocity(0);
-                System.out.println("Fahrt Beendet");
+                logger.warn("Drive ended for Truck2");
                 scheduler.shutdown();
             } else {
-                System.out.println("fahrt läuft");
-                //System.out.println(currentProgress);
-                //System.out.println(currentFuelTank);
+                logger.info("Truck2 driving");
+                logger.debug("current Progress Truck2: {}", currentProgress);
+                logger.debug("current FuelTank Truck2: {}", currentFuelTank);
                 setTirePressure(9000);
                 setVelocity(75 + Math.random() * 10);
                 setFuel(currentFuelTank - 1);

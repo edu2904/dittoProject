@@ -54,7 +54,6 @@ public class Main {
         thing.createTwinAndPolicy(dittoClient, GasStationWOTLink, lkwPolicy, gasStation.getThingId()).thenRun(() -> {
                     try {
                         gateway.startGasStationGateway(dittoClient, gasStation);
-                        System.out.println("GATEWAY STATATATATATAT");
                     } catch (ExecutionException | InterruptedException e) {
                         throw new RuntimeException(e);
                     }

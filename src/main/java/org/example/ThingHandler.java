@@ -6,6 +6,8 @@ import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.policies.model.PolicyId;
 import org.eclipse.ditto.things.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -18,6 +20,8 @@ import java.time.OffsetDateTime;
 import java.util.concurrent.*;
 
 public class ThingHandler {
+    private final Logger logger = LoggerFactory.getLogger(ThingHandler.class);
+
 
     public Feature fuelTankFeature;
     public Feature tirePressureFeature;
@@ -80,7 +84,7 @@ public class ThingHandler {
                 String search = "\"policyId\"";
                 int startIndex = json.indexOf(search);
                 if (startIndex == -1) {
-                    System.out.println("keine Policy gefunden");
+                    logger.error("No policy found");
                 }
                 int cIndex = json.indexOf(":", startIndex);
                 int start = json.indexOf("\"", cIndex + 1);
@@ -102,9 +106,9 @@ public class ThingHandler {
     }
     public CompletableFuture<Void> deletePolicy(DittoClient dittoClient, String policyID) {
         return dittoClient.policies().delete(PolicyId.of(policyID)).thenAccept(thing -> {
-            System.out.println("Deleted policy: " + policyID);
+            logger.info("Deleted policy: {}", policyID);
         }).exceptionally(ex -> {
-            System.out.println("Error deleting policy " + ex.getMessage());
+            logger.error("Error deleting policy {}", ex.getMessage());
             return null;
         }).toCompletableFuture();
     }
@@ -130,9 +134,9 @@ public class ThingHandler {
 
         client.twin().create(thing).handle((createdThing, throwable) -> {
                     if (createdThing != null) {
-                        System.out.println("Created new thing: " + createdThing);
+                        logger.info("Created new thing: {}", createdThing);
                     } else {
-                        System.out.println("Thing could not be created due to: " + throwable.getMessage());
+                        logger.error("Thing could not be created due to: {}" , throwable.getMessage());
                     }
                     return null;
                 }).toCompletableFuture()
@@ -170,9 +174,9 @@ public class ThingHandler {
 
     public CompletableFuture<Void> deleteThing(DittoClient dittoClient, String thingID) {
         return dittoClient.twin().delete(ThingId.of(thingID)).thenAccept(thing -> {
-            System.out.println("Deleted thing: " + thingID);
+            logger.info("Deleted thing: {}" , thingID);
         }).exceptionally(ex -> {
-            System.out.println("Error deleting thing" + ex.getMessage());
+            logger.error("Error deleting thing: {}", ex.getMessage());
             return null;
         }).toCompletableFuture();
     }
@@ -233,9 +237,9 @@ public class ThingHandler {
    */
     public CompletableFuture<Void> getThingPayload(DittoClient dittoClient, String thingId) {
         return dittoClient.twin().retrieve(ThingId.of(thingId)).thenAccept(thing -> {
-            System.out.println("Payload: " + thing.toString());
+            logger.info("Payload: {}", thing.toString());
         }).exceptionally(ex -> {
-            System.out.println("Error retrieving payload" + ex.getMessage());
+            logger.error("Error retrieving payload {}", ex.getMessage());
             return null;
         }).toCompletableFuture();
 

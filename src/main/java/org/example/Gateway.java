@@ -1,32 +1,25 @@
 
 package org.example;
 
-import com.sun.jdi.Value;
-import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonObject;
-import org.eclipse.ditto.json.JsonPointer;
 import org.eclipse.ditto.json.JsonValue;
-import org.eclipse.ditto.things.model.Attributes;
 import org.eclipse.ditto.things.model.Feature;
-import org.eclipse.ditto.things.model.ThingDefinition;
 import org.eclipse.ditto.things.model.ThingId;
-import org.eclipse.ditto.wot.model.Event;
-import org.eclipse.ditto.wot.model.ThingModel;
 import org.example.Things.GasStation;
 import org.example.Things.LKW;
-import org.eclipse.ditto.json.JsonValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-import javax.security.auth.Subject;
-import java.net.http.HttpResponse;
-import java.util.Objects;
 import java.util.concurrent.*;
 
 public class Gateway {
 
+    private final Logger logger = LoggerFactory.getLogger(Gateway.class);
+
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private DittoLogger dittoLogger = new DittoLogger();
+    private DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
 
 
    //Nimmt einen Attribut Wert von LKW und schickt es nach eclipse ditto
@@ -36,9 +29,9 @@ public class Gateway {
                 .mergeAttribute(attributeName, JsonValue.of(attributeAmount))
                 .whenComplete(((adaptable, throwable) -> {
                      if (throwable != null) {
-                         System.out.println("Received error while sending Attribute MergeThing for: " + attributeName + "'{}'"  + throwable.getMessage());
+                         logger.error("Received error while sending Attribute MergeThing for: {} {}",  attributeName, throwable.getMessage());
                      } else {
-                        // System.out.println("Attribute Merge operation completed successfully for " + thingId);
+                         logger.debug("Attribute Merge operation completed successfully for: {}",  thingId);
             }
         }));
 
@@ -53,9 +46,9 @@ public class Gateway {
                 .mergeProperty(featurePropertyName, featureAmount)
                 .whenComplete(((adaptable, throwable) -> {
                     if (throwable != null) {
-                        System.out.println("Received error while sending Feature MergeThing: " + featureID + "'{}'"  + throwable.getMessage());
+                        logger.error("Received error while sending Feature MergeThing for: {} {}",  featureID, throwable.getMessage());
                     } else {
-                      //  System.out.println("Feature Merge operation completed successfully for " + thingId);
+                        logger.debug("Feature Merge operation completed successfully for: {}",  thingId);
                     }
                 }));
 
@@ -182,7 +175,9 @@ public class Gateway {
                     .subject("lowfuel")
                     .payload(lowFuelFULL)
                     .contentType("application/json")
-                    .send(JsonObject.class, (response, throwable) -> {
+                    .send();
+                       /*
+                            JsonObject.class, (response, throwable) -> {
                         System.out.println("Callback wurde aufgerufen");
                         if (response != null) {
                             System.out.println("Got response: " + response);
@@ -194,10 +189,12 @@ public class Gateway {
                     });
 
 
+                        */
+
 
         }
        }catch (ExecutionException| InterruptedException ex){
-           System.err.println("Fehler beim SENDENDENDNED " + ex);
+           logger.error("Messaging Error: {}", ex.getMessage());
        }
 
 
@@ -249,8 +246,8 @@ public class Gateway {
 
 
     public void startLKWGateway(DittoClient dittoClient, LKW lkw) throws ExecutionException, InterruptedException {
-        dittoLogger.createEventLogging(lkw.getThingId(), "showStatus");
-        dittoLogger.createActionLogging(lkw.getThingId(), "resetProgress");
+        dittoEventActionHandler.createEventLogging(lkw.getThingId(), "showStatus");
+        dittoEventActionHandler.createActionLogging(lkw.getThingId(), "resetProgress");
         startUpdatingTruck(dittoClient, lkw);
     }
     public void startGasStationGateway(DittoClient dittoClient, GasStation gasStation) throws ExecutionException, InterruptedException {

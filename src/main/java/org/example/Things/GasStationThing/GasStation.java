@@ -1,4 +1,4 @@
-package org.example.Things;
+package org.example.Things.GasStationThing;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

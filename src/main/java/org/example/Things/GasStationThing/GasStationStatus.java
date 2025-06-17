@@ -1,4 +1,4 @@
-package org.example.Things;
+package org.example.Things.GasStationThing;
 
 public enum GasStationStatus {
     WAITING,

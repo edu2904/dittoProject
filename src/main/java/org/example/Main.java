@@ -1,21 +1,18 @@
 package org.example;
 
-import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
-import org.eclipse.ditto.things.model.ThingId;
 import org.example.Client.DittoClientBuilder;
-import org.example.Things.GasStation;
-import org.example.Things.GasStationStatus;
-import org.example.Things.LKW;
+import org.example.Things.GasStationThing.GasStation;
+import org.example.Things.Tasks;
+import org.example.Things.TruckThing.Truck;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
 public class Main {
-    public static void main(String[] args) throws ExecutionException, InterruptedException, IOException {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
 
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
@@ -23,21 +20,22 @@ public class Main {
 
 
         ThingHandler thing = new ThingHandler();
+thing.deleteThing(dittoClient, "task:refuel");
+        List<Truck> truckList = new ArrayList<>();
 
-        List<LKW> truckList = new ArrayList<>();
-
-        LKW lkw1 = new LKW();
-        lkw1.setStarterVaules(1);
-        LKW lkw2 = new LKW();
-        lkw2.setStarterVaules(2);
-        lkw1.featureSimulation1();
-        lkw2.featureSimulation2();
-        truckList.add(lkw1);
-        truckList.add(lkw2);
+        Truck truck1 = new Truck();
+        truck1.setStarterValues(1);
+        //Truck truck2 = new Truck();
+        //truck2.setStarterValues(2);
+        truck1.featureSimulation1(dittoClient);
+        //truck2.featureSimulation2();
+        truckList.add(truck1);
+        //truckList.add(truck2);
 
 
         GasStation gasStation = new GasStation();
         gasStation.featureSimulation();
+
 
         Gateway gateway = new Gateway();
 
@@ -61,33 +59,14 @@ public class Main {
         ).toCompletableFuture();
 
         for (int i = 0; i < truckList.size(); i++ ){
-        //if(!(lkwThing.policyExists(dittoClient, policyID).get())){
             int finalI = i;
             thing.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy, truckList.get(finalI).getThingId()).thenRun(() -> {
                 try {
-                    System.out.println(finalI);
-
                     gateway.startLKWGateway(dittoClient, truckList.get(finalI));
                 } catch (ExecutionException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             }).toCompletableFuture();
-            /*
-        }else {
-            int finalI = i;
-            lkwThing.deleteThingandPolicy(dittoClient, policyID, truckList.get(0).getThingId());
-            lkwThing.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy, lkw1.getThingId()).thenRun(() -> {
-                try {
-                    gateway.startGateway(dittoClient, truckList.get(finalI));
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            ;
-
-        }
-
-             */
         }
 
 

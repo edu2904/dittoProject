@@ -3,7 +3,6 @@ package org.example;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonFactory;
 import org.eclipse.ditto.json.JsonObject;
-import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.policies.model.PolicyId;
 import org.eclipse.ditto.things.model.*;
 import org.slf4j.Logger;
@@ -16,7 +15,6 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.OffsetDateTime;
 import java.util.concurrent.*;
 
 public class ThingHandler {
@@ -167,7 +165,14 @@ public class ThingHandler {
         return dittoClient
                 .twin()
                 .retrieve(ThingId.of(thingID))
-                .thenApply(pol -> true)
+                .thenApply(pol -> {
+                    if(pol.isEmpty()) {
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                })
                 .exceptionally(ex -> false).toCompletableFuture();
     }
 

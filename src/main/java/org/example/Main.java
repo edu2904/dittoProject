@@ -3,7 +3,6 @@ package org.example;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Client.DittoClientBuilder;
 import org.example.Things.GasStationThing.GasStation;
-import org.example.Things.Tasks;
 import org.example.Things.TruckThing.Truck;
 
 import java.util.ArrayList;
@@ -20,18 +19,24 @@ public class Main {
 
 
         ThingHandler thing = new ThingHandler();
-thing.deleteThing(dittoClient, "task:refuel");
+        thing.deleteThing(dittoClient, "task:refuel");
         List<Truck> truckList = new ArrayList<>();
 
         Truck truck1 = new Truck();
         truck1.setStarterValues(1);
-        //Truck truck2 = new Truck();
-        //truck2.setStarterValues(2);
-        truck1.featureSimulation1(dittoClient);
-        //truck2.featureSimulation2();
+        Truck truck2 = new Truck();
+        truck2.setStarterValues(2);
         truckList.add(truck1);
-        //truckList.add(truck2);
+        truckList.add(truck2);
 
+        for (Truck truck : truckList) {
+            if (thing.thingExists(dittoClient, "task:refuel_" + truck.getThingId()).get()) {
+                thing.deleteThing(dittoClient, "task:refuel_" + truck.getThingId());
+            }
+        }
+
+        truck1.featureSimulation1(dittoClient);
+        truck2.featureSimulation2(dittoClient);
 
         GasStation gasStation = new GasStation();
         gasStation.featureSimulation();

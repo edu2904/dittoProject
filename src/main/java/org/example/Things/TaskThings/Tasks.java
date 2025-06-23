@@ -1,4 +1,4 @@
-package org.example.Things;
+package org.example.Things.TaskThings;
 
 import org.example.Things.TruckThing.Truck;
 
@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter;
 public class Tasks {
 
     private String thingId;
-    private String status;
+    private TaskStatus status;
     private String targetTruck;
     private String creationTime;
 
@@ -21,11 +21,11 @@ public class Tasks {
         this.thingId = thingId;
     }
 
-    public String getStatus() {
+    public TaskStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(TaskStatus status) {
         this.status = status;
     }
 
@@ -45,9 +45,9 @@ public class Tasks {
         this.creationTime = creationTime;
     }
 
-    public void createRefuelTask(Truck truck){
-        setThingId("task:refuel");
-        setStatus("STARTING");
+    public void initializeRefuelTask(Truck truck) throws InterruptedException {
+        setThingId("task:refuel_" + truck.getThingId());
+        setStatus(TaskStatus.STARTING);
         setTargetTruck(truck.getThingId());
         setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
 

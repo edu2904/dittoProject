@@ -7,7 +7,9 @@ import org.eclipse.ditto.things.model.Feature;
 import org.eclipse.ditto.things.model.ThingId;
 import org.example.DittoEventAction.DittoEventActionHandler;
 import org.example.Things.GasStationThing.GasStation;
-import org.example.Things.Tasks;
+import org.example.Things.TaskThings.TaskStatus;
+import org.example.Things.TaskThings.Tasks;
+import org.example.Things.TaskThings.TasksEventsActions;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
 import org.slf4j.Logger;
@@ -22,7 +24,7 @@ public class Gateway {
     private double truckCurrentFuelAmount;
     private double truckCurrentProgress;
 
-    private String refuelTaskURL = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/refuelTruck";
+    private final String refuelTaskURL = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/refuelTruck";
     private String policyURL = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/lkwpolicy";
 
     private final Logger logger = LoggerFactory.getLogger(Gateway.class);
@@ -30,11 +32,9 @@ public class Gateway {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
     public TruckEventsActions truckEventsActions = new TruckEventsActions();
+    public TasksEventsActions tasksEventsActions = new TasksEventsActions();
     public ThingHandler thingHandler = new ThingHandler();
     public boolean taskActive;
-
-    public Tasks tasks;
-
 
    //Nimmt einen Attribut Wert von LKW und schickt es nach eclipse ditto
     public void updateAttributeValue(DittoClient dittoClient, String attributeName, Object attributeAmount, String thingId){
@@ -105,8 +105,8 @@ public class Gateway {
     public void createRefuelTask(DittoClient dittoClient, Truck truck, double fuelAmount) throws ExecutionException, InterruptedException {
 
         Tasks refuelTask = new Tasks();
-        refuelTask.createRefuelTask(truck);
-        if(fuelAmount <= 49 && !taskActive) {
+        refuelTask.initializeRefuelTask(truck);
+        if(fuelAmount <= 39 && !taskActive) {
             thingHandler.createTwinAndPolicy(dittoClient, refuelTaskURL, policyURL, refuelTask.getThingId()).thenRun(() -> {
                 try {
                     startUpdatingTask(dittoClient, refuelTask);
@@ -116,22 +116,24 @@ public class Gateway {
                     logger.info(e.getMessage());
                 }
             });
-            refuelTask.setStatus("UNDERGOING");
+            refuelTask.setStatus(TaskStatus.UNDERGOING);
         }
     }
 
     public void startUpdatingTask(DittoClient dittoClient, Tasks tasks){
+        tasksEventsActions.startTaskLogging(tasks.getThingId());
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
         Runnable updateTask = () -> {
-            updateAttributeValue(dittoClient, "status", tasks.getStatus(), tasks.getThingId());
+            updateAttributeValue(dittoClient, "status", tasks.getStatus().toString(), tasks.getThingId());
+
             updateAttributeValue(dittoClient, "targetTruck", tasks.getTargetTruck(), tasks.getThingId());
             updateAttributeValue(dittoClient, "creationDate", tasks.getCreationTime(), tasks.getThingId());
 
 
             if(truckCurrentFuelAmount == 300){
-                tasks.setStatus("FINISHED");
-                updateAttributeValue(dittoClient, "status", tasks.getStatus(), tasks.getThingId());
+                tasks.setStatus(TaskStatus.FINISHED);
+                updateAttributeValue(dittoClient, "status", tasks.getStatus().toString(), tasks.getThingId());
 
                 try {
                     Thread.sleep(1000);
@@ -143,6 +145,12 @@ public class Gateway {
                 future[0].cancel(false);
                 taskActive = false;
             }
+            try {
+                tasksEventsActions.handleRefuelTaskEvents(dittoClient, tasks);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
         };
         ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, 3, TimeUnit.SECONDS);
         future[0] = future1;
@@ -154,7 +162,7 @@ public class Gateway {
     //Zusammenfassung aller gewünschten Attribut/Feature updates für den LKW
     public void startUpdatingTruck(DittoClient dittoClient, Truck truck){
 
-
+        truckEventsActions.startTruckLogging(truck.getThingId());
         Runnable updateTask = () -> {
 
 
@@ -163,6 +171,7 @@ public class Gateway {
                 updateAttributeValue(dittoClient, "weight", truck.getWeight(), truck.getThingId());
                 updateAttributeValue(dittoClient, "status", truck.getStatus().toString(), truck.getThingId());
                 // Updates for the feature Values
+                updateFeatureValue(dittoClient, "TirePressure", "amount", truck.getTirePressure(), truck.getThingId());
                 updateFeatureValue(dittoClient, "Velocity", "amount", truck.getVelocity(), truck.getThingId());
                 updateFeatureValue(dittoClient, "Progress","amount", truck.getProgress(), truck.getThingId());
                 updateFeatureValue(dittoClient, "Progress","destinationStatus", truck.getStops(), truck.getThingId());
@@ -180,13 +189,7 @@ public class Gateway {
                 truckEventsActions.fuelAmountEvents(dittoClient, truck.getThingId(), truckCurrentFuelAmount);
 
                 // Handle measures to solve problems
-                System.out.println(truckCurrentFuelAmount);
                 createRefuelTask(dittoClient, truck, truckCurrentFuelAmount);
-
-
-
-
-
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -209,10 +212,7 @@ public class Gateway {
 
 
     public void startLKWGateway(DittoClient dittoClient, Truck truck) throws ExecutionException, InterruptedException{
-        dittoEventActionHandler.createEventLoggingForAttribute(truck.getThingId(), "showStatus");
-        dittoEventActionHandler.createEventLoggingForFeature(truck.getThingId(), "lowfuel", "FuelTank");
-        dittoEventActionHandler.createActionLogging(truck.getThingId(), "resetProgress");
-        startUpdatingTruck(dittoClient, truck);
+          startUpdatingTruck(dittoClient, truck);
     }
     public void startGasStationGateway(DittoClient dittoClient, GasStation gasStation) throws ExecutionException, InterruptedException {
         startUpdatingGasStation(dittoClient, gasStation);

@@ -2,7 +2,6 @@ package org.example.Things.TruckThing;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.example.ThingHandler;
-import org.example.Things.Tasks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +99,7 @@ public class Truck {
         setStatus(TruckStatus.IDLE);
         setWeight(7500);
         setVelocity(0);
-        setTirePressure(7000);
+        setTirePressure(9000);
         setProgress(0);
         setFuel(51);
     }
@@ -123,6 +122,7 @@ public class Truck {
             double currentFuelTank = getFuel();
             double currentVelocity = getVelocity();
             double currentProgress = getProgress();
+            double currentTirePressure = getTirePressure();
             ArrayList<Integer> currentStops = getStops();
 
 
@@ -133,8 +133,8 @@ public class Truck {
                 scheduler.shutdown();
             }else {
                 try {
-                    if(thingHandler.thingExists(dittoClient, "task:refuel").get()){
-                        logger.info("Refuel Task registered for {} ", truckName);
+                    if(thingHandler.thingExists(dittoClient, "task:refuel_"+ truckName).get()){
+                        //logger.info("Refuel Task registered for {} ", truckName);
                         double newFuel = Math.min(currentFuelTank + 50, 300);
                         setFuel(newFuel);
                         setStatus(TruckStatus.REFUELING);
@@ -142,18 +142,18 @@ public class Truck {
                     } else {
 
                         setStatus(TruckStatus.DRIVING);
-                        logger.info("{} driving", truckName);
+                        //logger.info("{} driving", truckName);
                         logger.debug("current Progress {}: {}", truckName, currentProgress);
                         logger.debug("current FuelTank {}: {}", truckName, currentFuelTank);
 
-                        setTirePressure(9000);
+                        //setTirePressure(tirePressure);
                         setVelocity(75 + Math.random() * 10);
                         setFuel(currentFuelTank - fuelConsumption);
                         setProgress(currentProgress + progressMade);
 
                         if(progress == 100 && currentStopIndex.get() < currentStops.size()){
                             stops.set(currentStopIndex.get(), 1);
-                            logger.info("Truck arrived at destination {}", currentStopIndex);
+                            logger.info("{} arrived at destination {}", truckName, currentStopIndex);
                             currentStopIndex.getAndIncrement();
                         }
                         if(currentStopIndex.get() == currentStops.size()){
@@ -171,11 +171,19 @@ public class Truck {
 
     }
 
+
     public void featureSimulation1(DittoClient dittoClient) {
-        runSimulation("Truck1", 5, 0.5, 5, dittoClient);
+        runSimulation(getThingId(), 5, 0.5, 5, dittoClient);
     }
 
     public void featureSimulation2(DittoClient dittoClient) {
-        runSimulation("Truck2", 3, 1.0, 10, dittoClient);
+        runSimulation(getThingId(), 3, 1.0, 10, dittoClient);
+    }
+
+    public void tirePressureDecreases(double tirePressure){
+        if(Math.random() <= 0.1){
+            double tirePressureReduction = Math.random() * 100 - 50;
+            setTirePressure(tirePressure - tirePressureReduction);
+        }
     }
 }

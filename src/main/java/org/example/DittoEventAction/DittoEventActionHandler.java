@@ -83,10 +83,29 @@ public class DittoEventActionHandler {
         };
         new Thread(task).start();
     }
-    public void createActionLogging(String thingID, String subject){
+
+    public void createActionLoggingForAttribute(String thingID, String subject) {
+        URL url = null;
+        try {
+            url = new URL("http://localhost:8080/api/2/things/"+ thingID + "/inbox/messages/" + subject);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+        createActionLogging(thingID, url);
+    }
+    public void  createActionLoggingForFeature(String thingID, String subject, String featureID){
+        URL url = null;
+        try {
+            url = new URL("http://localhost:8080/api/2/things/"+ thingID + "/features/"+ featureID + "/inbox/messages/" + subject);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+        createActionLogging(thingID, url);
+    }
+
+    public void createActionLogging(String thingID, URL url){
         Runnable task2 = () -> {
             try {
-                URL url = new URL("http://localhost:8080/api/2/things/"+ thingID + "/inbox/messages/" + subject);
                 HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
 
                 String username = "ditto";

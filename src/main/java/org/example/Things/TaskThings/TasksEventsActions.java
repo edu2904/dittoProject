@@ -30,7 +30,7 @@ public class TasksEventsActions {
         JsonObject endObject = JsonObject.newBuilder().set("message", "Refuel Task finished for " + thingID).build();
 
 
-        sendEvent(dittoClient, tasks.getThingId(), startObject, "refuelBegin");
+        //sendEvent(dittoClient, tasks.getThingId(), startObject, "refuelBegin");
 
 
 

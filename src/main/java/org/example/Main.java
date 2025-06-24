@@ -16,18 +16,21 @@ public class Main {
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
 
+        Gateway gateway = new Gateway();
+
+        gateway.initializeThings();
 
 
         ThingHandler thing = new ThingHandler();
         thing.deleteThing(dittoClient, "task:refuel");
-        List<Truck> truckList = new ArrayList<>();
+        List<Truck> truckList = gateway.getTruckList();
 
-        Truck truck1 = new Truck();
-        truck1.setStarterValues(1);
-        Truck truck2 = new Truck();
-        truck2.setStarterValues(2);
-        truckList.add(truck1);
-        truckList.add(truck2);
+        //Truck truck1 = new Truck(gateway);
+        //truck1.setStarterValues(1);
+        //Truck truck2 = new Truck(gateway);
+        //truck2.setStarterValues(2);
+        //truckList.add(truck1);
+        //truckList.add(truck2);
 
         for (Truck truck : truckList) {
             if (thing.thingExists(dittoClient, "task:refuel_" + truck.getThingId()).get()) {
@@ -35,14 +38,13 @@ public class Main {
             }
         }
 
-        truck1.featureSimulation1(dittoClient);
-        truck2.featureSimulation2(dittoClient);
+        truckList.get(0).featureSimulation1(dittoClient);
+        truckList.get(1).featureSimulation2(dittoClient);
 
-        GasStation gasStation = new GasStation();
+        GasStation gasStation = gateway.getGasStation();
         gasStation.featureSimulation();
 
 
-        Gateway gateway = new Gateway();
 
 
 

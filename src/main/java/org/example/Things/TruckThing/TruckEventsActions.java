@@ -16,7 +16,7 @@ public class TruckEventsActions {
     public void startTruckLogging(String thingID){
         dittoEventActionHandler.createEventLoggingForAttribute(thingID, "showStatus");
         dittoEventActionHandler.createEventLoggingForFeature(thingID, "lowfuel", "FuelTank");
-        dittoEventActionHandler.createActionLogging(thingID, "resetProgress");
+        dittoEventActionHandler.createActionLoggingForAttribute(thingID, "resetProgress");
 
     }
     public void weightEvent(DittoClient dittoClient, String thingID, double weightAmount) {
@@ -84,6 +84,16 @@ public class TruckEventsActions {
 
         }
 
+    }
+    public void sendEvent(DittoClient dittoClient, String thingID, JsonObject jsonData, String eventSubject) {
+        dittoClient.live()
+                .forId(ThingId.of(thingID))
+                .message()
+                .from()
+                .subject(eventSubject)
+                .payload(jsonData)
+                .contentType("application/json")
+                .send();
     }
 
 }

@@ -4,6 +4,7 @@ package org.example;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.Feature;
+import org.eclipse.ditto.things.model.Thing;
 import org.eclipse.ditto.things.model.ThingId;
 import org.example.DittoEventAction.DittoEventActionHandler;
 import org.example.Things.GasStationThing.GasStation;
@@ -16,13 +17,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import java.util.ArrayList;
+import java.util.DuplicateFormatFlagsException;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class Gateway {
 
-    private double truckCurrentWeight;
-    private double truckCurrentFuelAmount;
-    private double truckCurrentProgress;
+    private GasStation gasStation;
+    private List<Truck> truckList = new ArrayList<>();
 
     private final String refuelTaskURL = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/refuelTruck";
     private String policyURL = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/lkwpolicy";
@@ -34,7 +37,28 @@ public class Gateway {
     public TruckEventsActions truckEventsActions = new TruckEventsActions();
     public TasksEventsActions tasksEventsActions = new TasksEventsActions();
     public ThingHandler thingHandler = new ThingHandler();
-    public boolean taskActive;
+
+
+
+    public void initializeThings(){
+        gasStation = new GasStation();
+        gasStation.setStarterValues();
+
+        for(int i = 1; i <= 2; i++){
+            Truck truck = new Truck();
+            truck.setStarterValues(i);
+            truck.setGasStation(gasStation);
+            truckList.add(truck);
+        }
+    }
+
+    public List<Truck> getTruckList(){
+        return truckList;
+    }
+
+    public GasStation getGasStation(){
+        return gasStation;
+    }
 
    //Nimmt einen Attribut Wert von LKW und schickt es nach eclipse ditto
     public void updateAttributeValue(DittoClient dittoClient, String attributeName, Object attributeAmount, String thingId){
@@ -67,6 +91,7 @@ public class Gateway {
                 }));
 
     }
+
 
     public double getFeatureValueFromDitto(String featureProperty, DittoClient dittoClient, String thingId) throws InterruptedException, ExecutionException {
         CompletableFuture<Double> featureAmount = new CompletableFuture<>();
@@ -106,12 +131,12 @@ public class Gateway {
 
         Tasks refuelTask = new Tasks();
         refuelTask.initializeRefuelTask(truck);
-        if(fuelAmount <= 39 && !taskActive) {
+        if(fuelAmount <= 39 && !truck.isFuelTaskActive()) {
             thingHandler.createTwinAndPolicy(dittoClient, refuelTaskURL, policyURL, refuelTask.getThingId()).thenRun(() -> {
                 try {
-                    startUpdatingTask(dittoClient, refuelTask);
+                    startUpdatingTask(dittoClient, refuelTask, truck);
 
-                    taskActive = true;
+                    truck.setFuelTaskActive(true);
                 } catch (Exception e) {
                     logger.info(e.getMessage());
                 }
@@ -120,7 +145,8 @@ public class Gateway {
         }
     }
 
-    public void startUpdatingTask(DittoClient dittoClient, Tasks tasks){
+    public void startUpdatingTask(DittoClient dittoClient, Tasks tasks, Truck truck){
+        TasksEventsActions tasksEventsActions = new TasksEventsActions();
         tasksEventsActions.startTaskLogging(tasks.getThingId());
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
@@ -129,6 +155,13 @@ public class Gateway {
 
             updateAttributeValue(dittoClient, "targetTruck", tasks.getTargetTruck(), tasks.getThingId());
             updateAttributeValue(dittoClient, "creationDate", tasks.getCreationTime(), tasks.getThingId());
+
+            double truckCurrentFuelAmount = 0;
+            try {
+                truckCurrentFuelAmount = getFeatureValueFromDitto("FuelTank", dittoClient, truck.getThingId());
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
 
 
             if(truckCurrentFuelAmount == 300){
@@ -143,7 +176,7 @@ public class Gateway {
                 }
 
                 future[0].cancel(false);
-                taskActive = false;
+                truck.setFuelTaskActive(false);
             }
             try {
                 tasksEventsActions.handleRefuelTaskEvents(dittoClient, tasks);
@@ -179,9 +212,9 @@ public class Gateway {
 
 
                 //Values for Events and Actions
-                truckCurrentWeight = (double) getAttributeValueFromDitto("weight", dittoClient, truck.getThingId());
-                truckCurrentFuelAmount = getFeatureValueFromDitto("FuelTank", dittoClient, truck.getThingId());
-                truckCurrentProgress = getFeatureValueFromDitto("Progress", dittoClient, truck.getThingId());
+                double truckCurrentWeight = (double) getAttributeValueFromDitto("weight", dittoClient, truck.getThingId());
+                double truckCurrentFuelAmount = getFeatureValueFromDitto("FuelTank", dittoClient, truck.getThingId());
+                double truckCurrentProgress = getFeatureValueFromDitto("Progress", dittoClient, truck.getThingId());
 
                 //Handle Events and Actions
                 truckEventsActions.progressResetAction(dittoClient, truck.getThingId(), truck, truckCurrentProgress);
@@ -201,7 +234,7 @@ public class Gateway {
         Runnable updateTask = () -> {
             try {
                updateAttributeValue(dittoClient, "status", gasStation.getGasStationStatus().toString(), gasStation.getThingId());
-               updateFeatureValue(dittoClient, "GasStationFuel", "amount", gasStation.getFuelAmount(), gasStation.getThingId());
+               updateFeatureValue(dittoClient, "GasStationFuel", "amount", gasStation.getGasStationFuelAmount(), gasStation.getThingId());
                 //checkFuelAmountEvents(dittoClient, lkw.getThingId());
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);

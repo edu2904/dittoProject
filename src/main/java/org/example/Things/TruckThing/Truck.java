@@ -1,7 +1,6 @@
 package org.example.Things.TruckThing;
 
 import org.eclipse.ditto.client.DittoClient;
-import org.example.Gateway;
 import org.example.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
 import org.slf4j.Logger;

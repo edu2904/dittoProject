@@ -69,7 +69,6 @@ public class GasStation {
 
     public void startRefuel(Truck truck){
 
-        System.out.println("ASDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD " + getGasStationStatus());
         logger.info("Truck {} requested refuel", truck.getThingId());
 
         if(gasStationStatus == GasStationStatus.WAITING){

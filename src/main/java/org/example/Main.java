@@ -5,7 +5,6 @@ import org.example.Client.DittoClientBuilder;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.TruckThing.Truck;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -16,7 +15,7 @@ public class Main {
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
 
-        Gateway gateway = new Gateway();
+        GatewayMain gateway = new GatewayMain();
 
         gateway.initializeThings();
 

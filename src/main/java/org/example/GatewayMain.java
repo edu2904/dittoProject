@@ -1,10 +1,14 @@
 
 package org.example;
 
+import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.WriteApiBlocking;
+import com.influxdb.client.domain.WritePrecision;
+import com.influxdb.exceptions.InfluxException;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.Feature;
-import org.eclipse.ditto.things.model.Thing;
 import org.eclipse.ditto.things.model.ThingId;
 import org.example.DittoEventAction.DittoEventActionHandler;
 import org.example.Things.GasStationThing.GasStation;
@@ -15,14 +19,14 @@ import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.influxdb.client.write.Point;
 
-
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.DuplicateFormatFlagsException;
 import java.util.List;
 import java.util.concurrent.*;
 
-public class Gateway {
+public class GatewayMain {
 
     private GasStation gasStation;
     private List<Truck> truckList = new ArrayList<>();
@@ -30,7 +34,7 @@ public class Gateway {
     private final String refuelTaskURL = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/refuelTruck";
     private String policyURL = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/lkwpolicy";
 
-    private final Logger logger = LoggerFactory.getLogger(Gateway.class);
+    private final Logger logger = LoggerFactory.getLogger(GatewayMain.class);
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
@@ -38,6 +42,10 @@ public class Gateway {
     public TasksEventsActions tasksEventsActions = new TasksEventsActions();
     public ThingHandler thingHandler = new ThingHandler();
 
+    private static char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
+    private static String org = "admin";
+    private static String bucket = "ditto";
+    InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 
 
     public void initializeThings(){
@@ -197,7 +205,7 @@ public class Gateway {
 
         truckEventsActions.startTruckLogging(truck.getThingId());
         Runnable updateTask = () -> {
-
+            WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
 
             try {
                 // Updates for the attribute Values
@@ -211,6 +219,18 @@ public class Gateway {
                 updateFeatureValue(dittoClient, "FuelTank","amount", truck.getFuel(), truck.getThingId());
 
 
+                try {
+
+
+                    Point point = Point.measurement("Truck")
+                            .addTag("thingID", truck.getThingId())
+                            .addField("FuelTankAmount", truck.getFuel())
+                            .time(Instant.now().toEpochMilli(), WritePrecision.MS);
+
+                    writeApi.writePoint(point);
+                }catch (InfluxException e){
+                    logger.error(e.getMessage());
+                }
                 //Values for Events and Actions
                 double truckCurrentWeight = (double) getAttributeValueFromDitto("weight", dittoClient, truck.getThingId());
                 double truckCurrentFuelAmount = getFeatureValueFromDitto("FuelTank", dittoClient, truck.getThingId());

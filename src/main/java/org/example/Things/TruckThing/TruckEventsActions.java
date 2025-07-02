@@ -21,7 +21,7 @@ public class TruckEventsActions {
     }
     public void weightEvent(DittoClient dittoClient, String thingID, double weightAmount) {
 
-        if(weightAmount > 9000) {
+        if(weightAmount > 7000) {
             JsonObject weightmessage = JsonObject.newBuilder()
                     .set("amount", weightAmount)
                     .build();

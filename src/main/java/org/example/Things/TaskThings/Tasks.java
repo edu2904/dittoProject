@@ -11,6 +11,7 @@ public class Tasks {
     private TaskStatus status;
     private String targetTruck;
     private String creationTime;
+    private  TaskType taskType;
 
 
     public String getThingId() {
@@ -43,6 +44,14 @@ public class Tasks {
 
     public void setCreationTime(String creationTime) {
         this.creationTime = creationTime;
+    }
+
+    public TaskType getTaskType() {
+        return taskType;
+    }
+
+    public void setTaskType(TaskType taskType) {
+        this.taskType = taskType;
     }
 
     public void initializeRefuelTask(Truck truck) throws InterruptedException {

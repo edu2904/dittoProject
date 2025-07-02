@@ -2,9 +2,12 @@ package org.example;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Client.DittoClientBuilder;
+import org.example.SustainableCodeTest.Factory.Things.TruckFactory;
+import org.example.SustainableCodeTest.GatewayCoordinator;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.TruckThing.Truck;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -15,6 +18,13 @@ public class Main {
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
 
+        TruckFactory truckFactory = new TruckFactory(dittoClient);
+
+        truckFactory.createTwinsForDitto();
+
+        GatewayCoordinator gatewayCoordinator = new GatewayCoordinator(truckFactory.getTruckList(), dittoClient);
+        gatewayCoordinator.startGateways();
+/*
         GatewayMain gateway = new GatewayMain();
 
         gateway.initializeThings();
@@ -76,8 +86,10 @@ public class Main {
         }
 
 
-
+*/
     }
+
+
 
 
 }

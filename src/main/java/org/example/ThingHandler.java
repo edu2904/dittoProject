@@ -118,14 +118,6 @@ public class ThingHandler {
         String policy = getPolicyFromURL(policyURL).get();
         var future = new CompletableFuture<Boolean>();
 
-
-        //String json =
-        //  var o = JsonObject.newBuilder()
-        //         .set("thingId", thingId.toString()) //ThingId, need to adhere to rules (entityID in Ditto)
-        //         .set("definition", wotTDDefinitionURL) //WoT definition (in GUI WoT TD)
-        //         .set("policyId", policy)
-        //         .build();
-
         ThingDefinition thingDefinition = ThingsModelFactory.newDefinition(wotTDDefinitionURL);
         Thing thing = ThingsModelFactory.newThingBuilder()
                 .setId(ThingId.of(thingId)).setDefinition(thingDefinition).setPolicyId(PolicyId.of(policy)).build();

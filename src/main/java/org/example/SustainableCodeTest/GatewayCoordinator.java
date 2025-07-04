@@ -3,7 +3,15 @@ package org.example.SustainableCodeTest;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Client.DittoClientBuilder;
+import org.example.SustainableCodeTest.Factory.DigitalTwinFactoryMain;
+import org.example.SustainableCodeTest.Factory.Things.GasStationFactory;
+import org.example.SustainableCodeTest.Factory.Things.TruckFactory;
+import org.example.SustainableCodeTest.Gateways.GasStationGateway;
+import org.example.SustainableCodeTest.Gateways.TaskGateway;
 import org.example.SustainableCodeTest.Gateways.TruckGateway;
+import org.example.ThingHandler;
+import org.example.Things.GasStationThing.GasStation;
+import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
 
 import java.util.ArrayList;
@@ -14,26 +22,54 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class GatewayCoordinator {
-    DittoClient dittoClient;
-    InfluxDBClient influxDBClient;
 
-    List<Truck> truckList;
+    private final DigitalTwinFactoryMain digitalTwinFactoryMain;
+    private final DittoClient dittoClient;
+    InfluxDBClient influxDBClient;
+    ThingHandler thingHandler = new ThingHandler();
+
+
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
-    public GatewayCoordinator(List<Truck> trucks, DittoClient dittoClient) throws ExecutionException, InterruptedException {
+    public GatewayCoordinator(DittoClient dittoClient) throws ExecutionException, InterruptedException {
         this.dittoClient = dittoClient;
-        this.truckList = trucks;
+
+        this.digitalTwinFactoryMain = new DigitalTwinFactoryMain(dittoClient);
     }
 
-    public void startGateways(){
-        TruckGateway truckGateway = new TruckGateway(truckList, dittoClient, influxDBClient);
+    public void startGateways() throws ExecutionException, InterruptedException {
+
+        digitalTwinFactoryMain.getTruckFactory().createTwinsForDitto();
+        digitalTwinFactoryMain.getGasStationFactory().createTwinsForDitto();
+
+        List<Truck> trucks = ((TruckFactory) digitalTwinFactoryMain.getTruckFactory()).getTruckList();
+        GasStation gasStation1 = ((GasStationFactory) digitalTwinFactoryMain.getGasStationFactory()).getGasStation();
+
+        for(Truck truck: trucks){
+            truck.setGasStation(gasStation1);
+        }
+
+
+
+        TruckGateway truckGateway = new TruckGateway(dittoClient, influxDBClient,trucks);
+        GasStationGateway gasStationGateway = new GasStationGateway(dittoClient, influxDBClient, gasStation1);
+
+
+        for (Truck truck : trucks) {
+            if (thingHandler.thingExists(dittoClient, "task:refuel_" + truck.getThingId()).get()) {
+                thingHandler.deleteThing(dittoClient, "task:refuel_" + truck.getThingId()).toCompletableFuture();
+            }
+        }
+
+
         Runnable updateTask = () -> {
-
-
-            for(Truck truck: truckList){
-                truckGateway.startUpdating(truck);
+            try {
+                truckGateway.startGateway();
+                gasStationGateway.startGateway();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
         };

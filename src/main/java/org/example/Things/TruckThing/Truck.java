@@ -157,6 +157,8 @@ public class Truck {
                        if(currentStatus != TruckStatus.REFUELING) {
 
                            //logger.info("Refuel Task registered for {} ", truckName);
+
+
                            gasStation.startRefuel(this);
                            //setStatus(TruckStatus.REFUELING);
                        }
@@ -195,7 +197,7 @@ public class Truck {
 
 
     public void featureSimulation1(DittoClient dittoClient) {
-        runSimulation(getThingId(), 5, 0.95, 5, dittoClient);
+        runSimulation(getThingId(), 5, 0.1, 5, dittoClient);
     }
 
     public void featureSimulation2(DittoClient dittoClient) {

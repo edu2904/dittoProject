@@ -57,6 +57,7 @@ public class Tasks {
     public void initializeRefuelTask(Truck truck) throws InterruptedException {
         setThingId("task:refuel_" + truck.getThingId());
         setStatus(TaskStatus.STARTING);
+        setTaskType(TaskType.REFUEL);
         setTargetTruck(truck.getThingId());
         setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
 

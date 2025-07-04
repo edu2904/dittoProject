@@ -3,6 +3,8 @@ package org.example.SustainableCodeTest.Gateways;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.SustainableCodeTest.AbstractGateway;
+import org.example.SustainableCodeTest.Factory.Things.TaskFactory;
+import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
 
@@ -18,10 +20,10 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
     List<Truck> trucks;
     private final TruckEventsActions truckEventsActions = new TruckEventsActions();
-    public TruckGateway(List<Truck> trucks, DittoClient dittoClient, InfluxDBClient influxDBClient){
+    public TruckGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, List<Truck> trucks){
         super(dittoClient, influxDBClient);
         this.trucks = trucks;
-        subscribeForEventsAndActions(trucks);
+        subscribeForEventsAndActions();
 
     }
 
@@ -37,7 +39,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
     public void startUpdating(Truck truck){
             try {
 
-                System.out.println(getDittoClient());
+                System.out.println(this.dittoClient);
                 updateAttributes(truck);
                 updateFeatures(truck);
 
@@ -45,9 +47,11 @@ public class TruckGateway extends AbstractGateway<Truck> {
                 double truckCurrentFuelAmount = (double) getFeatureValueFromDitto("FuelTank", truck.getThingId());
                 double truckCurrentProgress = (double) getFeatureValueFromDitto("Progress", truck.getThingId());
 
-                truckEventsActions.progressResetAction(getDittoClient(), truck.getThingId(), truck, truckCurrentProgress);
-                truckEventsActions.weightEvent(getDittoClient(), truck.getThingId(), truckCurrentWeight);
-                truckEventsActions.fuelAmountEvents(getDittoClient(), truck.getThingId(), truckCurrentFuelAmount);
+                truckEventsActions.progressResetAction(this.dittoClient, truck.getThingId(), truck, truckCurrentProgress);
+                truckEventsActions.weightEvent(this.dittoClient, truck.getThingId(), truckCurrentWeight);
+                truckEventsActions.fuelAmountEvents(this.dittoClient, truck.getThingId(), truckCurrentFuelAmount);
+
+                checkRefuelTask(this.dittoClient, truckCurrentFuelAmount, truck);
 
                 //logToInfluxDB(truck);
             } catch (ExecutionException | InterruptedException e) {
@@ -99,9 +103,24 @@ public class TruckGateway extends AbstractGateway<Truck> {
     }
 
     @Override
-    public void subscribeForEventsAndActions(List<Truck> trucks) {
+    public void subscribeForEventsAndActions() {
         for(Truck truck: trucks){
             truckEventsActions.startTruckLogging(truck.getThingId());
+        }
+    }
+
+    public void checkRefuelTask(DittoClient dittoClient, double currentFuel, Truck truck) throws ExecutionException, InterruptedException {
+        if(currentFuel < 45) {
+            if (!truck.isFuelTaskActive()) {
+                TaskFactory taskFactory = new TaskFactory(dittoClient, TaskType.REFUEL, truck);
+
+                taskFactory.createTwinsForDitto();
+
+                TaskGateway taskGateway = new TaskGateway(dittoClient, this.influxDBClient, taskFactory.getTasks(), truck);
+                taskGateway.startUpdating(taskFactory.getTasks());
+
+                truck.setFuelTaskActive(true);
+            }
         }
     }
 

@@ -23,8 +23,7 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
         initializeThings();
 
         for (int i = 0; i < truckList.size(); i++ ){
-            thingHandler.createTwinAndPolicy(dittoClient, getWOTURL(), getPolicyURL(), truckList.get(i).getThingId()).thenRun(() -> {
-            }).toCompletableFuture();
+            thingHandler.createTwinAndPolicy(dittoClient, getWOTURL(), getPolicyURL(), truckList.get(i).getThingId()).toCompletableFuture();
         }
     }
     @Override

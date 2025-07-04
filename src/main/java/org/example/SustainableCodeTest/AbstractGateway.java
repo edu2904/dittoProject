@@ -21,8 +21,8 @@ import java.util.concurrent.ExecutionException;
 
 public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
-    private final DittoClient dittoClient;
-    InfluxDBClient influxDBClient;
+    protected final DittoClient dittoClient;
+    protected InfluxDBClient influxDBClient;
 
     private final Logger logger = LoggerFactory.getLogger(GatewayMain.class);
 
@@ -110,9 +110,6 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
         }catch (InfluxException e){
             logger.error(e.getMessage());
         }
-    }
-    public DittoClient getDittoClient(){
-        return dittoClient;
     }
 
     @Override

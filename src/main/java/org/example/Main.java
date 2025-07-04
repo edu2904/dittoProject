@@ -18,12 +18,9 @@ public class Main {
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
 
-        TruckFactory truckFactory = new TruckFactory(dittoClient);
-
-        truckFactory.createTwinsForDitto();
-
-        GatewayCoordinator gatewayCoordinator = new GatewayCoordinator(truckFactory.getTruckList(), dittoClient);
+        GatewayCoordinator gatewayCoordinator = new GatewayCoordinator(dittoClient);
         gatewayCoordinator.startGateways();
+
 /*
         GatewayMain gateway = new GatewayMain();
 

@@ -46,7 +46,7 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
 
 
     @Override
-    public void logToInfluxDB(GasStation thing) {
+    public void logToInfluxDB(GasStation thing, String measurementType) {
 
     }
 

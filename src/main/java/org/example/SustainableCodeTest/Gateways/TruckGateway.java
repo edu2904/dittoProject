@@ -53,7 +53,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
                 checkRefuelTask(this.dittoClient, truckCurrentFuelAmount, truck);
 
-                //logToInfluxDB(truck);
+                logToInfluxDB(truck, "Truck");
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -83,12 +83,12 @@ public class TruckGateway extends AbstractGateway<Truck> {
     }
 
     @Override
-    public void logToInfluxDB(Truck truck) {
+    public void logToInfluxDB(Truck truck, String measurementType) {
         String thingID = truck.getThingId();
-        startLoggingToInfluxDB(thingID, "FuelAmount", truck.getFuel());
-        startLoggingToInfluxDB(thingID, "ProgressAmount", truck.getProgress());
-        startLoggingToInfluxDB(thingID, "TirePressureAmount", truck.getTirePressure());
-        startLoggingToInfluxDB(thingID, "VelocityAmount", truck.getVelocity());
+        startLoggingToInfluxDB(measurementType, thingID, "FuelAmount", truck.getFuel());
+        startLoggingToInfluxDB(measurementType, thingID, "ProgressAmount", truck.getProgress());
+        startLoggingToInfluxDB(measurementType, thingID, "TirePressureAmount", truck.getTirePressure());
+        startLoggingToInfluxDB(measurementType, thingID, "VelocityAmount", truck.getVelocity());
 
     }
 

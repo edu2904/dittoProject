@@ -1,4 +1,4 @@
-
+/*
 package org.example;
 
 import com.influxdb.client.InfluxDBClient;
@@ -289,7 +289,7 @@ public class GatewayMain {
 
 
 
-/*
+
     public void messageTest(DittoClient dittoClient, String thingID) throws ExecutionException, InterruptedException {
         dittoClient.live().startConsumption().toCompletableFuture().get();
         dittoClient
@@ -304,7 +304,9 @@ public class GatewayMain {
 
         System.out.println("Listener registered for showStatus");
     }
-*/
-}
+    }
+ */
+
+
 
 

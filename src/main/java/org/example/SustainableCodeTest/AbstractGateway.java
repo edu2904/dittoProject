@@ -1,7 +1,6 @@
 package org.example.SustainableCodeTest;
 
 import com.influxdb.client.InfluxDBClient;
-import com.influxdb.client.InfluxDBClientFactory;
 import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
@@ -10,8 +9,7 @@ import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.Feature;
 import org.eclipse.ditto.things.model.ThingId;
-import org.example.DittoEventAction.DittoEventActionHandler;
-import org.example.GatewayMain;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +22,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
     protected final DittoClient dittoClient;
     protected InfluxDBClient influxDBClient;
 
-    private final Logger logger = LoggerFactory.getLogger(GatewayMain.class);
+    private final Logger logger = LoggerFactory.getLogger(AbstractGateway.class);
 
 
     public AbstractGateway(DittoClient dittoClient, InfluxDBClient influxDBClient){
@@ -98,12 +96,12 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
 
 
-    public void startLoggingToInfluxDB(String thingID, String subject, Object amount){
+    public void startLoggingToInfluxDB(String measurement, String thingID, String subject, double amount){
         WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
         try {
-            Point point = Point.measurement("Truck")
+            Point point = Point.measurement(measurement)
                     .addTag("thingID", thingID)
-                    .addField(subject, String.valueOf(amount))
+                    .addField(subject, amount)
                     .time(Instant.now().toEpochMilli(), WritePrecision.MS);
 
             writeApi.writePoint(point);

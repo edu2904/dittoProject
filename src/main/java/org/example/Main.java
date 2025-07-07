@@ -1,5 +1,7 @@
 package org.example;
 
+import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.InfluxDBClientFactory;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Client.DittoClientBuilder;
 import org.example.SustainableCodeTest.Factory.Things.TruckFactory;
@@ -18,7 +20,12 @@ public class Main {
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClient dittoClient = dittoClientBuilder.getDittoClient();
 
-        GatewayCoordinator gatewayCoordinator = new GatewayCoordinator(dittoClient);
+        char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
+        String org = "admin";
+        String bucket = "ditto";
+        InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
+
+        GatewayCoordinator gatewayCoordinator = new GatewayCoordinator(dittoClient, influxDBClient);
         gatewayCoordinator.startGateways();
 
 /*

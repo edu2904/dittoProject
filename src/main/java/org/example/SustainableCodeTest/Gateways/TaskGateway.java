@@ -43,7 +43,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
     }
 
     @Override
-    public void logToInfluxDB(Tasks thing) {
+    public void logToInfluxDB(Tasks thing, String measurementType) {
 
     }
 

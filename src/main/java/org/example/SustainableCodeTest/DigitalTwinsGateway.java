@@ -13,7 +13,7 @@ public interface DigitalTwinsGateway<T> {
     void startUpdating(T thing) throws ExecutionException, InterruptedException;
     void updateFeatures(T thing) throws ExecutionException, InterruptedException;
 
-    void logToInfluxDB(T thing);
+    void logToInfluxDB(T thing, String measurementType);
     void handleEvents(T thing);
     void handelActions(T thing);
     void subscribeForEventsAndActions();

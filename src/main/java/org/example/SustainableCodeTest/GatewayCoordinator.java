@@ -33,9 +33,10 @@ public class GatewayCoordinator {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
-    public GatewayCoordinator(DittoClient dittoClient) throws ExecutionException, InterruptedException {
+    public GatewayCoordinator(DittoClient dittoClient, InfluxDBClient influxDBClient) throws ExecutionException, InterruptedException {
         this.dittoClient = dittoClient;
 
+        this.influxDBClient = influxDBClient;
         this.digitalTwinFactoryMain = new DigitalTwinFactoryMain(dittoClient);
     }
 

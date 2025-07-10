@@ -49,8 +49,6 @@ public class TruckGateway extends AbstractGateway<Truck> {
                 double truckCurrentProgress = (double) getFeatureValueFromDitto("Progress", truck.getThingId());
                 double truckCurrentTirePressure = (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
 
-                System.out.println(truckCurrentTirePressure + " asdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-
                 truckEventsActions.progressResetAction(this.dittoClient, truck.getThingId(), truck, truckCurrentProgress);
                 truckEventsActions.weightEvent(this.dittoClient, truck.getThingId(), truckCurrentWeight);
                 truckEventsActions.fuelAmountEvents(this.dittoClient, truck.getThingId(), truckCurrentFuelAmount);

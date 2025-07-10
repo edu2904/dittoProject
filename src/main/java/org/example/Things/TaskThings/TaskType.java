@@ -1,7 +1,9 @@
 package org.example.Things.TaskThings;
 
 public enum TaskType {
-    REFUEL("https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/refuelTruck");
+    REFUEL("https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/refuelTruck"),
+
+    TIREPRESSUREADJUSTMENT("https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/tirePressureTask");
 
     private final  String wot;
 

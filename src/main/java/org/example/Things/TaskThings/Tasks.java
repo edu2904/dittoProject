@@ -63,4 +63,12 @@ public class Tasks {
 
 
     }
+    public void initializeTirePressureTask(Truck truck){
+        setThingId("task:tirePressureLow_" + truck.getThingId());
+        setStatus(TaskStatus.STARTING);
+        setTaskType(TaskType.TIREPRESSUREADJUSTMENT);
+        setTargetTruck(truck.getThingId());
+        setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
+
+    }
 }

@@ -85,7 +85,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
                     JsonValue feature = thing.getFeatures().
                             flatMap(features -> features.getFeature(featureProperty)).
                             flatMap(Feature::getProperties).
-                            flatMap(fuelTank -> fuelTank.getValue("amount"))
+                            flatMap(featureProperties -> featureProperties.getValue("amount"))
                             .orElse(JsonValue.nullLiteral());
 
                     featureAmount.complete(feature.asDouble());

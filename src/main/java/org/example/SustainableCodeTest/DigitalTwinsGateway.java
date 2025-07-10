@@ -5,6 +5,9 @@ import java.util.concurrent.ExecutionException;
 
 public interface DigitalTwinsGateway<T> {
 
+
+
+    //Responsible for the communication between things and their digital twin
     void startGateway() throws ExecutionException, InterruptedException;
 
     String getWOTURL();

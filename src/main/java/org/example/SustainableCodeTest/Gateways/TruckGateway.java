@@ -5,10 +5,12 @@ import org.eclipse.ditto.client.DittoClient;
 import org.example.SustainableCodeTest.AbstractGateway;
 import org.example.SustainableCodeTest.Factory.Things.TaskFactory;
 import org.example.Things.TaskThings.TaskType;
+import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
 
 import java.util.ArrayList;
+import java.util.DuplicateFormatFlagsException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -39,19 +41,22 @@ public class TruckGateway extends AbstractGateway<Truck> {
     public void startUpdating(Truck truck){
             try {
 
-                System.out.println(this.dittoClient);
                 updateAttributes(truck);
                 updateFeatures(truck);
 
                 double truckCurrentWeight = (double) getAttributeValueFromDitto("weight", truck.getThingId());
                 double truckCurrentFuelAmount = (double) getFeatureValueFromDitto("FuelTank", truck.getThingId());
                 double truckCurrentProgress = (double) getFeatureValueFromDitto("Progress", truck.getThingId());
+                double truckCurrentTirePressure = (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
+
+                System.out.println(truckCurrentTirePressure + " asdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 
                 truckEventsActions.progressResetAction(this.dittoClient, truck.getThingId(), truck, truckCurrentProgress);
                 truckEventsActions.weightEvent(this.dittoClient, truck.getThingId(), truckCurrentWeight);
                 truckEventsActions.fuelAmountEvents(this.dittoClient, truck.getThingId(), truckCurrentFuelAmount);
 
-                checkRefuelTask(this.dittoClient, truckCurrentFuelAmount, truck);
+                checkRefuelTask(truckCurrentFuelAmount, truck);
+                //checkTirePressureTask(truckCurrentTirePressure, truck);
 
                 logToInfluxDB(truck, "Truck");
             } catch (ExecutionException | InterruptedException e) {
@@ -109,19 +114,34 @@ public class TruckGateway extends AbstractGateway<Truck> {
         }
     }
 
-    public void checkRefuelTask(DittoClient dittoClient, double currentFuel, Truck truck) throws ExecutionException, InterruptedException {
+    public void checkRefuelTask(double currentFuel, Truck truck) throws ExecutionException, InterruptedException {
         if(currentFuel < 45) {
-            if (!truck.isFuelTaskActive()) {
-                TaskFactory taskFactory = new TaskFactory(dittoClient, TaskType.REFUEL, truck);
+            //if (!truck.isTaskActive()) {
+                TaskFactory taskFactory = new TaskFactory(this.dittoClient, TaskType.REFUEL, truck);
 
                 taskFactory.createTwinsForDitto();
 
-                TaskGateway taskGateway = new TaskGateway(dittoClient, this.influxDBClient, taskFactory.getTasks(), truck);
-                taskGateway.startUpdating(taskFactory.getTasks());
+                Tasks refuelTask = taskFactory.getTasks();
 
-                truck.setFuelTaskActive(true);
-            }
+                TaskGateway taskGateway = new TaskGateway(this.dittoClient, this.influxDBClient, refuelTask, truck);
+                taskGateway.startUpdating(refuelTask);
+
+           // }
         }
+    }
+
+    public void checkTirePressureTask(double currentTirePressure, Truck truck) throws ExecutionException, InterruptedException {
+        if(currentTirePressure < 8900){
+            TaskFactory taskFactory = new TaskFactory(this.dittoClient, TaskType.TIREPRESSUREADJUSTMENT, truck);
+
+            taskFactory.createTwinsForDitto();
+            Tasks tirePressureTask = taskFactory.getTasks();
+
+            TaskGateway taskGateway = new TaskGateway(this.dittoClient, this.influxDBClient, tirePressureTask, truck);
+            taskGateway.startUpdating(tirePressureTask);
+
+        }
+
     }
 
 

@@ -3,10 +3,13 @@ package org.example.Things.TruckThing;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
+import org.example.Things.TaskThings.Tasks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,11 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Truck {
 
     private final Logger logger = LoggerFactory.getLogger(Truck.class);
-
-
-
-
-    private final AtomicBoolean fuelTaskActive = new AtomicBoolean(false);
+    private final AtomicBoolean taskActive = new AtomicBoolean(false);
     private GasStation gasStation;
     private String thingId;
     private TruckStatus truckStatus;
@@ -32,6 +31,13 @@ public class Truck {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private final ThingHandler thingHandler = new ThingHandler();
+
+    private Queue<String> tasksQueue = new LinkedList<>();
+    private boolean isBusy;
+
+
+
+
 
 
 
@@ -105,11 +111,11 @@ public class Truck {
     public GasStation getGasStation(){
         return gasStation;
     }
-    public boolean isFuelTaskActive(){
-        return fuelTaskActive.get();
+    public boolean isTaskActive(){
+        return taskActive.get();
     }
-    public void setFuelTaskActive(boolean taskActive){
-        fuelTaskActive.set(taskActive);
+    public void setTaskActive(boolean currentTaskActive){
+        taskActive.set(currentTaskActive);
     }
 
     public void setStarterValues(int truckNumber) {
@@ -121,6 +127,22 @@ public class Truck {
         setProgress(0);
         setFuel(51);
     }
+
+
+
+    public void checkForNewTasks(DittoClient dittoClient) throws ExecutionException, InterruptedException {
+        String[] tasks = {
+                "task:refuel_"+ getThingId(),
+                "task:tirePressureLow_" + getThingId()
+        };
+
+        for(String taskID : tasks){
+            if(thingHandler.thingExists(dittoClient, taskID).get() && !tasksQueue.contains(taskID)){
+                tasksQueue.add(taskID);
+            }
+        }
+    }
+
 
     public void setDestinations(int destinations){
         //setStops(new ArrayList<>(Collections.nCopies(destinations, 0)));
@@ -143,6 +165,8 @@ public class Truck {
             double currentTirePressure = getTirePressure();
             TruckStatus currentStatus = getStatus();
 
+
+
             ArrayList<Integer> currentStops = getStops();
 
 
@@ -153,16 +177,29 @@ public class Truck {
                 scheduler.shutdown();
             }else {
                 try {
+                    checkForNewTasks(dittoClient);
+
+
+
+
                     if(thingHandler.thingExists(dittoClient, "task:refuel_"+ truckName).get()){
-                       if(currentStatus != TruckStatus.REFUELING) {
-
-                           //logger.info("Refuel Task registered for {} ", truckName);
-
-
+                       if(currentStatus != TruckStatus.REFUELING && !isTaskActive()) {
+                           setTaskActive(true);
                            gasStation.startRefuel(this);
-                           //setStatus(TruckStatus.REFUELING);
                        }
-                    } else {
+
+                    }
+                    else if(thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truckName).get()){
+                        if(currentStatus != TruckStatus.ADJUSTINGTIREPRESSURE && !isTaskActive()){
+                            setTaskActive(true);
+                            gasStation.startTirePressureAdjustment(this);
+                        }
+                    }
+
+
+
+
+                    else {
 
                         setStatus(TruckStatus.DRIVING);
                         //logger.info("{} driving", truckName);
@@ -205,7 +242,7 @@ public class Truck {
     }
 
     public void tirePressureDecreases(double tirePressure){
-        if(Math.random() <= 0.1){
+        if(Math.random() <= 0.99){
             double tirePressureReduction = Math.random() * 100;
             setTirePressure(tirePressure - tirePressureReduction);
         }

@@ -40,6 +40,17 @@ public class GatewayCoordinator {
         this.digitalTwinFactoryMain = new DigitalTwinFactoryMain(dittoClient);
     }
 
+    public void safeDeleteTasksBeforeRestart(List<Truck> truckList) throws ExecutionException, InterruptedException {
+        for (Truck truck : truckList) {
+            if (thingHandler.thingExists(dittoClient, "task:refuel_" + truck.getThingId()).get()) {
+                thingHandler.deleteThing(dittoClient, "task:refuel_" + truck.getThingId()).toCompletableFuture();
+            }
+            if (thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truck.getThingId()).get()) {
+                thingHandler.deleteThing(dittoClient, "task:tirePressureLow_" + truck.getThingId()).toCompletableFuture();
+            }
+        }
+    }
+
     public void startGateways() throws ExecutionException, InterruptedException {
 
         digitalTwinFactoryMain.getTruckFactory().createTwinsForDitto();
@@ -58,11 +69,7 @@ public class GatewayCoordinator {
         GasStationGateway gasStationGateway = new GasStationGateway(dittoClient, influxDBClient, gasStation1);
 
 
-        for (Truck truck : trucks) {
-            if (thingHandler.thingExists(dittoClient, "task:refuel_" + truck.getThingId()).get()) {
-                thingHandler.deleteThing(dittoClient, "task:refuel_" + truck.getThingId()).toCompletableFuture();
-            }
-        }
+        safeDeleteTasksBeforeRestart(trucks);
 
 
         Runnable updateTask = () -> {

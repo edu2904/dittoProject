@@ -40,6 +40,9 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         if(tasks.getTaskType() == TaskType.REFUEL){
             handleRefueling(dittoClient, truck, tasks);
         }
+        if(tasks.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
+            handleTirePressure(dittoClient, truck, tasks);
+        }
     }
 
     @Override
@@ -76,6 +79,11 @@ public class TaskGateway extends AbstractGateway<Tasks> {
             updateAttributeValue("targetTruck", tasks.getTargetTruck(), tasks.getThingId());
             updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
         }
+        if(tasks.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
+            updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
+            updateAttributeValue("targetTruck", tasks.getTargetTruck(), tasks.getThingId());
+            updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
+        }
     }
 
     public void handleRefueling(DittoClient dittoClient, Truck truck, Tasks tasks) throws ExecutionException, InterruptedException {
@@ -105,7 +113,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                 }
 
                 future[0].cancel(false);
-                truck.setFuelTaskActive(false);
+                truck.setTaskActive(false);
             }
 
                 tasksEventsActions.handleRefuelTaskEvents(dittoClient, tasks);
@@ -117,6 +125,48 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, 3, TimeUnit.SECONDS);
         future[0] = future1;
     }
+
+
+    public void handleTirePressure(DittoClient dittoClient, Truck truck, Tasks tasks) throws ExecutionException, InterruptedException {
+        final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
+
+
+        tasks.setStatus(TaskStatus.UNDERGOING);
+
+
+        Runnable updateTask = () -> {
+
+            updateAttributes(tasks);
+            double truckCurrentTirePressureAmount = 0;
+            try {
+                truckCurrentTirePressureAmount = (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
+
+
+                if(truckCurrentTirePressureAmount == 9000){
+                    tasks.setStatus(TaskStatus.FINISHED);
+                    updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
+
+                    try {
+                        Thread.sleep(1000);
+                        thingHandler.deleteThing(dittoClient, tasks.getThingId());
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    future[0].cancel(false);
+                    truck.setTaskActive(false);
+                }
+
+                tasksEventsActions.handleTirePressureLowTaskEvents(dittoClient, tasks);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+
+        };
+        ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, 3, TimeUnit.SECONDS);
+        future[0] = future1;
+    }
+
 
 }
 

@@ -6,6 +6,9 @@ public enum TruckStatus {
     WAITING,
 
     DRIVING,
+
+    ADJUSTINGTIREPRESSURE,
+
     LOADING,
     REFUELING
 }

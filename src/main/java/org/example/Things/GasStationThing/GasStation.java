@@ -101,6 +101,56 @@ public class GasStation {
                 if (!queue.isEmpty()) {
                     logger.info("Entering QUEUE");
                     Truck nextTruck = queue.poll();
+                    assert nextTruck != null;
+                    startRefuelProcess(nextTruck);
+                } else {
+                    logger.info("GASSTATION WAITING AGAIN");
+                    setGasStationStatus(GasStationStatus.WAITING);
+                }
+
+            }
+
+        }, 0, 3, TimeUnit.SECONDS);
+
+
+    }
+
+    public void startTirePressureAdjustment(Truck truck){
+
+        logger.info("Truck {} requested tire pressure adjustment", truck.getThingId());
+
+        if(gasStationStatus == GasStationStatus.WAITING){
+            logger.info("Start tire pressure adjustment process for {}", truck.getThingId());
+            setGasStationStatus(GasStationStatus.ADJUSTINGTIREPRESSURE);
+            startTireAdjustmentProcess(truck);
+        }else {
+            logger.info("Gas Station already tire pressure adjustment process. {} waiting in queue", truck.getThingId());
+            truck.setStatus(TruckStatus.WAITING);
+            queue.add(truck);
+        }
+
+    }
+
+    public void startTireAdjustmentProcess(Truck truck){
+        truck.setStatus(TruckStatus.ADJUSTINGTIREPRESSURE);
+        currentTask = scheduler.scheduleAtFixedRate(() ->
+        {
+            double currentTirePressure = truck.getTirePressure();
+            TruckStatus truckStatus = truck.getStatus();
+            if(currentTirePressure != 300 && truckStatus == TruckStatus.ADJUSTINGTIREPRESSURE) {
+                logger.info("Current Tire Pressure {}", currentTirePressure);
+                double newTirePressure = Math.min(100,9000 - currentTirePressure);
+                truck.setTirePressure(currentTirePressure + newTirePressure);
+
+
+            }
+            else {
+                currentTask.cancel(false);
+                logger.info("Cancel Task for {}" , truck.getThingId());
+                if (!queue.isEmpty()) {
+                    logger.info("Entering QUEUE");
+                    Truck nextTruck = queue.poll();
+                    assert nextTruck != null;
                     startRefuelProcess(nextTruck);
                 } else {
                     logger.info("GASSTATION WAITING AGAIN");

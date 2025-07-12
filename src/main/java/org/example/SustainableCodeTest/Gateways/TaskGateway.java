@@ -2,6 +2,7 @@ package org.example.SustainableCodeTest.Gateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
+import org.example.Config;
 import org.example.SustainableCodeTest.AbstractGateway;
 import org.example.ThingHandler;
 import org.example.Things.TaskThings.TaskStatus;
@@ -63,8 +64,8 @@ public class TaskGateway extends AbstractGateway<Tasks> {
     @Override
     public void subscribeForEventsAndActions() {
         tasksEventsActions.startTaskLogging(tasks.getThingId());
-
     }
+
 
     @Override
     public String getWOTURL() {
@@ -101,7 +102,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                 truckCurrentFuelAmount = (double) getFeatureValueFromDitto("FuelTank", truck.getThingId());
 
 
-            if(truckCurrentFuelAmount == 300){
+            if(truckCurrentFuelAmount == Config.FUEL_MAX_VALUE){
                 tasks.setStatus(TaskStatus.FINISHED);
                 updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
 
@@ -142,7 +143,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                 truckCurrentTirePressureAmount = (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
 
 
-                if(truckCurrentTirePressureAmount == 9000){
+                if(truckCurrentTirePressureAmount == Config.TIRE_PRESSURE_MAX_VALUE){
                     tasks.setStatus(TaskStatus.FINISHED);
                     updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
 

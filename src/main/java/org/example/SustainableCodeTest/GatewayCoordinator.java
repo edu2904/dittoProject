@@ -3,6 +3,7 @@ package org.example.SustainableCodeTest;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Client.DittoClientBuilder;
+import org.example.Config;
 import org.example.SustainableCodeTest.Factory.DigitalTwinFactoryMain;
 import org.example.SustainableCodeTest.Factory.Things.GasStationFactory;
 import org.example.SustainableCodeTest.Factory.Things.TruckFactory;
@@ -13,6 +14,8 @@ import org.example.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +31,7 @@ public class GatewayCoordinator {
     InfluxDBClient influxDBClient;
     ThingHandler thingHandler = new ThingHandler();
 
+    protected final Logger logger = LoggerFactory.getLogger(AbstractGateway.class);
 
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -43,10 +47,10 @@ public class GatewayCoordinator {
     public void safeDeleteTasksBeforeRestart(List<Truck> truckList) throws ExecutionException, InterruptedException {
         for (Truck truck : truckList) {
             if (thingHandler.thingExists(dittoClient, "task:refuel_" + truck.getThingId()).get()) {
-                thingHandler.deleteThing(dittoClient, "task:refuel_" + truck.getThingId()).toCompletableFuture();
+                thingHandler.deleteThing(dittoClient, "task:refuel_" + truck.getThingId()).toCompletableFuture().get();
             }
             if (thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truck.getThingId()).get()) {
-                thingHandler.deleteThing(dittoClient, "task:tirePressureLow_" + truck.getThingId()).toCompletableFuture();
+                thingHandler.deleteThing(dittoClient, "task:tirePressureLow_" + truck.getThingId()).toCompletableFuture().get();
             }
         }
     }
@@ -77,11 +81,11 @@ public class GatewayCoordinator {
                 truckGateway.startGateway();
                 gasStationGateway.startGateway();
             } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
+                logger.error("ERROR in updating", e);
             }
 
         };
-        scheduler.scheduleAtFixedRate(updateTask, 0, 3, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(updateTask, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
 
 }

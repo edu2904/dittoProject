@@ -13,12 +13,18 @@ import java.util.Base64;
 public class DittoEventActionHandler {
     private final Logger logger = LoggerFactory.getLogger(DittoEventActionHandler.class);
 
+    private volatile boolean gatewayActive = true;
+
 
 
 
     public DittoEventActionHandler(){
-
     }
+
+    public void stopEventActionHandler(){
+        gatewayActive = false;
+    }
+
 
     public void createEventLoggingForAttribute(String thingID, String subject) {
         URL url = null;
@@ -60,12 +66,11 @@ public class DittoEventActionHandler {
                 BufferedWriter fileWriter = new BufferedWriter(new FileWriter("received_sse_messages.txt", true));
 
 
-                while ((inputLine = in.readLine()) != null) {
+                while (gatewayActive && (inputLine = in.readLine()) != null) {
                     if(inputLine.startsWith("data:")) {
                         String data = inputLine.substring(5).trim();
 
                         if(!data.isEmpty()) {
-
                                     logger.info("Received Event: {} for {}", inputLine, thingID);
                                     fileWriter.write("New Event: " + inputLine + "\n");
                                     fileWriter.newLine();
@@ -124,7 +129,7 @@ public class DittoEventActionHandler {
                 BufferedWriter fileWriter = new BufferedWriter(new FileWriter("received_sse_messages.txt", true));
 
 
-                while ((inputLine = in.readLine()) != null) {
+                while (gatewayActive && (inputLine = in.readLine()) != null) {
                     if(inputLine.startsWith("data:")) {
                         String data = inputLine.substring(5).trim();
 

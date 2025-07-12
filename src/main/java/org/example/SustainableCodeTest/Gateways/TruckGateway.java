@@ -2,8 +2,10 @@ package org.example.SustainableCodeTest.Gateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
+import org.example.Config;
 import org.example.SustainableCodeTest.AbstractGateway;
 import org.example.SustainableCodeTest.Factory.Things.TaskFactory;
+import org.example.TaskManager;
 import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
@@ -22,10 +24,13 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
     List<Truck> trucks;
     private final TruckEventsActions truckEventsActions = new TruckEventsActions();
+
+    private final TaskManager taskManager;
     public TruckGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, List<Truck> trucks){
         super(dittoClient, influxDBClient);
         this.trucks = trucks;
         subscribeForEventsAndActions();
+        this.taskManager = new TaskManager(dittoClient, influxDBClient);
 
     }
 
@@ -113,34 +118,27 @@ public class TruckGateway extends AbstractGateway<Truck> {
     }
 
     public void checkRefuelTask(double currentFuel, Truck truck) throws ExecutionException, InterruptedException {
-        if(currentFuel < 45) {
-            //if (!truck.isTaskActive()) {
-                TaskFactory taskFactory = new TaskFactory(this.dittoClient, TaskType.REFUEL, truck);
-
-                taskFactory.createTwinsForDitto();
-
-                Tasks refuelTask = taskFactory.getTasks();
-
-                TaskGateway taskGateway = new TaskGateway(this.dittoClient, this.influxDBClient, refuelTask, truck);
-                taskGateway.startUpdating(refuelTask);
-
-           // }
+        try {
+            if (currentFuel < Config.FUEL_MIN_VALUE) {
+                taskManager.startTask(TaskType.REFUEL, truck);
+            }
+        } catch (ExecutionException | InterruptedException e) {
+            logger.error("Error creating Refuel Task for " + truck.getThingId(), e);
         }
     }
 
     public void checkTirePressureTask(double currentTirePressure, Truck truck) throws ExecutionException, InterruptedException {
-        if(currentTirePressure < 8900){
-            TaskFactory taskFactory = new TaskFactory(this.dittoClient, TaskType.TIREPRESSUREADJUSTMENT, truck);
-
-            taskFactory.createTwinsForDitto();
-            Tasks tirePressureTask = taskFactory.getTasks();
-
-            TaskGateway taskGateway = new TaskGateway(this.dittoClient, this.influxDBClient, tirePressureTask, truck);
-            taskGateway.startUpdating(tirePressureTask);
-
+        try {
+            if(currentTirePressure < Config.TIRE_PRESSURE_MIN_VALUE){
+            taskManager.startTask(TaskType.TIREPRESSUREADJUSTMENT, truck);
+            }
+        } catch (ExecutionException | InterruptedException e) {
+        logger.error("Error Creating TirePressure task for " + truck.getThingId(), e);
         }
 
     }
 
-
 }
+
+
+

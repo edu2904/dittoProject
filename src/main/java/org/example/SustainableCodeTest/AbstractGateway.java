@@ -22,7 +22,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
     protected final DittoClient dittoClient;
     protected InfluxDBClient influxDBClient;
 
-    private final Logger logger = LoggerFactory.getLogger(AbstractGateway.class);
+    protected final Logger logger = LoggerFactory.getLogger(AbstractGateway.class);
 
 
     public AbstractGateway(DittoClient dittoClient, InfluxDBClient influxDBClient){

@@ -1,4 +1,6 @@
 package org.example.Things.WarehouseThing;
 
-public class WarehouseStatus {
+public enum WarehouseStatus {
+    WAITING,
+    LOADING
 }

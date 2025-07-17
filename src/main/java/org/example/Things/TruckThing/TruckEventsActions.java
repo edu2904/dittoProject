@@ -4,16 +4,18 @@ import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.things.model.ThingId;
 import org.example.DittoEventAction.DittoEventActionHandler;
+import org.example.Things.EventActionHandler;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-public class TruckEventsActions {
+public class TruckEventsActions implements EventActionHandler {
 
     DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
 
-    public void startTruckLogging(String thingID){
+    @Override
+    public void startLogging(String thingID) {
         dittoEventActionHandler.createEventLoggingForAttribute(thingID, "showStatus");
         dittoEventActionHandler.createEventLoggingForFeature(thingID, "lowfuel", "FuelTank");
         dittoEventActionHandler.createActionLoggingForAttribute(thingID, "resetProgress");
@@ -31,14 +33,8 @@ public class TruckEventsActions {
                     .set("properties", weightmessage).build();
 
 
-            dittoClient.live()
-                    .forId(ThingId.of(thingID))
-                    .message()
-                    .from()
-                    .subject("showStatus")
-                    .payload(jsonWeight)
-                    .contentType("application/json")
-                    .send();
+            sendEvent(dittoClient, thingID, jsonWeight, "showStatus");
+
         }
 
     }
@@ -52,48 +48,20 @@ public class TruckEventsActions {
                     .set("properties", lowfuelmessage).build();
 
             if (fuelAmount < 45) {
-                dittoClient.live()
-                        .forId(ThingId.of(thingID))
-                        .forFeature("FuelTank")
-                        .message()
-                        .from()
-                        .subject("lowfuel")
-                        .payload(jsonData)
-                        .contentType("application/json")
-                        .send();}
+                sendEvent(dittoClient, thingID, jsonData, "lowfuel");
+            }
         }
     public void progressResetAction(DittoClient dittoClient, String thingID, Truck truck, double currentProgress) {
 
 
         if(currentProgress == 100) {
-
-
-
             JsonObject object = JsonObject.newBuilder().set("message", "Progress was resettet").build();
-            dittoClient
-                    .live()
-                    .forId(ThingId.of(thingID))
-                    .message()
-                    .to()
-                    .subject("resetProgress")
-                    .payload(object)
-                    .contentType("application/json")
-                    .send();
 
+            sendAction(dittoClient, thingID, object, "resetProgress");
             truck.setProgress(0);
 
         }
 
-    }
-    public void sendEvent(DittoClient dittoClient, String thingID, JsonObject jsonData, String eventSubject) {
-        dittoClient.live()
-                .forId(ThingId.of(thingID))
-                .message()
-                .from()
-                .subject(eventSubject)
-                .payload(jsonData)
-                .contentType("application/json")
-                .send();
     }
 
 }

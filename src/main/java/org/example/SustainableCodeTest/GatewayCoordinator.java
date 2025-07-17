@@ -7,13 +7,16 @@ import org.example.Config;
 import org.example.SustainableCodeTest.Factory.DigitalTwinFactoryMain;
 import org.example.SustainableCodeTest.Factory.Things.GasStationFactory;
 import org.example.SustainableCodeTest.Factory.Things.TruckFactory;
+import org.example.SustainableCodeTest.Factory.Things.WarehouseFactory;
 import org.example.SustainableCodeTest.Gateways.GasStationGateway;
 import org.example.SustainableCodeTest.Gateways.TaskGateway;
 import org.example.SustainableCodeTest.Gateways.TruckGateway;
+import org.example.SustainableCodeTest.Gateways.WarehouseGateway;
 import org.example.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
+import org.example.Things.WarehouseThing.Warehouse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,13 +58,19 @@ public class GatewayCoordinator {
         }
     }
 
-    public void startGateways() throws ExecutionException, InterruptedException {
-
+    public void createPermanentThings() throws ExecutionException, InterruptedException {
         digitalTwinFactoryMain.getTruckFactory().createTwinsForDitto();
         digitalTwinFactoryMain.getGasStationFactory().createTwinsForDitto();
+        digitalTwinFactoryMain.getWarehouseFactory().createTwinsForDitto();
+    }
+
+    public void startGateways() throws ExecutionException, InterruptedException {
+
+        createPermanentThings();
 
         List<Truck> trucks = ((TruckFactory) digitalTwinFactoryMain.getTruckFactory()).getTruckList();
         GasStation gasStation1 = ((GasStationFactory) digitalTwinFactoryMain.getGasStationFactory()).getGasStation();
+        Warehouse warehouseMain = ((WarehouseFactory) digitalTwinFactoryMain.getWarehouseFactory()).getWarehouseMain();
 
         for(Truck truck: trucks){
             truck.setGasStation(gasStation1);
@@ -71,6 +80,8 @@ public class GatewayCoordinator {
 
         TruckGateway truckGateway = new TruckGateway(dittoClient, influxDBClient,trucks);
         GasStationGateway gasStationGateway = new GasStationGateway(dittoClient, influxDBClient, gasStation1);
+        WarehouseGateway warehouseGateway = new WarehouseGateway(dittoClient, influxDBClient, warehouseMain);
+
 
 
         safeDeleteTasksBeforeRestart(trucks);
@@ -80,6 +91,7 @@ public class GatewayCoordinator {
             try {
                 truckGateway.startGateway();
                 gasStationGateway.startGateway();
+                warehouseGateway.startGateway();
             } catch (ExecutionException | InterruptedException e) {
                 logger.error("ERROR in updating", e);
             }

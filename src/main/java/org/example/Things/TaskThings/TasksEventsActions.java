@@ -4,11 +4,12 @@ import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.things.model.ThingId;
 import org.example.DittoEventAction.DittoEventActionHandler;
+import org.example.Things.EventActionHandler;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class TasksEventsActions {
+public class TasksEventsActions implements EventActionHandler {
     private final Map<String, Boolean> refuelStarted = new HashMap<>();
 
     private final Map<String, Boolean> tirePressureTaskStarted = new HashMap<>();
@@ -17,7 +18,8 @@ public class TasksEventsActions {
 
     DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
 
-    public void startTaskLogging(String thingID){
+    @Override
+    public void startLogging(String thingID) {
         dittoEventActionHandler.createEventLoggingForAttribute(thingID, "refuelBegin");
         dittoEventActionHandler.createEventLoggingForAttribute(thingID, "refuelUndergoing");
         dittoEventActionHandler.createEventLoggingForAttribute(thingID, "refuelFinished");
@@ -44,7 +46,6 @@ public class TasksEventsActions {
             refuelStarted.put(thingID, false);
         }
     }
-
     public void handleTirePressureLowTaskEvents(DittoClient dittoClient, Tasks tasks) throws InterruptedException {
 
         String thingID = tasks.getThingId();
@@ -54,7 +55,6 @@ public class TasksEventsActions {
         JsonObject endObject = JsonObject.newBuilder().set("message", "Tire Pressure Task finished for " + thingID).build();
 
         if (tasks.getStatus().equals(TaskStatus.UNDERGOING)) {
-
             sendEvent(dittoClient, tasks.getThingId(), processObject, "tirePressureAdjustingUndergoing");
         }
         if(tasks.getStatus().equals(TaskStatus.FINISHED)){
@@ -62,19 +62,5 @@ public class TasksEventsActions {
             tirePressureTaskStarted.put(thingID, false);
         }
     }
-
-    public void sendEvent(DittoClient dittoClient, String thingID, JsonObject jsonData, String eventSubject) {
-        dittoClient.live()
-                .forId(ThingId.of(thingID))
-                .message()
-                .from()
-                .subject(eventSubject)
-                .payload(jsonData)
-                .contentType("application/json")
-                .send();
-    }
-
-
-
 }
 

@@ -113,7 +113,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
     @Override
     public void subscribeForEventsAndActions() {
         for(Truck truck: trucks){
-            truckEventsActions.startTruckLogging(truck.getThingId());
+            truckEventsActions.startLogging(truck.getThingId());
         }
     }
 

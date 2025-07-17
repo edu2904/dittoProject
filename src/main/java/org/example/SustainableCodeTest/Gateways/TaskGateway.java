@@ -28,7 +28,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         super(dittoClient, influxDBClient);
         this.truck = truck;
         this.tasks = tasks;
-        tasksEventsActions.startTaskLogging(tasks.getThingId());
+        tasksEventsActions.startLogging(tasks.getThingId());
     }
 
     @Override
@@ -63,7 +63,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
 
     @Override
     public void subscribeForEventsAndActions() {
-        tasksEventsActions.startTaskLogging(tasks.getThingId());
+        tasksEventsActions.startLogging(tasks.getThingId());
     }
 
 

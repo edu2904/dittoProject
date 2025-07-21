@@ -14,6 +14,8 @@ public class TasksEventsActions implements EventActionHandler {
 
     private final Map<String, Boolean> tirePressureTaskStarted = new HashMap<>();
 
+    private final Map<String, Boolean> loadingTaskStarted = new HashMap<>();
+
 
 
     DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
@@ -26,6 +28,9 @@ public class TasksEventsActions implements EventActionHandler {
         dittoEventActionHandler.createEventLoggingForAttribute(thingID, "tirePressureAdjustingBegins");
         dittoEventActionHandler.createEventLoggingForAttribute(thingID, "tirePressureAdjustingUndergoing");
         dittoEventActionHandler.createEventLoggingForAttribute(thingID, "tirePressureAdjustingFinished");
+        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "loadBegin");
+        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "loadingUndergoing");
+        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "loadingFinished");
 
     }
 
@@ -60,6 +65,22 @@ public class TasksEventsActions implements EventActionHandler {
         if(tasks.getStatus().equals(TaskStatus.FINISHED)){
             sendEvent(dittoClient, tasks.getThingId(), endObject, "tirePressureAdjustingFinished");
             tirePressureTaskStarted.put(thingID, false);
+        }
+    }
+    public void handleLoadingTruckTaskEvents(DittoClient dittoClient, Tasks tasks) throws InterruptedException {
+
+        String thingID = tasks.getThingId();
+        JsonObject startObject = JsonObject.newBuilder().set("message", "Loading Task started for " + thingID).build();
+
+        JsonObject processObject = JsonObject.newBuilder().set("message", "Loading Task in Process for " + thingID).build();
+        JsonObject endObject = JsonObject.newBuilder().set("message", "Loading Task finished for " + thingID).build();
+
+        if (tasks.getStatus().equals(TaskStatus.UNDERGOING)) {
+            sendEvent(dittoClient, tasks.getThingId(), processObject, "loadingUndergoing");
+        }
+        if(tasks.getStatus().equals(TaskStatus.FINISHED)){
+            sendEvent(dittoClient, tasks.getThingId(), endObject, "loadingFinished");
+            loadingTaskStarted.put(thingID, false);
         }
     }
 }

@@ -28,7 +28,6 @@ public class DigitalTwinFactoryMain {
     public DigitalTwinFactory<Truck> getTruckFactory() {
         return truckFactory;
     }
-
     public DigitalTwinFactory<Warehouse> getWarehouseFactory() {
         return warehouseFactory;
     }

@@ -54,6 +54,9 @@ public class TaskFactory implements DigitalTwinFactory<Tasks>
             case TIREPRESSUREADJUSTMENT:
                 task.initializeTirePressureTask(truck);
                 break;
+            case LOAD:
+                task.initializeLoadingTask(truck);
+                break;
             default:
                 throw new IllegalStateException("Unexpected value: " + taskType);
         }

@@ -71,4 +71,11 @@ public class Tasks {
         setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
 
     }
+    public void initializeLoadingTask(Truck truck){
+        setThingId("task:loadingTruck_" + truck.getThingId());
+        setStatus(TaskStatus.STARTING);
+        setTaskType(TaskType.LOAD);
+        setTargetTruck(truck.getThingId());
+        setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
+    }
 }

@@ -55,6 +55,9 @@ public class GatewayCoordinator {
             if (thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truck.getThingId()).get()) {
                 thingHandler.deleteThing(dittoClient, "task:tirePressureLow_" + truck.getThingId()).toCompletableFuture().get();
             }
+            if (thingHandler.thingExists(dittoClient, "task:loadingTruck_" + truck.getThingId()).get()) {
+                thingHandler.deleteThing(dittoClient, "task:loadingTruck_" + truck.getThingId()).toCompletableFuture().get();
+            }
         }
     }
 
@@ -74,6 +77,7 @@ public class GatewayCoordinator {
 
         for(Truck truck: trucks){
             truck.setGasStation(gasStation1);
+            truck.setWarehouseMain(warehouseMain);
         }
 
 

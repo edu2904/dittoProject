@@ -1,9 +1,11 @@
 package org.example.Things.TruckThing;
 
 import org.eclipse.ditto.client.DittoClient;
+import org.example.Config;
 import org.example.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.TaskThings.Tasks;
+import org.example.Things.WarehouseThing.Warehouse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,16 +28,13 @@ public class Truck {
     private double tirePressure;
     private double progress;
     private double fuel;
+    private int capacity;
+    private int inventory;
     private ArrayList<Integer> stops;
-
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
     private final ThingHandler thingHandler = new ThingHandler();
-
     private Queue<String> tasksQueue = new LinkedList<>();
-    private boolean isBusy;
-
-
+    private Warehouse warehouseMain;
 
 
 
@@ -55,6 +54,14 @@ public class Truck {
 
     public void setStatus(TruckStatus status) {
         this.truckStatus = status;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
     }
 
     public double getWeight() {
@@ -96,7 +103,12 @@ public class Truck {
     public double getFuel() {
         return fuel;
     }
-
+    public int getInventory() {
+        return inventory;
+    }
+    public void setInventory(int inventory) {
+        this.inventory = inventory;
+    }
     public void setStops(ArrayList<Integer> stops) {
         this.stops = stops;
     }
@@ -111,6 +123,15 @@ public class Truck {
     public GasStation getGasStation(){
         return gasStation;
     }
+
+    public Warehouse getWarehouseMain() {
+        return warehouseMain;
+    }
+
+    public void setWarehouseMain(Warehouse warehouseMain) {
+        this.warehouseMain = warehouseMain;
+    }
+
     public boolean isTaskActive(){
         return taskActive.get();
     }
@@ -118,14 +139,18 @@ public class Truck {
         taskActive.set(currentTaskActive);
     }
 
+
+
     public void setStarterValues(int truckNumber) {
         setThingId("mytest:LKW-" + truckNumber);
         setStatus(TruckStatus.IDLE);
-        setWeight(7500);
+        setWeight(Config.WEIGHT_STANDARD_TRUCK);
         setVelocity(0);
-        setTirePressure(9000);
+        setTirePressure(Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK);
         setProgress(0);
         setFuel(51);
+        setCapacity(Config.CAPACITY_STANDARD_TRUCK);
+        setInventory(Config.CAPACITY_STANDARD_TRUCK);
     }
 
 
@@ -163,6 +188,7 @@ public class Truck {
             double currentVelocity = getVelocity();
             double currentProgress = getProgress();
             double currentTirePressure = getTirePressure();
+            int currentInventory = getInventory();
             TruckStatus currentStatus = getStatus();
 
 
@@ -187,12 +213,15 @@ public class Truck {
                            setTaskActive(true);
                            gasStation.startRefuel(this);
                        }
-
-                    }
-                    else if(thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truckName).get()){
-                        if(currentStatus != TruckStatus.ADJUSTINGTIREPRESSURE && !isTaskActive()){
+                    } else if(thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truckName).get()) {
+                        if (currentStatus != TruckStatus.ADJUSTINGTIREPRESSURE && !isTaskActive()) {
                             setTaskActive(true);
                             gasStation.startTirePressureAdjustment(this);
+                        }
+                    }else if(thingHandler.thingExists(dittoClient, "task:loadingTruck_" + truckName).get()){
+                        if(currentStatus != TruckStatus.LOADING && !isTaskActive()){
+                            setTaskActive(true);
+                            warehouseMain.startLoading(this);
                         }
                     }
 
@@ -211,6 +240,7 @@ public class Truck {
                         setVelocity(75 + Math.random() * 10);
                         setFuel(currentFuelTank - fuelConsumption);
                         setProgress(currentProgress + progressMade);
+                        setInventory(Math.max(0, currentInventory - 20));
 
                         if(progress == 100 && currentStopIndex.get() < currentStops.size()){
                             stops.set(currentStopIndex.get(), 1);
@@ -227,7 +257,7 @@ public class Truck {
             }
 
 
-        }, 0, 3, TimeUnit.SECONDS);
+        }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
 
 
     }
@@ -242,7 +272,7 @@ public class Truck {
     }
 
     public void tirePressureDecreases(double tirePressure){
-        if(Math.random() <= 0.99){
+        if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
             double tirePressureReduction = Math.random() * 100;
             setTirePressure(tirePressure - tirePressureReduction);
         }

@@ -53,6 +53,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
                 double truckCurrentFuelAmount = (double) getFeatureValueFromDitto("FuelTank", truck.getThingId());
                 double truckCurrentProgress = (double) getFeatureValueFromDitto("Progress", truck.getThingId());
                 double truckCurrentTirePressure = (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
+                double truckCurrentInventoryAmount = (double) getFeatureValueFromDitto("Inventory", truck.getThingId());
 
                 truckEventsActions.progressResetAction(this.dittoClient, truck.getThingId(), truck, truckCurrentProgress);
                 truckEventsActions.weightEvent(this.dittoClient, truck.getThingId(), truckCurrentWeight);
@@ -60,6 +61,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
                 checkRefuelTask(truckCurrentFuelAmount, truck);
                 //checkTirePressureTask(truckCurrentTirePressure, truck);
+                checkLoadingTask((int) truckCurrentInventoryAmount, truck);
 
                 logToInfluxDB(truck, "Truck");
             } catch (ExecutionException | InterruptedException e) {
@@ -78,6 +80,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
     public void updateAttributes(Truck truck) {
         updateAttributeValue("weight", truck.getWeight(), truck.getThingId());
         updateAttributeValue("status", truck.getStatus().toString(), truck.getThingId());
+        updateAttributeValue("capacity", truck.getCapacity(), truck.getThingId());
 
     }
     @Override
@@ -87,6 +90,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
         updateFeatureValue("Progress","amount", truck.getProgress(), truck.getThingId());
         updateFeatureValue("Progress","destinationStatus", truck.getStops(), truck.getThingId());
         updateFeatureValue("FuelTank","amount", truck.getFuel(), truck.getThingId());
+        updateFeatureValue("Inventory","amount", truck.getInventory(), truck.getThingId());
 
     }
 
@@ -97,6 +101,8 @@ public class TruckGateway extends AbstractGateway<Truck> {
         startLoggingToInfluxDB(measurementType, thingID, "ProgressAmount", truck.getProgress());
         startLoggingToInfluxDB(measurementType, thingID, "TirePressureAmount", truck.getTirePressure());
         startLoggingToInfluxDB(measurementType, thingID, "VelocityAmount", truck.getVelocity());
+        startLoggingToInfluxDB(measurementType, thingID, "InventoryAmount", truck.getInventory());
+
 
     }
 
@@ -117,9 +123,9 @@ public class TruckGateway extends AbstractGateway<Truck> {
         }
     }
 
-    public void checkRefuelTask(double currentFuel, Truck truck) throws ExecutionException, InterruptedException {
+    public void checkRefuelTask(double currentFuel, Truck truck){
         try {
-            if (currentFuel < Config.FUEL_MIN_VALUE) {
+            if (currentFuel < Config.FUEL_MIN_VALUE_STANDARD_TRUCK) {
                 taskManager.startTask(TaskType.REFUEL, truck);
             }
         } catch (ExecutionException | InterruptedException e) {
@@ -129,13 +135,22 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
     public void checkTirePressureTask(double currentTirePressure, Truck truck) throws ExecutionException, InterruptedException {
         try {
-            if(currentTirePressure < Config.TIRE_PRESSURE_MIN_VALUE){
+            if(currentTirePressure < Config.TIRE_PRESSURE_MIN_VALUE_STANDARD_TRUCK){
             taskManager.startTask(TaskType.TIREPRESSUREADJUSTMENT, truck);
             }
         } catch (ExecutionException | InterruptedException e) {
         logger.error("Error Creating TirePressure task for " + truck.getThingId(), e);
         }
 
+    }
+    public void checkLoadingTask(int currentInventory, Truck truck) {
+        try{
+            if(currentInventory == 0){
+                taskManager.startTask(TaskType.LOAD, truck);
+            }
+        }catch (ExecutionException | InterruptedException e) {
+            logger.error("Error creating Loading Task for " + truck.getThingId(), e);
+        }
     }
 
 }

@@ -44,6 +44,9 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         if(tasks.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
             handleTirePressure(dittoClient, truck, tasks);
         }
+        if(tasks.getTaskType() == TaskType.LOAD){
+            handleLoading(dittoClient, truck, tasks);
+        }
     }
 
     @Override
@@ -85,6 +88,11 @@ public class TaskGateway extends AbstractGateway<Tasks> {
             updateAttributeValue("targetTruck", tasks.getTargetTruck(), tasks.getThingId());
             updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
         }
+        if(tasks.getTaskType() == TaskType.LOAD){
+            updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
+            updateAttributeValue("targetTruck", tasks.getTargetTruck(), tasks.getThingId());
+            updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
+        }
     }
 
     public void handleRefueling(DittoClient dittoClient, Truck truck, Tasks tasks) throws ExecutionException, InterruptedException {
@@ -102,7 +110,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                 truckCurrentFuelAmount = (double) getFeatureValueFromDitto("FuelTank", truck.getThingId());
 
 
-            if(truckCurrentFuelAmount == Config.FUEL_MAX_VALUE){
+            if(truckCurrentFuelAmount == Config.FUEL_MAX_VALUE_STANDARD_TRUCK){
                 tasks.setStatus(TaskStatus.FINISHED);
                 updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
 
@@ -123,7 +131,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
             }
 
         };
-        ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, 3, TimeUnit.SECONDS);
+        ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
         future[0] = future1;
     }
 
@@ -143,7 +151,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                 truckCurrentTirePressureAmount = (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
 
 
-                if(truckCurrentTirePressureAmount == Config.TIRE_PRESSURE_MAX_VALUE){
+                if(truckCurrentTirePressureAmount == Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK){
                     tasks.setStatus(TaskStatus.FINISHED);
                     updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
 
@@ -164,7 +172,49 @@ public class TaskGateway extends AbstractGateway<Tasks> {
             }
 
         };
-        ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, 3, TimeUnit.SECONDS);
+        ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
+        future[0] = future1;
+    }
+
+    public void handleLoading(DittoClient dittoClient, Truck truck, Tasks tasks) throws ExecutionException, InterruptedException {
+        final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
+
+
+        tasks.setStatus(TaskStatus.UNDERGOING);
+
+
+        Runnable updateTask = () -> {
+
+            updateAttributes(tasks);
+            int truckCapacity = 0;
+            int truckCurrentInventory = 0;
+            try {
+                truckCurrentInventory = (int) getFeatureValueFromDitto("Inventory", truck.getThingId());
+                truckCapacity = (int) getAttributeValueFromDitto("capacity", truck.getThingId());
+
+
+                if(truckCurrentInventory == truckCapacity){
+                    tasks.setStatus(TaskStatus.FINISHED);
+                    updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
+
+                    try {
+                        Thread.sleep(1000);
+                        thingHandler.deleteThing(dittoClient, tasks.getThingId());
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    future[0].cancel(false);
+                    truck.setTaskActive(false);
+                }
+
+                tasksEventsActions.handleTirePressureLowTaskEvents(dittoClient, tasks);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+
+        };
+        ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
         future[0] = future1;
     }
 

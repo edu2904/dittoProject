@@ -4,13 +4,8 @@ import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Client.DittoClientBuilder;
-import org.example.SustainableCodeTest.Factory.Things.TruckFactory;
-import org.example.SustainableCodeTest.GatewayCoordinator;
-import org.example.Things.GasStationThing.GasStation;
-import org.example.Things.TruckThing.Truck;
+import org.example.Gateways.GatewayManager;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
@@ -25,8 +20,8 @@ public class Main {
         String bucket = "ditto";
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 
-        GatewayCoordinator gatewayCoordinator = new GatewayCoordinator(dittoClient, influxDBClient);
-        gatewayCoordinator.startGateways();
+        GatewayManager gatewayManager = new GatewayManager(dittoClient, influxDBClient);
+        gatewayManager.startGateways();
 
 /*
         GatewayMain gateway = new GatewayMain();

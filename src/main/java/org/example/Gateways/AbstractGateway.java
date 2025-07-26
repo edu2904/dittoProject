@@ -1,4 +1,4 @@
-package org.example.SustainableCodeTest;
+package org.example.Gateways;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.WriteApiBlocking;
@@ -6,6 +6,7 @@ import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.exceptions.InfluxException;
 import org.eclipse.ditto.client.DittoClient;
+import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.Feature;
 import org.eclipse.ditto.things.model.ThingId;
@@ -62,22 +63,26 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
     }
 
     public Object getAttributeValueFromDitto(String attributeProperty, String thingId) throws InterruptedException, ExecutionException {
-        CompletableFuture<Double> attributeAmount = new CompletableFuture<>();
+        CompletableFuture<Object> attributeAmount = new CompletableFuture<>();
 
         dittoClient.twin().forId(ThingId.of(thingId))
                 .retrieve()
                 .thenCompose(thing -> {
-                    JsonValue feature = thing.getAttributes().
+                    JsonValue attribute = thing.getAttributes().
                             flatMap(attributes -> attributes.getValue(attributeProperty))
                             .orElse(JsonValue.nullLiteral());
 
-                    attributeAmount.complete(feature.asDouble());
+                    if(attribute.isDouble()) {
+                        attributeAmount.complete(attribute.asDouble());
+                    }else if(attribute.isString()){
+                        attributeAmount.complete(attribute.asString());
+                    }
                     return CompletableFuture.completedFuture(null);
                 });
         return attributeAmount.get();
     }
     public Object getFeatureValueFromDitto(String featureProperty, String thingId) throws InterruptedException, ExecutionException {
-        CompletableFuture<Double> featureAmount = new CompletableFuture<>();
+        CompletableFuture<Object> featureAmount = new CompletableFuture<>();
 
         dittoClient.twin().forId(ThingId.of(thingId))
                 .retrieve()
@@ -87,8 +92,11 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
                             flatMap(Feature::getProperties).
                             flatMap(featureProperties -> featureProperties.getValue("amount"))
                             .orElse(JsonValue.nullLiteral());
-
-                    featureAmount.complete(feature.asDouble());
+                    if(feature.isDouble()) {
+                        featureAmount.complete(feature.asDouble());
+                    }else if(feature.isString()){
+                        featureAmount.complete(feature.asString());
+                    }
                     return CompletableFuture.completedFuture(null);
                 });
         return featureAmount.get();

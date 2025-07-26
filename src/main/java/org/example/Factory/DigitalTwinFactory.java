@@ -1,4 +1,4 @@
-package org.example.SustainableCodeTest.Factory;
+package org.example.Factory;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;

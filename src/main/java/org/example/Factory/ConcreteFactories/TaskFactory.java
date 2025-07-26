@@ -1,7 +1,7 @@
-package org.example.SustainableCodeTest.Factory.Things;
+package org.example.Factory.ConcreteFactories;
 
 import org.eclipse.ditto.client.DittoClient;
-import org.example.SustainableCodeTest.Factory.DigitalTwinFactory;
+import org.example.Factory.DigitalTwinFactory;
 import org.example.ThingHandler;
 import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TaskThings.Tasks;

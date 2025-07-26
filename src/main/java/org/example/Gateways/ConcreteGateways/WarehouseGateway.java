@@ -1,9 +1,8 @@
-package org.example.SustainableCodeTest.Gateways;
+package org.example.Gateways.ConcreteGateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.example.SustainableCodeTest.AbstractGateway;
-import org.example.SustainableCodeTest.DigitalTwinsGateway;
+import org.example.Gateways.AbstractGateway;
 import org.example.Things.TruckThing.TruckEventsActions;
 import org.example.Things.WarehouseThing.Warehouse;
 

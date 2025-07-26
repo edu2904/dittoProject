@@ -1,7 +1,7 @@
-package org.example.SustainableCodeTest.Factory.Things;
+package org.example.Factory.ConcreteFactories;
 
 import org.eclipse.ditto.client.DittoClient;
-import org.example.SustainableCodeTest.Factory.DigitalTwinFactory;
+import org.example.Factory.DigitalTwinFactory;
 import org.example.ThingHandler;
 import org.example.Things.WarehouseThing.Warehouse;
 
@@ -9,13 +9,14 @@ import java.util.concurrent.ExecutionException;
 
 public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
 
-    ThingHandler thingHandler = new ThingHandler();
+    ThingHandler thingHandler;
     DittoClient dittoClient;
     Warehouse warehouseMain;
 
 
-    public WarehouseFactory(DittoClient dittoClient){
+    public WarehouseFactory(DittoClient dittoClient, ThingHandler thingHandler){
         this.dittoClient = dittoClient;
+        this.thingHandler = thingHandler;
     }
     @Override
     public void createTwinsForDitto() throws ExecutionException, InterruptedException {

@@ -1,4 +1,4 @@
-package org.example.SustainableCodeTest;
+package org.example.Gateways;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;

@@ -1,9 +1,9 @@
-package org.example.SustainableCodeTest.Gateways;
+package org.example.Gateways.ConcreteGateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Config;
-import org.example.SustainableCodeTest.AbstractGateway;
+import org.example.Gateways.AbstractGateway;
 import org.example.ThingHandler;
 import org.example.Things.TaskThings.TaskStatus;
 import org.example.Things.TaskThings.TaskType;
@@ -11,7 +11,6 @@ import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TaskThings.TasksEventsActions;
 import org.example.Things.TruckThing.Truck;
 
-import java.util.List;
 import java.util.concurrent.*;
 
 public class TaskGateway extends AbstractGateway<Tasks> {
@@ -98,7 +97,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
     public void handleRefueling(DittoClient dittoClient, Truck truck, Tasks tasks) throws ExecutionException, InterruptedException {
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
-
+        //tasksEventsActions.handleRefuelTaskEvents(dittoClient, tasks);
         tasks.setStatus(TaskStatus.UNDERGOING);
 
 
@@ -186,11 +185,11 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         Runnable updateTask = () -> {
 
             updateAttributes(tasks);
-            int truckCapacity = 0;
-            int truckCurrentInventory = 0;
+            double truckCapacity = 0;
+            double truckCurrentInventory = 0;
             try {
-                truckCurrentInventory = (int) getFeatureValueFromDitto("Inventory", truck.getThingId());
-                truckCapacity = (int) getAttributeValueFromDitto("capacity", truck.getThingId());
+                truckCurrentInventory = (double) getFeatureValueFromDitto("Inventory", truck.getThingId());
+                truckCapacity = (double) getAttributeValueFromDitto("capacity", truck.getThingId());
 
 
                 if(truckCurrentInventory == truckCapacity){
@@ -208,7 +207,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                     truck.setTaskActive(false);
                 }
 
-                tasksEventsActions.handleTirePressureLowTaskEvents(dittoClient, tasks);
+                tasksEventsActions.handleLoadingTruckTaskEvents(dittoClient, tasks);
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }

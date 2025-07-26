@@ -9,22 +9,19 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class Warehouse {
 
     private final Logger logger = LoggerFactory.getLogger(Warehouse.class);
 
-    private int inventory;
-    private int capacity;
+    private double inventory;
+    private double capacity;
     private WarehouseStatus status;
     private int workers;
     private String thingId;
     private ScheduledFuture<?> currentTask;
-    Queue<Truck> queue = new LinkedList<>();
+    Queue<Truck> queue = new ConcurrentLinkedQueue<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public Warehouse (){
@@ -39,19 +36,19 @@ public class Warehouse {
         this.thingId = thingID;
     }
 
-    public int getInventory() {
+    public double getInventory() {
         return inventory;
     }
 
-    public void setInventory(int inventory) {
+    public void setInventory(double inventory) {
         this.inventory = inventory;
     }
 
-    public int getCapacity() {
+    public double getCapacity() {
         return capacity;
     }
 
-    public void setCapacity(int capacity) {
+    public void setCapacity(double capacity) {
         this.capacity = capacity;
     }
 
@@ -84,7 +81,7 @@ public class Warehouse {
 
     }
 
-    public void startLoading(Truck truck){
+    public synchronized void startLoading(Truck truck){
 
         logger.info("Truck {} requested loading", truck.getThingId());
 
@@ -103,11 +100,11 @@ public class Warehouse {
         truck.setStatus(TruckStatus.LOADING);
         currentTask = scheduler.scheduleAtFixedRate(() ->
         {
-            int currentInventory = truck.getInventory();
+            double currentInventory = truck.getInventory();
             TruckStatus truckStatus = truck.getStatus();
             if(currentInventory != Config.CAPACITY_STANDARD_TRUCK && truckStatus == TruckStatus.LOADING) {
-                logger.info("CurrentInventory {}", currentInventory);
-                int newInventory = Math.min(10,100 - currentInventory);
+                logger.info("CurrentInventory {} for {}", currentInventory, truck.getThingId());
+                double newInventory = Math.min(10,100 - currentInventory);
                 truck.setInventory(currentInventory + newInventory);
                 setInventory(getInventory() - newInventory);
 
@@ -121,7 +118,7 @@ public class Warehouse {
                     assert nextTruck != null;
                     startLoadingProcess(nextTruck);
                 } else {
-                    logger.info("GASSTATION WAITING AGAIN");
+                    logger.info("WAREHOUSE WAITING AGAIN");
                     setStatus(WarehouseStatus.WAITING);
                 }
 

@@ -1,7 +1,7 @@
-package org.example.SustainableCodeTest.Factory.Things;
+package org.example.Factory.ConcreteFactories;
 
 import org.eclipse.ditto.client.DittoClient;
-import org.example.SustainableCodeTest.Factory.DigitalTwinFactory;
+import org.example.Factory.DigitalTwinFactory;
 import org.example.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
 
@@ -9,12 +9,13 @@ import java.util.concurrent.ExecutionException;
 
 public class GasStationFactory implements DigitalTwinFactory<GasStation> {
 
-    ThingHandler thingHandler = new ThingHandler();
+    ThingHandler thingHandler;
     DittoClient dittoClient;
 
     GasStation gasStation;
 
-    public GasStationFactory(DittoClient dittoClient){
+    public GasStationFactory(DittoClient dittoClient, ThingHandler thingHandler){
+        this.thingHandler = thingHandler;
         this.dittoClient = dittoClient;
 
     }
@@ -36,7 +37,7 @@ public class GasStationFactory implements DigitalTwinFactory<GasStation> {
     }
 
     @Override
-    public void initializeThings() throws InterruptedException {
+    public void initializeThings(){
         gasStation = new GasStation();
         gasStation.setStarterValues();
         gasStation.featureSimulation();

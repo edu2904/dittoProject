@@ -20,6 +20,8 @@ public class Truck {
 
     private final Logger logger = LoggerFactory.getLogger(Truck.class);
     private final AtomicBoolean taskActive = new AtomicBoolean(false);
+    private final AtomicBoolean truckArrived = new AtomicBoolean(false);
+    private final AtomicInteger currentStopIndex = new AtomicInteger();
     private GasStation gasStation;
     private String thingId;
     private TruckStatus truckStatus;
@@ -28,8 +30,8 @@ public class Truck {
     private double tirePressure;
     private double progress;
     private double fuel;
-    private int capacity;
-    private int inventory;
+    private double capacity;
+    private double inventory;
     private ArrayList<Integer> stops;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ThingHandler thingHandler = new ThingHandler();
@@ -56,11 +58,11 @@ public class Truck {
         this.truckStatus = status;
     }
 
-    public int getCapacity() {
+    public double getCapacity() {
         return capacity;
     }
 
-    public void setCapacity(int capacity) {
+    public void setCapacity(double capacity) {
         this.capacity = capacity;
     }
 
@@ -103,10 +105,10 @@ public class Truck {
     public double getFuel() {
         return fuel;
     }
-    public int getInventory() {
+    public double getInventory() {
         return inventory;
     }
-    public void setInventory(int inventory) {
+    public void setInventory(double inventory) {
         this.inventory = inventory;
     }
     public void setStops(ArrayList<Integer> stops) {
@@ -155,20 +157,6 @@ public class Truck {
 
 
 
-    public void checkForNewTasks(DittoClient dittoClient) throws ExecutionException, InterruptedException {
-        String[] tasks = {
-                "task:refuel_"+ getThingId(),
-                "task:tirePressureLow_" + getThingId()
-        };
-
-        for(String taskID : tasks){
-            if(thingHandler.thingExists(dittoClient, taskID).get() && !tasksQueue.contains(taskID)){
-                tasksQueue.add(taskID);
-            }
-        }
-    }
-
-
     public void setDestinations(int destinations){
         //setStops(new ArrayList<>(Collections.nCopies(destinations, 0)));
         ArrayList<Integer> listDestinations = new ArrayList<>();
@@ -180,77 +168,21 @@ public class Truck {
 
     public void runSimulation(String truckName, int destinations, double fuelConsumption, double progressMade, DittoClient dittoClient){
         setDestinations(destinations);
-        AtomicBoolean truckArrived = new AtomicBoolean(false);
-        AtomicInteger currentStopIndex = new AtomicInteger();
 
         scheduler.scheduleAtFixedRate(() -> {
-            double currentFuelTank = getFuel();
-            double currentVelocity = getVelocity();
-            double currentProgress = getProgress();
-            double currentTirePressure = getTirePressure();
-            int currentInventory = getInventory();
-            TruckStatus currentStatus = getStatus();
 
 
-
-            ArrayList<Integer> currentStops = getStops();
-
-
-            if (truckArrived.get() || currentFuelTank <= 0) {
-                setStatus(TruckStatus.IDLE);
-                setVelocity(0);
-                logger.warn("Drive ended for {}", truckName);
+            if (truckArrived.get() || getFuel() <= 0) {
+                stopTruck(truckName);
                 scheduler.shutdown();
             }else {
                 try {
                     checkForNewTasks(dittoClient);
 
-
-
-
-                    if(thingHandler.thingExists(dittoClient, "task:refuel_"+ truckName).get()){
-                       if(currentStatus != TruckStatus.REFUELING && !isTaskActive()) {
-                           setTaskActive(true);
-                           gasStation.startRefuel(this);
-                       }
-                    } else if(thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truckName).get()) {
-                        if (currentStatus != TruckStatus.ADJUSTINGTIREPRESSURE && !isTaskActive()) {
-                            setTaskActive(true);
-                            gasStation.startTirePressureAdjustment(this);
-                        }
-                    }else if(thingHandler.thingExists(dittoClient, "task:loadingTruck_" + truckName).get()){
-                        if(currentStatus != TruckStatus.LOADING && !isTaskActive()){
-                            setTaskActive(true);
-                            warehouseMain.startLoading(this);
-                        }
+                    if(!checkForActiveTask(dittoClient, truckName)){
+                        drive(truckName, fuelConsumption, progressMade);
                     }
 
-
-
-
-                    else {
-
-                        setStatus(TruckStatus.DRIVING);
-                        //logger.info("{} driving", truckName);
-                        logger.debug("current Progress {}: {}", truckName, currentProgress);
-                        logger.debug("current FuelTank {}: {}", truckName, currentFuelTank);
-
-                        //setTirePressure(tirePressure);
-                        tirePressureDecreases(currentTirePressure);
-                        setVelocity(75 + Math.random() * 10);
-                        setFuel(currentFuelTank - fuelConsumption);
-                        setProgress(currentProgress + progressMade);
-                        setInventory(Math.max(0, currentInventory - 20));
-
-                        if(progress == 100 && currentStopIndex.get() < currentStops.size()){
-                            stops.set(currentStopIndex.get(), 1);
-                            logger.info("{} arrived at destination {}", truckName, currentStopIndex);
-                            currentStopIndex.getAndIncrement();
-                        }
-                        if(currentStopIndex.get() == currentStops.size()){
-                            truckArrived.set(true);
-                        }
-                    }
                 } catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }
@@ -262,6 +194,87 @@ public class Truck {
 
     }
 
+    public void drive(String truckName, double fuelConsumption, double progressMade){
+        setStatus(TruckStatus.DRIVING);
+        //logger.info("{} driving", truckName);
+        logger.debug("current Progress {}: {}", truckName, getProgress());
+        logger.debug("current FuelTank {}: {}", truckName, getFuel());
+
+        //setTirePressure(tirePressure);
+        tirePressureDecreases(getTirePressure());
+        setVelocity(75 + Math.random() * 10);
+        setFuel(getFuel() - fuelConsumption);
+        setProgress(getProgress() + progressMade);
+        setInventory(Math.max(0, getInventory() - 20));
+
+        if(getProgress() == 100 && currentStopIndex.get() < getStops().size()){
+            stops.set(currentStopIndex.get(), 1);
+            logger.info("{} arrived at destination {}", truckName, currentStopIndex);
+            currentStopIndex.getAndIncrement();
+        }
+        if(currentStopIndex.get() == getStops().size()){
+            truckArrived.set(true);
+        }
+    }
+
+    public void stopTruck(String truckName){
+        setStatus(TruckStatus.IDLE);
+        setVelocity(0);
+        logger.warn("Drive ended for {}", truckName);
+    }
+
+
+    public void checkForNewTasks(DittoClient dittoClient) throws ExecutionException, InterruptedException {
+        String[] tasks = {
+                "task:refuel_"+ getThingId(),
+                "task:tirePressureLow_" + getThingId(),
+                "task:loadingTruck_" + getThingId()
+        };
+
+        for(String taskID : tasks){
+            if(thingHandler.thingExists(dittoClient, taskID).get() && !tasksQueue.contains(taskID)){
+                tasksQueue.add(taskID);
+            }
+        }
+    }
+
+    public boolean checkForActiveTask(DittoClient dittoClient, String truckName){
+        try {
+            if(thingHandler.thingExists(dittoClient, "task:refuel_"+ truckName).get()){
+                if(getStatus() != TruckStatus.REFUELING && !isTaskActive()) {
+                    setTaskActive(true);
+                    gasStation.startRefuel(this);
+
+                }
+                return true;
+            } else if(thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truckName).get()) {
+                if (getStatus() != TruckStatus.ADJUSTINGTIREPRESSURE && !isTaskActive()) {
+                    setTaskActive(true);
+                    gasStation.startTirePressureAdjustment(this);
+                }
+                return true;
+            }else if(thingHandler.thingExists(dittoClient, "task:loadingTruck_" + truckName).get()){
+                if(getStatus() != TruckStatus.LOADING && !isTaskActive()){
+                    setTaskActive(true);
+                    warehouseMain.startLoading(this);
+                }
+                return true;
+            }
+
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
+    }
+
+
+    public void tirePressureDecreases(double tirePressure){
+        if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
+            double tirePressureReduction = Math.random() * 100;
+            setTirePressure(tirePressure - tirePressureReduction);
+        }
+    }
+
 
     public void featureSimulation1(DittoClient dittoClient) {
         runSimulation(getThingId(), 5, 0.1, 5, dittoClient);
@@ -271,10 +284,5 @@ public class Truck {
         runSimulation(getThingId(), 3, 1.0, 10, dittoClient);
     }
 
-    public void tirePressureDecreases(double tirePressure){
-        if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
-            double tirePressureReduction = Math.random() * 100;
-            setTirePressure(tirePressure - tirePressureReduction);
-        }
-    }
+
 }

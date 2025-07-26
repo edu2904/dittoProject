@@ -1,33 +1,29 @@
-package org.example.SustainableCodeTest;
+package org.example.Gateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.example.Client.DittoClientBuilder;
 import org.example.Config;
-import org.example.SustainableCodeTest.Factory.DigitalTwinFactoryMain;
-import org.example.SustainableCodeTest.Factory.Things.GasStationFactory;
-import org.example.SustainableCodeTest.Factory.Things.TruckFactory;
-import org.example.SustainableCodeTest.Factory.Things.WarehouseFactory;
-import org.example.SustainableCodeTest.Gateways.GasStationGateway;
-import org.example.SustainableCodeTest.Gateways.TaskGateway;
-import org.example.SustainableCodeTest.Gateways.TruckGateway;
-import org.example.SustainableCodeTest.Gateways.WarehouseGateway;
+import org.example.Factory.DigitalTwinFactoryMain;
+import org.example.Factory.ConcreteFactories.GasStationFactory;
+import org.example.Factory.ConcreteFactories.TruckFactory;
+import org.example.Factory.ConcreteFactories.WarehouseFactory;
+import org.example.Gateways.ConcreteGateways.GasStationGateway;
+import org.example.Gateways.ConcreteGateways.TruckGateway;
+import org.example.Gateways.ConcreteGateways.WarehouseGateway;
 import org.example.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
-import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.WarehouseThing.Warehouse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class GatewayCoordinator {
+public class GatewayManager {
 
     private final DigitalTwinFactoryMain digitalTwinFactoryMain;
     private final DittoClient dittoClient;
@@ -40,9 +36,8 @@ public class GatewayCoordinator {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
-    public GatewayCoordinator(DittoClient dittoClient, InfluxDBClient influxDBClient) throws ExecutionException, InterruptedException {
+    public GatewayManager(DittoClient dittoClient, InfluxDBClient influxDBClient) throws ExecutionException, InterruptedException {
         this.dittoClient = dittoClient;
-
         this.influxDBClient = influxDBClient;
         this.digitalTwinFactoryMain = new DigitalTwinFactoryMain(dittoClient);
     }

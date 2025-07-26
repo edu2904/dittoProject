@@ -1,23 +1,17 @@
-package org.example.SustainableCodeTest.Gateways;
+package org.example.Gateways.ConcreteGateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Config;
-import org.example.SustainableCodeTest.AbstractGateway;
-import org.example.SustainableCodeTest.Factory.Things.TaskFactory;
+import org.example.Gateways.AbstractGateway;
 import org.example.TaskManager;
 import org.example.Things.TaskThings.TaskType;
-import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
+import org.example.Things.TruckThing.TruckStatus;
 
-import java.util.ArrayList;
-import java.util.DuplicateFormatFlagsException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class TruckGateway extends AbstractGateway<Truck> {
 
@@ -60,8 +54,8 @@ public class TruckGateway extends AbstractGateway<Truck> {
                 truckEventsActions.fuelAmountEvents(this.dittoClient, truck.getThingId(), truckCurrentFuelAmount);
 
                 checkRefuelTask(truckCurrentFuelAmount, truck);
-                //checkTirePressureTask(truckCurrentTirePressure, truck);
-                checkLoadingTask((int) truckCurrentInventoryAmount, truck);
+                checkTirePressureTask(truckCurrentTirePressure, truck);
+                checkLoadingTask(truckCurrentInventoryAmount, truck);
 
                 logToInfluxDB(truck, "Truck");
             } catch (ExecutionException | InterruptedException e) {
@@ -143,9 +137,9 @@ public class TruckGateway extends AbstractGateway<Truck> {
         }
 
     }
-    public void checkLoadingTask(int currentInventory, Truck truck) {
+    public void checkLoadingTask(double currentInventory, Truck truck) {
         try{
-            if(currentInventory == 0){
+            if(currentInventory == 0 && !(truck.getStatus() == TruckStatus.WAITING)){
                 taskManager.startTask(TaskType.LOAD, truck);
             }
         }catch (ExecutionException | InterruptedException e) {

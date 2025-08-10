@@ -2,7 +2,9 @@ package org.example.Factory.ConcreteFactories;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Factory.DigitalTwinFactory;
-import org.example.ThingHandler;
+import org.example.Things.TruckThing.TruckStatus;
+import org.example.util.Config;
+import org.example.util.ThingHandler;
 import org.example.Things.TruckThing.Truck;
 
 import java.util.ArrayList;
@@ -23,8 +25,8 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
     public void createTwinsForDitto() throws ExecutionException, InterruptedException {
         initializeThings();
 
-        for (int i = 0; i < truckList.size(); i++ ){
-            thingHandler.createTwinAndPolicy(dittoClient, getWOTURL(), getPolicyURL(), truckList.get(i).getThingId()).toCompletableFuture();
+        for (Truck truck : truckList) {
+            thingHandler.createTwinAndPolicy(dittoClient, getWOTURL(), getPolicyURL(), truck.getThingId()).toCompletableFuture();
         }
     }
     @Override
@@ -40,22 +42,40 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
 
     @Override
     public void initializeThings() {
-        Truck truck1 = new Truck();
-        truck1.setStarterValues(1);
-        Truck truck2 = new Truck();
-        truck2.setStarterValues(2);
+        Truck truck1 = createDefaultTruck(1);
+
+        //Truck truck2 = new Truck();
+        //truck2.setStarterValues(2);
 
         truckList.add(truck1);
-        truckList.add(truck2);
+        //truckList.add(truck2);
 
-        truck1.featureSimulation1(dittoClient);
-        truck2.featureSimulation2(dittoClient);
+        //truck1.featureSimulation1(dittoClient);
+        //truck2.featureSimulation2(dittoClient);
 
 
     }
-    public List<Truck> getTruckList(){
+
+    @Override
+    public List<Truck> getThings() {
         return truckList;
     }
+
+    private Truck createDefaultTruck(int number) {
+        Truck truck = new Truck();
+        truck.setThingId("mytest:LKW-" + number);
+        truck.setStatus(TruckStatus.IDLE);
+        truck.setWeight(Config.WEIGHT_STANDARD_TRUCK);
+        truck.setVelocity(0);
+        truck.setTirePressure(Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK);
+        truck.setProgress(0);
+        truck.setFuel(51);
+        truck.setCapacity(Config.CAPACITY_STANDARD_TRUCK);
+        truck.setInventory(Config.CAPACITY_STANDARD_TRUCK);
+        return truck;
+    }
+
+
 
 
 }

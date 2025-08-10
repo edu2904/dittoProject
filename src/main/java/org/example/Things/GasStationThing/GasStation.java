@@ -2,22 +2,26 @@ package org.example.Things.GasStationThing;
 
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckStatus;
+import org.example.util.Config;
+import org.example.util.GeoConst;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class GasStation {
+
+    Map<String, Object> location = new HashMap<>();
+
     private final Logger logger = LoggerFactory.getLogger(GasStation.class);
 
     Queue<Truck> queue = new LinkedList<>();
 
+    public Set<Truck> trucksInGasStation = new HashSet<>();
     private String thingId;
     private GasStationStatus gasStationStatus;
     private double gasStationFuelAmount;
@@ -25,6 +29,7 @@ public class GasStation {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private ScheduledFuture<?> currentTask;
+    private double utilization;
 
     public GasStation(){
 
@@ -53,23 +58,38 @@ public class GasStation {
         this.gasStationFuelAmount = gasStationFuelAmount;
     }
 
+    public Map<String, Object> getLocation() {
+        return location;
+    }
 
-    public void setStarterValues(){
-        setThingId("mything:GasStation-1");
-        setGasStationStatus(GasStationStatus.WAITING);
-        setGasStationFuelAmount(3000);
+    public void setLocation(double lat, double lon) {
+        if(this.location == null){
+            this.location = new HashMap<>();
+        }
+        this.location.put(GeoConst.LAT, lat);
+        this.location.put(GeoConst.LON, lon);
+    }
+
+    public double getUtilization() {
+        return utilization;
+    }
+
+    public void setUtilization(double utilization) {
+        this.utilization = utilization;
     }
 
     public  void featureSimulation(){
         scheduler.scheduleAtFixedRate(() -> {
-            double currentFuelAmount = getGasStationFuelAmount();
-            GasStationStatus currentGasStationStatus = getGasStationStatus();
+            setUtilization(calculateUtilization());
+            setGasStationFuelAmount(getGasStationFuelAmount() + 5);
         }, 0, 3, TimeUnit.SECONDS);
     }
 
-    public void startRefuel(Truck truck){
+    public synchronized void startRefuel(Truck truck){
 
         logger.info("Truck {} requested refuel", truck.getThingId());
+
+        trucksInGasStation.add(truck);
 
         if(gasStationStatus == GasStationStatus.WAITING){
             logger.info("Start refuel process for {}", truck.getThingId());
@@ -89,7 +109,7 @@ public class GasStation {
             double currentFuel = truck.getFuel();
             TruckStatus truckStatus = truck.getStatus();
             if(currentFuel != 300 && truckStatus == TruckStatus.REFUELING) {
-                logger.info("CurrentFuel {}", currentFuel);
+                logger.info("CurrentFuel {} for {}", currentFuel, truck.getThingId());
                 double newFuel = Math.min(50,300 - currentFuel);
                 truck.setFuel(currentFuel + newFuel);
                 setGasStationFuelAmount(getGasStationFuelAmount() - newFuel);
@@ -98,6 +118,9 @@ public class GasStation {
             else {
                 currentTask.cancel(false);
                 logger.info("Cancel Task for {}" , truck.getThingId());
+                truck.setTarget(null);
+                truck.setTaskActive(false);
+                trucksInGasStation.remove(truck);
                 if (!queue.isEmpty()) {
                     logger.info("Entering QUEUE");
                     Truck nextTruck = queue.poll();
@@ -110,7 +133,7 @@ public class GasStation {
 
             }
 
-        }, 0, 3, TimeUnit.SECONDS);
+        }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
 
 
     }
@@ -162,6 +185,24 @@ public class GasStation {
         }, 0, 3, TimeUnit.SECONDS);
 
 
+    }
+
+    public double calculateUtilization(){
+        double weightTrucks = 0.7;
+        double weightFuel = 0.3;
+
+
+        int currentTrucks = trucksInGasStation.size();
+        double truckUtilization = Math.log(currentTrucks + 1) / Math.log(10);
+
+
+        double currentFuel = getGasStationFuelAmount();
+        double maxCapacity = 5000;
+        double inventoryUtilization = currentFuel / maxCapacity;
+
+        double combinedUtilization = weightTrucks * truckUtilization + weightFuel * inventoryUtilization;
+
+        return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
     }
 
 }

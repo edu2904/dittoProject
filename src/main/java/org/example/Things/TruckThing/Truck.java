@@ -1,28 +1,28 @@
 package org.example.Things.TruckThing;
 
 import org.eclipse.ditto.client.DittoClient;
-import org.example.Config;
-import org.example.ThingHandler;
+import org.example.util.Config;
+import org.example.util.GeoConst;
+import org.example.util.GeoUtil;
+import org.example.util.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
-import org.example.Things.TaskThings.Tasks;
 import org.example.Things.WarehouseThing.Warehouse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Truck {
 
+    Map<String, Object> location = new ConcurrentHashMap<>();
+
     private final Logger logger = LoggerFactory.getLogger(Truck.class);
     private final AtomicBoolean taskActive = new AtomicBoolean(false);
     private final AtomicBoolean truckArrived = new AtomicBoolean(false);
-    private final AtomicInteger currentStopIndex = new AtomicInteger();
-    private GasStation gasStation;
+    private final AtomicInteger currentStopIndex = new AtomicInteger(1);
     private String thingId;
     private TruckStatus truckStatus;
     private double weight;
@@ -35,9 +35,11 @@ public class Truck {
     private ArrayList<Integer> stops;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ThingHandler thingHandler = new ThingHandler();
-    private Queue<String> tasksQueue = new LinkedList<>();
-    private Warehouse warehouseMain;
-
+    private final Queue<String> tasksQueue = new LinkedList<>();
+    private final List<Warehouse> warehouseList = new ArrayList<>();
+    private final List<GasStation> gasStationList = new ArrayList<>();
+    private TruckTargetDecision<?> target;
+    private TruckTargetDecision<?> recommendedTarget;
 
 
 
@@ -120,18 +122,18 @@ public class Truck {
     }
 
     public void setGasStation(GasStation gasStation){
-        this.gasStation = gasStation;
+        this.gasStationList.add(gasStation);
     }
-    public GasStation getGasStation(){
-        return gasStation;
-    }
-
-    public Warehouse getWarehouseMain() {
-        return warehouseMain;
+    public List<GasStation> getGasStation(){
+        return gasStationList;
     }
 
-    public void setWarehouseMain(Warehouse warehouseMain) {
-        this.warehouseMain = warehouseMain;
+    public List<Warehouse> getWarehouseList() {
+        return warehouseList;
+    }
+
+    public void setWarehouseList(Warehouse warehouse) {
+        this.warehouseList.add(warehouse);
     }
 
     public boolean isTaskActive(){
@@ -141,21 +143,45 @@ public class Truck {
         taskActive.set(currentTaskActive);
     }
 
+    public Map<String, Object> getLocation() {
+        return location;
+    }
 
-
-    public void setStarterValues(int truckNumber) {
-        setThingId("mytest:LKW-" + truckNumber);
-        setStatus(TruckStatus.IDLE);
-        setWeight(Config.WEIGHT_STANDARD_TRUCK);
-        setVelocity(0);
-        setTirePressure(Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK);
-        setProgress(0);
-        setFuel(51);
-        setCapacity(Config.CAPACITY_STANDARD_TRUCK);
-        setInventory(Config.CAPACITY_STANDARD_TRUCK);
+    public void setLocation(double lat, double lon) {
+        if(this.location == null){
+            this.location = new HashMap<>();
+        }
+        this.location.put(GeoConst.LAT, lat);
+        this.location.put(GeoConst.LON, lon);
     }
 
 
+    public void setLocation(Map<String, Object> currentLocation){
+        this.location.put(GeoConst.LAT, currentLocation.get(GeoConst.LAT));
+        this.location.put(GeoConst.LON, currentLocation.get(GeoConst.LON));
+    }
+    public synchronized TruckTargetDecision<?> getTarget() {
+        return target;
+    }
+
+    public synchronized void setTarget(TruckTargetDecision<?> target) {
+        this.target = target;
+    }
+
+    public void setRecommendedTarget(TruckTargetDecision<?> recommendedTarget) {
+        this.recommendedTarget = recommendedTarget;
+    }
+    public void updateTarget(){
+        if(this.target == null && this.recommendedTarget != null){
+            this.target = this.recommendedTarget;
+            setTarget(target);
+            this.recommendedTarget = null;
+        }
+    }
+
+    public AtomicInteger getCurrentStopIndex() {
+        return currentStopIndex;
+    }
 
     public void setDestinations(int destinations){
         //setStops(new ArrayList<>(Collections.nCopies(destinations, 0)));
@@ -166,61 +192,60 @@ public class Truck {
         setStops(listDestinations);
     }
 
-    public void runSimulation(String truckName, int destinations, double fuelConsumption, double progressMade, DittoClient dittoClient){
+    public void runSimulation(int destinations, double fuelConsumption, double progressMade, DittoClient dittoClient){
         setDestinations(destinations);
+        setStarterLocation();
 
         scheduler.scheduleAtFixedRate(() -> {
+            try {
+            updateTarget();
 
+            if (getFuel() <= 0 || getTarget() == null) {
+                stopTruck();
+                logger.info("Truck {} ran out of fuel", getThingId());
 
-            if (truckArrived.get() || getFuel() <= 0) {
-                stopTruck(truckName);
-                scheduler.shutdown();
-            }else {
-                try {
-                    checkForNewTasks(dittoClient);
+            }else if(getTarget() != null) {
 
-                    if(!checkForActiveTask(dittoClient, truckName)){
-                        drive(truckName, fuelConsumption, progressMade);
-                    }
-
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
+                checkForNewTasks(dittoClient);
+                drive(fuelConsumption, progressMade, getTarget(), dittoClient);
             }
-
-
-        }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
-
-
+                } catch (Exception e) {
+                    logger.error("Error in truck {}: {}" , thingId, e);
+                }
+            }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
 
-    public void drive(String truckName, double fuelConsumption, double progressMade){
-        setStatus(TruckStatus.DRIVING);
-        //logger.info("{} driving", truckName);
-        logger.debug("current Progress {}: {}", truckName, getProgress());
-        logger.debug("current FuelTank {}: {}", truckName, getFuel());
+    public void drive(double fuelConsumption, double progressMade, TruckTargetDecision<?> target, DittoClient dittoClient){
 
-        //setTirePressure(tirePressure);
+        if(isTaskActive()) return;
+        setStatus(TruckStatus.DRIVING);
+
         tirePressureDecreases(getTirePressure());
         setVelocity(75 + Math.random() * 10);
         setFuel(getFuel() - fuelConsumption);
-        setProgress(getProgress() + progressMade);
-        setInventory(Math.max(0, getInventory() - 20));
 
-        if(getProgress() == 100 && currentStopIndex.get() < getStops().size()){
-            stops.set(currentStopIndex.get(), 1);
-            logger.info("{} arrived at destination {}", truckName, currentStopIndex);
-            currentStopIndex.getAndIncrement();
-        }
-        if(currentStopIndex.get() == getStops().size()){
-            truckArrived.set(true);
+        double targetDistance = target.getDistance() * 1000;
+        double progressPerTick = (progressMade / targetDistance) * 100;
+        setProgress(Math.min(100, getProgress() + progressPerTick));
+        double distanceTravelled = (getProgress() / 100) * targetDistance;
+
+
+        logger.info("{} travelled {}/{} Meters", thingId, distanceTravelled, targetDistance);
+
+        if(getProgress() >= 100 && currentStopIndex.get() <= getStops().size()){
+            checkForActiveTask(dittoClient, target);
+            setProgress(0);
+        }else if(currentStopIndex.get() > getStops().size()){
+            logger.info("Truck {} finished tour", thingId);
+            currentStopIndex.set(1);
+            Collections.fill(stops, 0);
         }
     }
 
-    public void stopTruck(String truckName){
+    public void stopTruck(){
         setStatus(TruckStatus.IDLE);
         setVelocity(0);
-        logger.warn("Drive ended for {}", truckName);
+        logger.warn("Drive stopped for {}", getThingId());
     }
 
 
@@ -238,34 +263,45 @@ public class Truck {
         }
     }
 
-    public boolean checkForActiveTask(DittoClient dittoClient, String truckName){
-        try {
-            if(thingHandler.thingExists(dittoClient, "task:refuel_"+ truckName).get()){
+    public void checkForActiveTask(DittoClient dittoClient, TruckTargetDecision<?> target){
+
+        //try {
+           if(target.getDecidedTarget() instanceof GasStation){
+           // if(thingHandler.thingExists(dittoClient, "task:refuel_"+ getThingId()).get()){
                 if(getStatus() != TruckStatus.REFUELING && !isTaskActive()) {
                     setTaskActive(true);
-                    gasStation.startRefuel(this);
+                    setLocation(((GasStation) target.getDecidedTarget()).getLocation());
+                    ((GasStation) target.getDecidedTarget()).startRefuel(this);
+                }
 
-                }
-                return true;
-            } else if(thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truckName).get()) {
-                if (getStatus() != TruckStatus.ADJUSTINGTIREPRESSURE && !isTaskActive()) {
-                    setTaskActive(true);
-                    gasStation.startTirePressureAdjustment(this);
-                }
-                return true;
-            }else if(thingHandler.thingExists(dittoClient, "task:loadingTruck_" + truckName).get()){
-                if(getStatus() != TruckStatus.LOADING && !isTaskActive()){
-                    setTaskActive(true);
-                    warehouseMain.startLoading(this);
-                }
-                return true;
+            //} else if(thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + getThingId()).get()) {
+            //    if (getStatus() != TruckStatus.ADJUSTINGTIREPRESSURE && !isTaskActive()) {
+            //        setTaskActive(true);
+            //        setLocation(((GasStation) target.getTarget()).getLocation());
+             //       ((GasStation) target.getTarget()).startTirePressureAdjustment(this);
+            //    }
             }
-
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-        return false;
+          //  } else if(target.getTarget() instanceof Warehouse) {
+            else if(target.getDecidedTarget() instanceof Warehouse) {
+               //if (thingHandler.thingExists(dittoClient, "task:loadingTruck_" + getThingId()).get()) {
+                   if (getStatus() != TruckStatus.LOADING && !isTaskActive()) {
+                       setTaskActive(true);
+                       setLocation(((Warehouse) target.getDecidedTarget()).getLocation());
+                       ((Warehouse) target.getDecidedTarget()).startLoading(this);
+                       if(!((Warehouse) target.getDecidedTarget()).isMainWareHouse()) {
+                           stops.set(currentStopIndex.get() - 1, 1);
+                           currentStopIndex.getAndIncrement();
+                       }
+                   }
+               }
+          // }
+         //  }
+       // } catch (InterruptedException | ExecutionException e) {
+       //     throw new RuntimeException(e);
+       // }
     }
+
+
 
 
     public void tirePressureDecreases(double tirePressure){
@@ -277,12 +313,31 @@ public class Truck {
 
 
     public void featureSimulation1(DittoClient dittoClient) {
-        runSimulation(getThingId(), 5, 0.1, 5, dittoClient);
+        runSimulation( 5, 0.1, 1050, dittoClient);
     }
 
     public void featureSimulation2(DittoClient dittoClient) {
-        runSimulation(getThingId(), 3, 1.0, 10, dittoClient);
+        runSimulation(3, 1.0, 10, dittoClient);
     }
 
-
+    public Map<String, Double> calculateDistances(){
+        Map<String, Double> distances = new HashMap<>();
+        for(Warehouse warehouse : getWarehouseList()){
+            double warehouseDistance = GeoUtil.calculateDistance(getLocation(), warehouse.getLocation());
+            distances.put(warehouse.getThingId(), warehouseDistance);
+        }
+        for(GasStation gasStation : getGasStation()){
+            double gasStationDistance = GeoUtil.calculateDistance(getLocation(), gasStation.getLocation());
+            distances.put(gasStation.getThingId(), gasStationDistance);
+        }
+        return distances;
+    }
+    public void setStarterLocation(){
+        for(Warehouse warehouse : warehouseList){
+            if(warehouse.isMainWareHouse()){
+                setLocation(warehouse.getLocation());
+                break;
+            }
+        }
+    }
 }

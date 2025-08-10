@@ -2,9 +2,9 @@ package org.example.Gateways.ConcreteGateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.example.Config;
+import org.example.util.Config;
 import org.example.Gateways.AbstractGateway;
-import org.example.ThingHandler;
+import org.example.util.ThingHandler;
 import org.example.Things.TaskThings.TaskStatus;
 import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TaskThings.Tasks;
@@ -27,7 +27,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         super(dittoClient, influxDBClient);
         this.truck = truck;
         this.tasks = tasks;
-        tasksEventsActions.startLogging(tasks.getThingId());
+       // tasksEventsActions.startLogging(tasks.getThingId());
     }
 
     @Override
@@ -53,20 +53,11 @@ public class TaskGateway extends AbstractGateway<Tasks> {
 
     }
 
-    @Override
-    public void handleEvents(Tasks thing) {
 
-    }
-
-    @Override
-    public void handelActions(Tasks thing) {
-
-    }
-
-    @Override
-    public void subscribeForEventsAndActions() {
-        tasksEventsActions.startLogging(tasks.getThingId());
-    }
+   // @Override
+   // public void subscribeForEventsAndActions() {
+    //    tasksEventsActions.startLogging(tasks.getThingId());
+   // }
 
 
     @Override
@@ -79,17 +70,17 @@ public class TaskGateway extends AbstractGateway<Tasks> {
     public void updateAttributes(Tasks tasks) {
         if(tasks.getTaskType() == TaskType.REFUEL) {
             updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
-            updateAttributeValue("targetTruck", tasks.getTargetTruck(), tasks.getThingId());
+            updateAttributeValue("targetThing", tasks.getTargetTruck(), tasks.getThingId());
             updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
         }
         if(tasks.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
             updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
-            updateAttributeValue("targetTruck", tasks.getTargetTruck(), tasks.getThingId());
+            updateAttributeValue("targetThing", tasks.getTargetTruck(), tasks.getThingId());
             updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
         }
         if(tasks.getTaskType() == TaskType.LOAD){
             updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
-            updateAttributeValue("targetTruck", tasks.getTargetTruck(), tasks.getThingId());
+            updateAttributeValue("targetThing", tasks.getTargetTruck(), tasks.getThingId());
             updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
         }
     }

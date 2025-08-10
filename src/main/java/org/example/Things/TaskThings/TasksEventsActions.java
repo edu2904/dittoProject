@@ -19,23 +19,14 @@ public class TasksEventsActions implements EventActionHandler {
 
 
 
-    DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
+  //  DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
 
-    @Override
-    public void startLogging(String thingID) {
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "refuelBegin");
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "refuelUndergoing");
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "refuelFinished");
-
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "tirePressureAdjustingBegins");
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "tirePressureAdjustingUndergoing");
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "tirePressureAdjustingFinished");
-
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "loadBegin");
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "loadingUndergoing");
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "loadingFinished");
-
-    }
+  //  @Override
+ //   public void startLogging(String thingID) {
+ //       dittoEventActionHandler.createEventLoggingForAttribute(thingID, "taskBegins");
+ //       dittoEventActionHandler.createEventLoggingForAttribute(thingID, "taskUndergoing");
+ //       dittoEventActionHandler.createEventLoggingForAttribute(thingID, "taskFinished");
+ //   }
 
     public void handleRefuelTaskEvents(DittoClient dittoClient, Tasks tasks) throws InterruptedException {
 
@@ -47,10 +38,10 @@ public class TasksEventsActions implements EventActionHandler {
 
         if (tasks.getStatus().equals(TaskStatus.UNDERGOING)) {
 
-            sendEvent(dittoClient, tasks.getThingId(), processObject, "refuelUndergoing");
+            sendEvent(dittoClient, tasks.getThingId(), processObject, "taskUndergoing");
         }
         if(tasks.getStatus().equals(TaskStatus.FINISHED)){
-            sendEvent(dittoClient, tasks.getThingId(), endObject, "refuelFinished");
+            sendEvent(dittoClient, tasks.getThingId(), endObject, "taskFinished");
             //refuelStarted.put(thingID, false);
         }
     }
@@ -64,10 +55,10 @@ public class TasksEventsActions implements EventActionHandler {
         JsonObject endObject = JsonObject.newBuilder().set("message", "Tire Pressure Task finished for " + thingID).build();
 
         if (tasks.getStatus().equals(TaskStatus.UNDERGOING)) {
-            sendEvent(dittoClient, tasks.getThingId(), processObject, "tirePressureAdjustingUndergoing");
+            sendEvent(dittoClient, tasks.getThingId(), processObject, "taskUndergoing");
         }
         if(tasks.getStatus().equals(TaskStatus.FINISHED)){
-            sendEvent(dittoClient, tasks.getThingId(), endObject, "tirePressureAdjustingFinished");
+            sendEvent(dittoClient, tasks.getThingId(), endObject, "taskFinished");
             //tirePressureTaskStarted.put(thingID, false);
         }
     }
@@ -79,10 +70,10 @@ public class TasksEventsActions implements EventActionHandler {
         JsonObject endObject = JsonObject.newBuilder().set("message", "Loading Task finished for " + thingID).build();
 
         if (tasks.getStatus().equals(TaskStatus.UNDERGOING)) {
-            sendEvent(dittoClient, tasks.getThingId(), processObject, "loadingUndergoing");
+            sendEvent(dittoClient, tasks.getThingId(), processObject, "taskUndergoing");
         }
         if(tasks.getStatus().equals(TaskStatus.FINISHED)){
-            sendEvent(dittoClient, tasks.getThingId(), endObject, "loadingFinished");
+            sendEvent(dittoClient, tasks.getThingId(), endObject, "taskFinished");
            // loadingTaskStarted.put(thingID, false);
         }
     }

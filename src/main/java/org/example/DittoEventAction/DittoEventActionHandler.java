@@ -1,18 +1,15 @@
 package org.example.DittoEventAction;
 
 
-import org.example.Config;
+import org.example.util.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.events.Event;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -137,53 +134,4 @@ public class DittoEventActionHandler {
             logger.info("ERERERERERRERER {}", e.getMessage());
         }
     }
-/*
-    public void createActionLogging(String thingID, URL url){
-        Runnable task2 = () -> {
-            try {
-                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-
-                String username = "ditto";
-                String password = "ditto";
-                String auth = username + ":" + password;
-                String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
-                httpURLConnection.setRequestProperty("Authorization", "Basic " + encodedAuth);
-                httpURLConnection.setRequestMethod("GET");
-                httpURLConnection.setRequestProperty("Accept", "text/event-stream");
-                httpURLConnection.setDoInput(true);
-
-
-                BufferedReader in = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()));
-                String inputLine;
-
-                BufferedWriter fileWriter = new BufferedWriter(new FileWriter("received_sse_messages.txt", true));
-
-
-                while (gatewayActive && (inputLine = in.readLine()) != null) {
-                    if(inputLine.startsWith("data:")) {
-                        String data = inputLine.substring(5).trim();
-
-                        if(!data.isEmpty()) {
-
-                                     logger.info("Received Action: {} for {}", inputLine, thingID);
-                                     fileWriter.write("New Action: " + inputLine + "\n");
-                                     fileWriter.newLine();
-                                 }
-
-
-                    }
-                }
-
-                in.close();
-                fileWriter.close();
-
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
-        new Thread(task2).start();
-    }
-*/
-
 }

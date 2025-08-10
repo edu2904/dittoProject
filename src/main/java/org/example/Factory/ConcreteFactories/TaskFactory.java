@@ -2,11 +2,16 @@ package org.example.Factory.ConcreteFactories;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Factory.DigitalTwinFactory;
-import org.example.ThingHandler;
+import org.example.Things.TaskThings.TaskStatus;
+import org.example.util.ThingHandler;
 import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class TaskFactory implements DigitalTwinFactory<Tasks>
@@ -49,13 +54,13 @@ public class TaskFactory implements DigitalTwinFactory<Tasks>
         task = new Tasks();
         switch (taskType){
             case REFUEL:
-                task.initializeRefuelTask(truck);
+                initializeRefuelTask(truck);
                 break;
             case TIREPRESSUREADJUSTMENT:
-                task.initializeTirePressureTask(truck);
+                initializeTirePressureTask(truck);
                 break;
             case LOAD:
-                task.initializeLoadingTask(truck);
+                initializeLoadingTask(truck);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + taskType);
@@ -63,12 +68,34 @@ public class TaskFactory implements DigitalTwinFactory<Tasks>
 
 
     }
-    public TaskType getTaskType(Tasks tasks){
-        return tasks.getTaskType();
+
+    public void initializeRefuelTask(Truck truck) {
+        task.setThingId("task:refuel_" + truck.getThingId());
+        task.setStatus(TaskStatus.STARTING);
+        task.setTaskType(TaskType.REFUEL);
+        task.setTargetTruck(truck.getThingId());
+        task.setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
+    }
+    public void initializeTirePressureTask(Truck truck){
+        task.setThingId("task:tirePressureLow_" + truck.getThingId());
+        task.setStatus(TaskStatus.STARTING);
+        task.setTaskType(TaskType.TIREPRESSUREADJUSTMENT);
+        task.setTargetTruck(truck.getThingId());
+        task.setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
+
+    }
+    public void initializeLoadingTask(Truck truck){
+        task.setThingId("task:loadingTruck_" + truck.getThingId());
+        task.setStatus(TaskStatus.STARTING);
+        task.setTaskType(TaskType.LOAD);
+        task.setTargetTruck(truck.getThingId());
+        task.setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
     }
 
-    public Tasks getTasks() {
-        return task;
+    @Override
+    public List<Tasks> getThings() {
+        return Collections.singletonList(task);
     }
+
 
 }

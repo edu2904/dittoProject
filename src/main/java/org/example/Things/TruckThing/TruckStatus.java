@@ -1,6 +1,8 @@
 package org.example.Things.TruckThing;
 
-public enum TruckStatus {
+import org.example.Things.DigitalTwinStatus;
+
+public enum TruckStatus implements DigitalTwinStatus {
     IDLE,
 
     WAITING,
@@ -10,5 +12,10 @@ public enum TruckStatus {
     ADJUSTINGTIREPRESSURE,
 
     LOADING,
-    REFUELING
+    REFUELING;
+
+    @Override
+    public String status() {
+        return name();
+    }
 }

@@ -4,7 +4,7 @@ import org.eclipse.ditto.client.DittoClient;
 import org.example.Factory.ConcreteFactories.GasStationFactory;
 import org.example.Factory.ConcreteFactories.TruckFactory;
 import org.example.Factory.ConcreteFactories.WarehouseFactory;
-import org.example.ThingHandler;
+import org.example.util.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.WarehouseThing.Warehouse;

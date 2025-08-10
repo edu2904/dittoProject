@@ -13,5 +13,8 @@ public interface DigitalTwinFactory<T> {
     String getPolicyURL();
 
     // Initialize Things by creating them and setting starter values
+
     void initializeThings() throws InterruptedException;
+
+    List<T> getThings();
 }

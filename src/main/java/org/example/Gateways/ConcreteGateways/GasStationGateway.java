@@ -4,26 +4,31 @@ import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Gateways.AbstractGateway;
 import org.example.Things.GasStationThing.GasStation;
+import org.example.Things.TruckThing.Truck;
+import org.example.util.GeoConst;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class GasStationGateway extends AbstractGateway<GasStation> {
 
-    GasStation gasStation;
+    List<GasStation> gasStations;
 
-    public GasStationGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, GasStation gasStation) {
+    public GasStationGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, List<GasStation> gasStations) {
         super(dittoClient, influxDBClient);
-        this.gasStation = gasStation;
+        this.gasStations = gasStations;
     }
 
 
     @Override
     public void startGateway() throws ExecutionException, InterruptedException {
-        startUpdating(gasStation);
+        for (GasStation gasStation : gasStations) {
+            startUpdating(gasStation);
+        }
     }
 
     @Override
-    public void startUpdating(GasStation thing) throws ExecutionException, InterruptedException {
+    public void startUpdating(GasStation gasStation) throws ExecutionException, InterruptedException {
         updateAttributes(gasStation);
         updateFeatures(gasStation);
     }
@@ -34,12 +39,16 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
     }
 
     @Override
-    public void updateAttributes(GasStation thing) {
+    public void updateAttributes(GasStation gasStation) {
         updateAttributeValue("status", gasStation.getGasStationStatus().toString(), gasStation.getThingId());
+        updateAttributeValue("location/geo:lat", gasStation.getLocation().get(GeoConst.LAT), gasStation.getThingId());
+        updateAttributeValue("location/geo:long", gasStation.getLocation().get(GeoConst.LON), gasStation.getThingId());
+        updateAttributeValue("utilization", gasStation.getUtilization(), gasStation.getThingId());
+
 
     }
     @Override
-    public void updateFeatures(GasStation thing) throws ExecutionException, InterruptedException {
+    public void updateFeatures(GasStation gasStation) throws ExecutionException, InterruptedException {
         updateFeatureValue("GasStationFuel", "amount", gasStation.getGasStationFuelAmount(), gasStation.getThingId());
     }
 
@@ -49,18 +58,7 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
 
     }
 
-    @Override
-    public void handleEvents(GasStation thing) {
-
-    }
-
-    @Override
-    public void handelActions(GasStation thing) {
-
-    }
-
-    @Override
-    public void subscribeForEventsAndActions() {
-
+    public double getUtilizationFromDitto(GasStation gasStation) throws ExecutionException, InterruptedException {
+        return (double) getAttributeValueFromDitto("utilization", gasStation.getThingId());
     }
 }

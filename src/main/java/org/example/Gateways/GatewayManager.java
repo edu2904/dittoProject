@@ -2,15 +2,13 @@ package org.example.Gateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.example.Config;
+import org.example.Things.TruckThing.TruckTargetDecision;
+import org.example.util.Config;
 import org.example.Factory.DigitalTwinFactoryMain;
-import org.example.Factory.ConcreteFactories.GasStationFactory;
-import org.example.Factory.ConcreteFactories.TruckFactory;
-import org.example.Factory.ConcreteFactories.WarehouseFactory;
 import org.example.Gateways.ConcreteGateways.GasStationGateway;
 import org.example.Gateways.ConcreteGateways.TruckGateway;
 import org.example.Gateways.ConcreteGateways.WarehouseGateway;
-import org.example.ThingHandler;
+import org.example.util.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.WarehouseThing.Warehouse;
@@ -18,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,6 +30,13 @@ public class GatewayManager {
     ThingHandler thingHandler = new ThingHandler();
 
     protected final Logger logger = LoggerFactory.getLogger(AbstractGateway.class);
+    List<Truck> truckList;
+    List<Warehouse> warehouseList;
+    List<GasStation> gasStationList;
+
+    TruckGateway truckGateway;
+    WarehouseGateway warehouseGateway;
+    GasStationGateway gasStationGateway;
 
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -66,31 +72,46 @@ public class GatewayManager {
 
         createPermanentThings();
 
-        List<Truck> trucks = ((TruckFactory) digitalTwinFactoryMain.getTruckFactory()).getTruckList();
-        GasStation gasStation1 = ((GasStationFactory) digitalTwinFactoryMain.getGasStationFactory()).getGasStation();
-        Warehouse warehouseMain = ((WarehouseFactory) digitalTwinFactoryMain.getWarehouseFactory()).getWarehouseMain();
+        truckList = digitalTwinFactoryMain.getTruckFactory().getThings();
+        gasStationList = digitalTwinFactoryMain.getGasStationFactory().getThings();
+        warehouseList = digitalTwinFactoryMain.getWarehouseFactory().getThings();
 
-        for(Truck truck: trucks){
-            truck.setGasStation(gasStation1);
-            truck.setWarehouseMain(warehouseMain);
+        for(Truck truck: truckList) {
+            for (GasStation gasStation : gasStationList) {
+                gasStation.featureSimulation();
+                truck.setGasStation(gasStation);
+            }
+            for (Warehouse warehouse : warehouseList){
+                warehouse.featureSimulation();
+
+                truck.setWarehouseList(warehouse);
+        }
+            truck.featureSimulation1(dittoClient);
         }
 
 
 
-        TruckGateway truckGateway = new TruckGateway(dittoClient, influxDBClient,trucks);
-        GasStationGateway gasStationGateway = new GasStationGateway(dittoClient, influxDBClient, gasStation1);
-        WarehouseGateway warehouseGateway = new WarehouseGateway(dittoClient, influxDBClient, warehouseMain);
+        truckGateway = new TruckGateway(dittoClient, influxDBClient,truckList);
+        gasStationGateway = new GasStationGateway(dittoClient, influxDBClient, gasStationList);
+        warehouseGateway = new WarehouseGateway(dittoClient, influxDBClient, warehouseList);
 
 
 
-        safeDeleteTasksBeforeRestart(trucks);
+        safeDeleteTasksBeforeRestart(truckList);
 
 
         Runnable updateTask = () -> {
             try {
+
                 truckGateway.startGateway();
                 gasStationGateway.startGateway();
                 warehouseGateway.startGateway();
+
+                for (Truck truck : truckList){
+                    if(truck.getTarget() == null){
+                        setDecisionForNextDestination(truck);
+                    }
+                }
             } catch (ExecutionException | InterruptedException e) {
                 logger.error("ERROR in updating", e);
             }
@@ -99,4 +120,77 @@ public class GatewayManager {
         scheduler.scheduleAtFixedRate(updateTask, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
 
+    public void setDecisionForNextDestination(Truck truck) throws ExecutionException, InterruptedException {
+        double fuel = truckGateway.getFuelFromDitto(truck);
+        Map<String, Double> distances = truck.calculateDistances();
+
+        TruckTargetDecision<?> bestTarget = null;
+        double bestScore = Double.MAX_VALUE;
+
+        double weightDistance = 0.6;
+        double weightUtilization = 0.4;
+        //double weightFuel = 0.1;
+
+        for(GasStation gasStation : gasStationList){
+            Double distanceGasStation = distances.get(gasStation.getThingId());
+            if(distanceGasStation == null){
+                continue;
+            }
+            double utilizationGasStation = gasStationGateway.getUtilizationFromDitto(gasStation);
+            System.out.println("Gasstation utilization " + utilizationGasStation);
+
+            System.out.println(fuel);
+            double urgencyLowFuel = fuel < 40 ? (1-(fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK)) * 75 : 0;
+            double urgencyHighFuel = fuel > 150 ? (fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK) * 75 : 0;
+
+
+            double cost = weightDistance * distanceGasStation + weightUtilization * utilizationGasStation - urgencyLowFuel + urgencyHighFuel;
+
+            System.out.println(gasStation.getThingId() + ": " + cost);
+            if(cost < bestScore){
+                bestScore = cost;
+                bestTarget = new TruckTargetDecision<>(gasStation, distanceGasStation, gasStation.getLocation(), gasStation.getThingId());
+            }
+        }
+        int currentStopIndex = truck.getCurrentStopIndex().get();
+        System.out.println("CURRENT INDEX " + currentStopIndex + " WarehouseSize: " + warehouseList.size());
+        if(currentStopIndex >= 1 && currentStopIndex < warehouseList.size()) {
+                Warehouse nextWarehouse = warehouseList.get(currentStopIndex);
+                logger.info("Check for potential travel to {}", nextWarehouse.getThingId());
+                Double distanceWarehouse = distances.get(nextWarehouse.getThingId());
+                if (distanceWarehouse != null) {
+
+                    double utilizationWarehouse = warehouseGateway.getUtilizationFromDitto(nextWarehouse);
+                    System.out.println("Warehouse utilization " + utilizationWarehouse);
+                    double cost = weightDistance * distanceWarehouse + weightUtilization * utilizationWarehouse;
+
+                    System.out.println(nextWarehouse.getThingId() + ": " + cost);
+                    if (cost < bestScore) {
+                        bestScore = cost;
+                        bestTarget = new TruckTargetDecision<>(nextWarehouse, distanceWarehouse, nextWarehouse.getLocation(), nextWarehouse.getThingId());
+                    }
+                }
+            } else if(currentStopIndex >= warehouseList.size()){
+                Warehouse nextWarehouse = warehouseList.get(0);
+                logger.info("Check for potential travel to {}", nextWarehouse.getThingId());
+                Double distanceWarehouse = distances.get(nextWarehouse.getThingId());
+                if (distanceWarehouse != null) {
+
+                    double utilizationWarehouse = warehouseGateway.getUtilizationFromDitto(nextWarehouse);
+
+                    double cost = weightDistance * distanceWarehouse + weightUtilization * utilizationWarehouse;
+
+                    System.out.println(nextWarehouse.getThingId() + ": " + cost);
+                    if (cost < bestScore) {
+                        bestScore = cost;
+                        bestTarget = new TruckTargetDecision<>(nextWarehouse, distanceWarehouse, nextWarehouse.getLocation(), nextWarehouse.getThingId());
+                    }
+                }
+            }
+            if(bestTarget != null){
+            truck.setRecommendedTarget(bestTarget);
+            logger.info("Next Target for {} is {}" , truck.getThingId(), bestTarget.getDecidedTarget() instanceof GasStation ? ((GasStation) bestTarget.getDecidedTarget()).getThingId() : ((Warehouse) bestTarget.getDecidedTarget()).getThingId());
+        }
+
+    }
 }

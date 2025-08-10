@@ -7,7 +7,7 @@ import org.eclipse.ditto.client.configuration.WebSocketMessagingConfiguration;
 import org.eclipse.ditto.client.messaging.AuthenticationProviders;
 import org.eclipse.ditto.client.messaging.MessagingProvider;
 import org.eclipse.ditto.client.messaging.MessagingProviders;
-import org.example.Config;
+import org.example.util.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

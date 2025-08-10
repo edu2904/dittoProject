@@ -1,4 +1,4 @@
-package org.example;
+package org.example.util;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonFactory;
@@ -184,54 +184,6 @@ public class ThingHandler {
         deletePolicy(dittoClient, policyID);
         return null;
     }
-
-    /*   public CompletableFuture<Boolean> updateTwinDefinition(DittoClient dittoClient, String thingWOTURL, String policy){
-           var o = JsonObject.newBuilder()
-                   .set("thingId", thingId.toString())
-                   .set("definition", thingWOTURL)
-                   .set("policyId", policy)
-                   .build();
-           JsonObject feature = JsonObject.newBuilder().set("definition", "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/LKW/FuelTank").build();
-           ThingDefinition thingDefinition = ThingsModelFactory.newDefinition(thingWOTURL);
-           Thing thing = ThingsModelFactory.newThingBuilder()
-                   .setId(thingId).setFeature("FuelTank").setDefinition(thingDefinition).setPolicyId(PolicyId.of(policy)).build();
-           var future = new CompletableFuture<Boolean>();
-           var newDef = JsonObject.newBuilder().set("definition", thingWOTURL).build();
-
-
-
-           dittoClient.twin().put(o).whenComplete((createdThing, throwable) -> {
-                       if (createdThing.isPresent()) {
-                           System.out.println("Created new thing: " + createdThing);
-                       } else {
-                           System.out.println("Thing could not be created due to: " + throwable.getMessage());
-                       }
-
-           }).toCompletableFuture()
-                   .thenRun(() -> future.complete(true))
-                   .exceptionally((t) -> {
-                       future.completeExceptionally(t);
-                       return null;
-                   });
-
-
-           dittoClient.twin().merge(thingId, thing).whenComplete((adaptable, throwable) -> {
-                       if (throwable != null) {
-                           System.out.println("Received error while sending MergeThing: '{}' " +  throwable);
-                       } else {
-                           System.out.println("Received response for MergeThing: '{}' " + adaptable);
-                       }
-                   }).toCompletableFuture()
-                   .thenRun(() -> future.complete(true))
-                   .exceptionally((t) -> {
-                       future.completeExceptionally(t);
-                       return null;
-                   });
-
-           return future;
-
-       }
-   */
     public CompletableFuture<Void> getThingPayload(DittoClient dittoClient, String thingId) {
         return dittoClient.twin().retrieve(ThingId.of(thingId)).thenAccept(thing -> {
             logger.info("Payload: {}", thing.toString());
@@ -241,6 +193,4 @@ public class ThingHandler {
         }).toCompletableFuture();
 
     }
-
-
 }

@@ -6,22 +6,41 @@ import org.eclipse.ditto.things.model.ThingId;
 import org.example.DittoEventAction.DittoEventActionHandler;
 import org.example.Things.EventActionHandler;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 public class TruckEventsActions implements EventActionHandler {
 
-    DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
 
-    @Override
-    public void startLogging(String thingID) {
-        dittoEventActionHandler.createEventLoggingForAttribute(thingID, "showStatus");
-        dittoEventActionHandler.createEventLoggingForFeature(thingID, "lowfuel", "FuelTank");
-        dittoEventActionHandler.createActionLoggingForAttribute(thingID, "resetProgress");
+    public DittoClient dittoClient;
+    public static final String WEIGHTEVENT = "showStatus";
+    public static final String RESETPROGRESS = "resetProgress";
+    public static final String SEARCHNEWTASK = "taskSearch";
 
+    public static final String TRUCKARRIVED = "truckArrived";
+
+  //  DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
+
+  //  @Override
+  //  public void startLogging(String thingID) {
+  //      dittoEventActionHandler.createEventLoggingForAttribute(thingID, "showStatus");
+  //      dittoEventActionHandler.createEventLoggingForFeature(thingID, "lowfuel", "FuelTank");
+  //      dittoEventActionHandler.createActionLoggingForAttribute(thingID, "resetProgress");
+
+  //  }
+    public TruckEventsActions(DittoClient dittoClient){
+        this.dittoClient = dittoClient;
     }
-    public void weightEvent(DittoClient dittoClient, String thingID, double weightAmount) {
+
+    public void arrivalEvent(String thingId, Map<String, Object> destination, Map<String, Object> location, String locationName){
+        if(location.equals(destination)) {
+            JsonObject arrivalMessage = JsonObject.newBuilder().set("message", thingId + " arrived at next destination: " + locationName).build();
+            sendEvent(dittoClient, thingId, arrivalMessage, "truckArrived");
+        }
+    }
+    public void weightEvent(String thingID, double weightAmount) {
 
         if(weightAmount > 9000) {
             JsonObject weightmessage = JsonObject.newBuilder()
@@ -38,7 +57,7 @@ public class TruckEventsActions implements EventActionHandler {
         }
 
     }
-    public void fuelAmountEvents(DittoClient dittoClient, String thingID, double fuelAmount)  {
+    public void fuelAmountEvents(String thingID, double fuelAmount)  {
             JsonObject lowfuelmessage = JsonObject.newBuilder()
                     .set("amount", fuelAmount)
                     .build();
@@ -51,9 +70,22 @@ public class TruckEventsActions implements EventActionHandler {
                 sendEvent(dittoClient, thingID, jsonData, "lowfuel");
             }
         }
-    public void progressResetAction(DittoClient dittoClient, String thingID, Truck truck, double currentProgress) {
+
+    public void taskSearchAction(String thingID, double currentWeight){
+        if(currentWeight > 9000){
+            JsonObject weightmessage = JsonObject.newBuilder()
+                    .set("amount", currentWeight)
+                    .build();
+            JsonObject jsonWeight = JsonObject.newBuilder()
+                    .set("title", "Weight too high")
+                    .set("type", "object")
+                    .set("properties", weightmessage).build();
 
 
+            sendAction(dittoClient, thingID, jsonWeight, "taskSearch");
+        }
+    }
+    public void progressResetAction(String thingID, Truck truck, double currentProgress) {
         if(currentProgress == 100) {
             JsonObject object = JsonObject.newBuilder().set("message", "Progress was resettet").build();
 

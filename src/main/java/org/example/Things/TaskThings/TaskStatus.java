@@ -1,7 +1,14 @@
 package org.example.Things.TaskThings;
 
-public enum TaskStatus {
+import org.example.Things.DigitalTwinStatus;
+
+public enum TaskStatus implements DigitalTwinStatus {
     STARTING,
     UNDERGOING,
-    FINISHED
+    FINISHED;
+
+    @Override
+    public String status() {
+        return name();
+    }
 }

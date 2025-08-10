@@ -1,4 +1,4 @@
-package org.example;
+package org.example.util;
 
 public class Config {
     public static double FUEL_MIN_VALUE_STANDARD_TRUCK = 45.0;
@@ -12,4 +12,5 @@ public class Config {
     public static String WEBSOCKET_ENDPOINT = "ws://localhost:8080/ws/2";
     public static String DITTO_USERNAME = "ditto";
     public static String DITTO_PASSWORD = "ditto";
+    public static int EARTH_RADIUS = 6371;
 }

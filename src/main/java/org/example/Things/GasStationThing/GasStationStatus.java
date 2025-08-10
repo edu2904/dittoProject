@@ -1,8 +1,15 @@
 package org.example.Things.GasStationThing;
 
-public enum GasStationStatus {
+import org.example.Things.DigitalTwinStatus;
+
+public enum GasStationStatus implements DigitalTwinStatus {
     WAITING,
     REFUELING,
 
-    ADJUSTINGTIREPRESSURE
+    ADJUSTINGTIREPRESSURE;
+
+    @Override
+    public String status() {
+        return name();
+    }
 }

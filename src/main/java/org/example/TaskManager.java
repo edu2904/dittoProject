@@ -8,6 +8,7 @@ import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TaskThings.Tasks;
 import org.example.Things.TruckThing.Truck;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class TaskManager {
@@ -23,7 +24,8 @@ public class TaskManager {
 
         taskFactory.createTwinsForDitto();
 
-        Tasks task = taskFactory.getTasks();
+        List<Tasks> tasks = taskFactory.getThings();
+        Tasks task = tasks.get(0);
 
         TaskGateway taskGateway = new TaskGateway(this.dittoClient, this.influxDBClient, task, truck);
         taskGateway.startUpdating(task);

@@ -54,28 +54,4 @@ public class Tasks {
         this.taskType = taskType;
     }
 
-    public void initializeRefuelTask(Truck truck) throws InterruptedException {
-        setThingId("task:refuel_" + truck.getThingId());
-        setStatus(TaskStatus.STARTING);
-        setTaskType(TaskType.REFUEL);
-        setTargetTruck(truck.getThingId());
-        setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
-
-
-    }
-    public void initializeTirePressureTask(Truck truck){
-        setThingId("task:tirePressureLow_" + truck.getThingId());
-        setStatus(TaskStatus.STARTING);
-        setTaskType(TaskType.TIREPRESSUREADJUSTMENT);
-        setTargetTruck(truck.getThingId());
-        setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
-
-    }
-    public void initializeLoadingTask(Truck truck){
-        setThingId("task:loadingTruck_" + truck.getThingId());
-        setStatus(TaskStatus.STARTING);
-        setTaskType(TaskType.LOAD);
-        setTargetTruck(truck.getThingId());
-        setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
-    }
 }

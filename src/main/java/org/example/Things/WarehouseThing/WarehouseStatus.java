@@ -1,6 +1,13 @@
 package org.example.Things.WarehouseThing;
 
-public enum WarehouseStatus {
+import org.example.Things.DigitalTwinStatus;
+
+public enum WarehouseStatus implements DigitalTwinStatus {
     WAITING,
-    LOADING
+    LOADING;
+
+    @Override
+    public String status() {
+        return name();
+    }
 }

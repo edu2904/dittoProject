@@ -2,26 +2,42 @@ package org.example;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
+import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Client.DittoClientBuilder;
+import org.example.Factory.DigitalTwinFactoryMain;
 import org.example.Gateways.GatewayManager;
+import org.example.process.TruckProcess;
 
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 
 public class Main {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
-        DittoClient dittoClient = dittoClientBuilder.getDittoClient();
+        DittoClientBuilder dittoClientBuilder1 = new DittoClientBuilder();
+        DittoClient processDittoClient = dittoClientBuilder1.getDittoClient();
+
+        DittoClient backendDittoClient = dittoClientBuilder.getDittoClient();
+
+
+        processDittoClient.live().startConsumption().toCompletableFuture();
+        backendDittoClient.live().startConsumption().toCompletableFuture();
+        processDittoClient.twin().startConsumption().toCompletableFuture();
+        backendDittoClient.twin().startConsumption().toCompletableFuture();
+
+        TruckProcess truckProcess = new TruckProcess(processDittoClient);
 
         char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
         String org = "admin";
         String bucket = "ditto";
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 
-        GatewayManager gatewayManager = new GatewayManager(dittoClient, influxDBClient);
+        GatewayManager gatewayManager = new GatewayManager(backendDittoClient, influxDBClient);
         gatewayManager.startGateways();
+
+
 
 /*
         GatewayMain gateway = new GatewayMain();

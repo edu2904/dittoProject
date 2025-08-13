@@ -1,5 +1,8 @@
 package org.example.util;
 
+import org.example.Things.Location;
+
+import java.util.List;
 import java.util.Map;
 
 public final class GeoUtil {
@@ -18,11 +21,11 @@ public final class GeoUtil {
         return Math.round(distance * 100.0) / 100.0;
     }
 
-    public static double calculateDistance(Map<String, Object> location1, Map<String, Object> location2){
-        return calculateDistance((Double) location1.get(GeoConst.LAT),
-                (Double) location1.get(GeoConst.LON),
-                (Double) location2.get(GeoConst.LAT),
-                (Double) location2.get(GeoConst.LON));
+    public static double calculateDistance(Location location1, Location location2){
+        return calculateDistance(location1.getLat(),
+                location1.getLon(),
+                location2.getLat(),
+                location2.getLon());
     }
 
     private GeoUtil(){

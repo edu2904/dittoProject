@@ -27,7 +27,6 @@ public class Main {
         processDittoClient.twin().startConsumption().toCompletableFuture();
         backendDittoClient.twin().startConsumption().toCompletableFuture();
 
-        TruckProcess truckProcess = new TruckProcess(processDittoClient);
 
         char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
         String org = "admin";
@@ -35,6 +34,7 @@ public class Main {
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 
         GatewayManager gatewayManager = new GatewayManager(backendDittoClient, influxDBClient);
+        TruckProcess truckProcess = new TruckProcess(processDittoClient, gatewayManager);
         gatewayManager.startGateways();
 
 

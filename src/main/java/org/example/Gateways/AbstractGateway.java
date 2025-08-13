@@ -24,11 +24,13 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
     protected InfluxDBClient influxDBClient;
 
     protected final Logger logger = LoggerFactory.getLogger(AbstractGateway.class);
+    WriteApiBlocking writeApi;
 
 
     public AbstractGateway(DittoClient dittoClient, InfluxDBClient influxDBClient){
         this.dittoClient = dittoClient;
         this.influxDBClient = influxDBClient;
+        this.writeApi = influxDBClient.getWriteApiBlocking();
 
     }
 
@@ -104,9 +106,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
 
 
-    public void startLoggingToInfluxDB(String measurement, String thingID, String subject, double amount){
-        WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
-        try {
+    public void startLoggingToInfluxDB(String measurement, String thingID, String subject, double amount){try {
             Point point = Point.measurement(measurement)
                     .addTag("thingID", thingID)
                     .addField(subject, amount)
@@ -116,6 +116,8 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
         }catch (InfluxException e){
             logger.error(e.getMessage());
         }
+        System.out.println("Logging to InfluxDB: measurement=" + measurement + ", thingID=" + thingID + ", subject=" + subject + ", amount=" + amount);
+
     }
 
     @Override

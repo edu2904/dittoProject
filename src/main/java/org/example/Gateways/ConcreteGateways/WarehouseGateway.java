@@ -36,8 +36,8 @@ public class WarehouseGateway extends AbstractGateway<Warehouse> {
     public void updateAttributes(Warehouse warehouse) {
         updateAttributeValue("capacity", warehouse.getCapacity(), warehouse.getThingId());
         updateAttributeValue("status", warehouse.getStatus().toString(), warehouse.getThingId());
-        updateAttributeValue("location/geo:lat", warehouse.getLocation().get(GeoConst.LAT), warehouse.getThingId());
-        updateAttributeValue("location/geo:long", warehouse.getLocation().get(GeoConst.LON), warehouse.getThingId());
+        updateAttributeValue("location/geo:lat", warehouse.getLocation().getLat(), warehouse.getThingId());
+        updateAttributeValue("location/geo:long", warehouse.getLocation().getLon(), warehouse.getThingId());
         updateAttributeValue("utilization", warehouse.getUtilization(), warehouse.getThingId());
     }
 

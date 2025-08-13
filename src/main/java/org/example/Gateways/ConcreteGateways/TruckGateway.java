@@ -2,6 +2,7 @@ package org.example.Gateways.ConcreteGateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
+import org.example.Things.Location;
 import org.example.Things.TruckThing.TruckTargetDecision;
 import org.example.util.Config;
 import org.example.Gateways.AbstractGateway;
@@ -51,6 +52,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
                 truckEventsActions.fuelAmountEvents(truck.getThingId(), getFuelFromDitto(truck));
                // truckEventsActions.taskSearchAction(truck.getThingId(), getWeightFromDitto(truck), 7000);
                 truckEventsActions.arrivalEvent(truck.getThingId(), getTargetLocationFromDitto(truck), getLocationFromDitto(truck), getTargetNameFromDitto(truck));
+                truckEventsActions.checkForTruckWithoutTask(truck.getThingId(), truck.getStatus());
 
                 checkRefuelTask(getFuelFromDitto(truck), truck);
                 checkTirePressureTask(getTirePressureFromDitto(truck), truck);
@@ -76,13 +78,13 @@ public class TruckGateway extends AbstractGateway<Truck> {
         updateAttributeValue("capacity", truck.getCapacity(), truck.getThingId());
 
 
-        updateAttributeValue("location/geo:lat", truck.getLocation().get(GeoConst.LAT), truck.getThingId());
-        updateAttributeValue("location/geo:long", truck.getLocation().get(GeoConst.LON), truck.getThingId());
+        updateAttributeValue("location/geo:lat", truck.getLocation().getLat(), truck.getThingId());
+        updateAttributeValue("location/geo:long", truck.getLocation().getLon(), truck.getThingId());
 
         if(truck.getTarget() != null) {
             updateAttributeValue("targetLocation/name", truck.getTarget().getTargetName(), truck.getThingId());
-            updateAttributeValue("targetLocation/geo:lat", truck.getTarget().getTargetLocation().get(GeoConst.LAT), truck.getThingId());
-            updateAttributeValue("targetLocation/geo:long", truck.getTarget().getTargetLocation().get(GeoConst.LON), truck.getThingId());
+            updateAttributeValue("targetLocation/geo:lat", truck.getTarget().getTargetLocation().getLat(), truck.getThingId());
+            updateAttributeValue("targetLocation/geo:long", truck.getTarget().getTargetLocation().getLon(), truck.getThingId());
         }
     }
     @Override
@@ -97,13 +99,14 @@ public class TruckGateway extends AbstractGateway<Truck> {
     }
 
     @Override
-    public void logToInfluxDB(Truck truck, String measurementType) {
+    public void logToInfluxDB(Truck truck, String measurementType) throws ExecutionException, InterruptedException {
+        System.out.println("Fuel before logging " + getProgressFromDitto(truck));
         String thingID = truck.getThingId();
-        startLoggingToInfluxDB(measurementType, thingID, "FuelAmount", truck.getFuel());
-        startLoggingToInfluxDB(measurementType, thingID, "ProgressAmount", truck.getProgress());
-        startLoggingToInfluxDB(measurementType, thingID, "TirePressureAmount", truck.getTirePressure());
-        startLoggingToInfluxDB(measurementType, thingID, "VelocityAmount", truck.getVelocity());
-        startLoggingToInfluxDB(measurementType, thingID, "InventoryAmount", truck.getInventory());
+        //startLoggingToInfluxDB(measurementType, thingID, "FuelAmount", getFuelFromDitto(truck));
+        startLoggingToInfluxDB(measurementType, thingID, "ProgressAmount", getProgressFromDitto(truck));
+        //startLoggingToInfluxDB(measurementType, thingID, "TirePressureAmount", getTirePressureFromDitto(truck));
+        //startLoggingToInfluxDB(measurementType, thingID, "VelocityAmount", truck.getVelocity());
+       // startLoggingToInfluxDB(measurementType, thingID, "InventoryAmount", getInventoryFromDitto(truck));
 
 
     }
@@ -154,25 +157,16 @@ public class TruckGateway extends AbstractGateway<Truck> {
     public double getInventoryFromDitto(Truck truck) throws ExecutionException, InterruptedException {
         return (double) getFeatureValueFromDitto("Inventory", truck.getThingId());
     }
-    public Map<String, Object> getLocationFromDitto(Truck truck) throws ExecutionException, InterruptedException {
-        Map<String, Object> currentLocation = new ConcurrentHashMap<>();
+    public Location getLocationFromDitto(Truck truck) throws ExecutionException, InterruptedException {
          double lat = (Double) getAttributeValueFromDitto("location/geo:lat", truck.getThingId());
          double lon = (Double) getAttributeValueFromDitto("location/geo:long", truck.getThingId());
-         currentLocation.put(GeoConst.LAT, lat);
-         currentLocation.put(GeoConst.LON, lon);
-         return currentLocation;
+        return new Location(lat, lon);
     }
-    public Map<String, Object> getTargetLocationFromDitto(Truck truck) throws ExecutionException, InterruptedException {
-
-        Map<String, Object> targetLocation = new ConcurrentHashMap<>();
+    public Location getTargetLocationFromDitto(Truck truck) throws ExecutionException, InterruptedException {
         if (truck.getTarget() != null) {
             double lat = (Double) getAttributeValueFromDitto("targetLocation/geo:lat", truck.getThingId());
             double lon = (Double) getAttributeValueFromDitto("targetLocation/geo:long", truck.getThingId());
-            targetLocation.put(GeoConst.LAT, lat);
-            targetLocation.put(GeoConst.LON, lon);
-            return targetLocation;
-
-
+           return new Location(lat, lon);
         }
         return null;
     }

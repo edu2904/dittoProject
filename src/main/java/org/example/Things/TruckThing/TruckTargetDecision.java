@@ -1,17 +1,23 @@
 package org.example.Things.TruckThing;
 
+import org.example.Things.Location;
+
 import java.util.Map;
 
 public class TruckTargetDecision<T> {
     private T target;
     private double distance;
-    private Map<String, Object> targetLocation;
+    private Location targetLocation;
     private String targetName;
 
 
-    public TruckTargetDecision(T target, double distance, Map<String, Object> targetLocation, String targetName){
+    public TruckTargetDecision(T target, double distance, Location targetLocation, String targetName){
         this.target = target;
         this.distance = distance;
+        this.targetLocation = targetLocation;
+        this.targetName = targetName;
+    }
+    public TruckTargetDecision(Location targetLocation, String targetName){
         this.targetLocation = targetLocation;
         this.targetName = targetName;
     }
@@ -24,7 +30,7 @@ public class TruckTargetDecision<T> {
         return target;
     }
 
-    public Map<String, Object> getTargetLocation() {
+    public Location getTargetLocation() {
         return targetLocation;
     }
 
@@ -32,7 +38,7 @@ public class TruckTargetDecision<T> {
         return targetName;
     }
 
-    public void setTargetLocation(Map<String, Object> targetLocation) {
+    public void setTargetLocation(Location targetLocation) {
         this.targetLocation = targetLocation;
     }
 

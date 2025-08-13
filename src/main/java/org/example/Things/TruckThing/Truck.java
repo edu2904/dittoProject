@@ -1,6 +1,7 @@
 package org.example.Things.TruckThing;
 
 import org.eclipse.ditto.client.DittoClient;
+import org.example.Things.Location;
 import org.example.util.Config;
 import org.example.util.GeoConst;
 import org.example.util.GeoUtil;
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Truck {
 
-    Map<String, Object> location = new ConcurrentHashMap<>();
+    Location location;
 
     private final Logger logger = LoggerFactory.getLogger(Truck.class);
     private final AtomicBoolean taskActive = new AtomicBoolean(false);
@@ -143,23 +144,15 @@ public class Truck {
         taskActive.set(currentTaskActive);
     }
 
-    public Map<String, Object> getLocation() {
+    public Location getLocation() {
         return location;
     }
 
-    public void setLocation(double lat, double lon) {
-        if(this.location == null){
-            this.location = new HashMap<>();
-        }
-        this.location.put(GeoConst.LAT, lat);
-        this.location.put(GeoConst.LON, lon);
+
+    public void setLocation(Location currentLocation){
+        this.location = new Location(currentLocation.getLat(), currentLocation.getLon());
     }
 
-
-    public void setLocation(Map<String, Object> currentLocation){
-        this.location.put(GeoConst.LAT, currentLocation.get(GeoConst.LAT));
-        this.location.put(GeoConst.LON, currentLocation.get(GeoConst.LON));
-    }
     public synchronized TruckTargetDecision<?> getTarget() {
         return target;
     }
@@ -175,6 +168,7 @@ public class Truck {
         if(this.target == null && this.recommendedTarget != null){
             this.target = this.recommendedTarget;
             setTarget(target);
+            setProgress(0);
             this.recommendedTarget = null;
         }
     }
@@ -234,7 +228,6 @@ public class Truck {
 
         if(getProgress() >= 100 && currentStopIndex.get() <= getStops().size()){
             checkForActiveTask(dittoClient, target);
-            setProgress(0);
         }else if(currentStopIndex.get() > getStops().size()){
             logger.info("Truck {} finished tour", thingId);
             currentStopIndex.set(1);

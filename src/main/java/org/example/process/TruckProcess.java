@@ -6,6 +6,7 @@ import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.client.DittoClients;
 import org.eclipse.ditto.json.JsonObject;
 import org.example.Client.DittoClientBuilder;
+import org.example.Gateways.GatewayManager;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
 import org.slf4j.Logger;
@@ -21,9 +22,11 @@ public class TruckProcess {
     DittoClient dittoClient;
     DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
     private final Logger logger = LoggerFactory.getLogger(Truck.class);
+    GatewayManager gatewayManager;
 
-    public TruckProcess(DittoClient dittoClient) throws ExecutionException, InterruptedException {
+    public TruckProcess(DittoClient dittoClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
         this.dittoClient = dittoClient;
+        this.gatewayManager = gatewayManager;
         subscribeForChanges(dittoClient);
         receiveMessages(dittoClient);
         //receiveActions(dittoClient);
@@ -41,16 +44,10 @@ public class TruckProcess {
     public void receiveMessages(DittoClient dittoClient) {
          dittoClient.live().registerForMessage("test2", "*", message -> {
                 switch (message.getSubject()) {
-                    case TruckEventsActions.WEIGHTEVENT, TruckEventsActions.TRUCKARRIVED:
-                        System.out.println("+++++++++++++++++++++++++++++");
+                    case TruckEventsActions.TRUCKARRIVED, TruckEventsActions.TRUCKWAITNGTOOLONG:
                         logger.info(message.getPayload().toString());
-                        System.out.println("+++++++++++++++++++++++++++++");
+
                         break;
-                }
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
                 }
                 message.reply().httpStatus(HttpStatus.OK).payload("response sent for " + message.getPayload()).send();
             });

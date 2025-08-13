@@ -1,5 +1,6 @@
 package org.example.Things.WarehouseThing;
 
+import org.example.Things.Location;
 import org.example.util.Config;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckStatus;
@@ -17,7 +18,7 @@ import java.util.concurrent.*;
 public class Warehouse {
 
 
-    Map<String, Object> location = new HashMap<>();
+    Location location;
     private boolean mainWarehouse;
 
 
@@ -86,16 +87,12 @@ public class Warehouse {
         this.workers = workers;
     }
 
-    public Map<String, Object> getLocation() {
+    public Location getLocation() {
         return location;
     }
 
     public void setLocation(double lat, double lon) {
-        if(this.location == null){
-            this.location = new HashMap<>();
-        }
-        this.location.put(GeoConst.LAT, lat);
-        this.location.put(GeoConst.LON, lon);
+       this.location = new Location(lat, lon);
     }
 
     public double getUtilization() {

@@ -5,21 +5,24 @@ import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.things.model.ThingId;
 import org.example.DittoEventAction.DittoEventActionHandler;
 import org.example.Things.EventActionHandler;
+import org.example.Things.Location;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public class TruckEventsActions implements EventActionHandler {
 
+
+    private final Map<String, Boolean> eventState = new ConcurrentHashMap<>();
+    private final Map<String, Long> waitingSince = new ConcurrentHashMap<>();
 
     public DittoClient dittoClient;
     public static final String WEIGHTEVENT = "showStatus";
     public static final String RESETPROGRESS = "resetProgress";
     public static final String SEARCHNEWTASK = "taskSearch";
-
     public static final String TRUCKARRIVED = "truckArrived";
+    public static final String TRUCKWAITNGTOOLONG = "tooLongIdle";
+
 
   //  DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
 
@@ -34,12 +37,39 @@ public class TruckEventsActions implements EventActionHandler {
         this.dittoClient = dittoClient;
     }
 
-    public void arrivalEvent(String thingId, Map<String, Object> destination, Map<String, Object> location, String locationName){
-        if(location.equals(destination)) {
-            JsonObject arrivalMessage = JsonObject.newBuilder().set("message", thingId + " arrived at next destination: " + locationName).build();
-            sendEvent(dittoClient, thingId, arrivalMessage, "truckArrived");
+    public void arrivalEvent(String thingId, Location destination, Location location, String locationName){
+        if(destination != null) {
+            boolean wasActive = eventState.getOrDefault("arrival_" + thingId, false);
+            boolean isActive = location.getLat() == destination.getLat() && location.getLon() == destination.getLon();
+
+            if (!wasActive && isActive) {
+                JsonObject arrivalMessage = JsonObject.newBuilder().set("message", thingId + " arrived at next destination: " + locationName).build();
+                sendEvent(dittoClient, thingId, arrivalMessage, TRUCKARRIVED);
+                eventState.put("arrival_" + thingId, true);
+            } else if (wasActive && !isActive) {
+                eventState.put("arrival_" + thingId, false);
+            }
         }
     }
+    public void checkForTruckWithoutTask(String thingId, TruckStatus truckStatus){
+        boolean wasActive = eventState.getOrDefault("withoutTask_" + thingId, false);
+        boolean isActive = truckStatus == TruckStatus.IDLE;
+
+        if(!wasActive && isActive){
+            waitingSince.putIfAbsent(thingId, System.currentTimeMillis());
+            long waited = System.currentTimeMillis() - waitingSince.get(thingId);
+            if(waited >= TimeUnit.SECONDS.toMillis(10)){
+                JsonObject withoutTaskMessage = JsonObject.newBuilder().set("message", thingId + " waitinge for too long. Requesting task search").build();
+                sendEvent(dittoClient, thingId, withoutTaskMessage, TRUCKWAITNGTOOLONG);
+                eventState.put("withoutTask_" + thingId, true);
+            }
+        }else if (wasActive && !isActive) {
+            eventState.put("withoutTask_" + thingId, false);
+            waitingSince.remove(thingId);
+        }
+    }
+
+
     public void weightEvent(String thingID, double weightAmount) {
 
         if(weightAmount > 9000) {
@@ -55,7 +85,6 @@ public class TruckEventsActions implements EventActionHandler {
             sendEvent(dittoClient, thingID, jsonWeight, "showStatus");
 
         }
-
     }
     public void fuelAmountEvents(String thingID, double fuelAmount)  {
             JsonObject lowfuelmessage = JsonObject.newBuilder()

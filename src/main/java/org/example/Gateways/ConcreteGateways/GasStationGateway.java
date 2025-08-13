@@ -41,8 +41,8 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
     @Override
     public void updateAttributes(GasStation gasStation) {
         updateAttributeValue("status", gasStation.getGasStationStatus().toString(), gasStation.getThingId());
-        updateAttributeValue("location/geo:lat", gasStation.getLocation().get(GeoConst.LAT), gasStation.getThingId());
-        updateAttributeValue("location/geo:long", gasStation.getLocation().get(GeoConst.LON), gasStation.getThingId());
+        updateAttributeValue("location/geo:lat", gasStation.getLocation().getLat(), gasStation.getThingId());
+        updateAttributeValue("location/geo:long", gasStation.getLocation().getLon(), gasStation.getThingId());
         updateAttributeValue("utilization", gasStation.getUtilization(), gasStation.getThingId());
 
 

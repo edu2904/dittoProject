@@ -6,7 +6,6 @@ import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.exceptions.InfluxException;
 import org.eclipse.ditto.client.DittoClient;
-import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.Feature;
 import org.eclipse.ditto.things.model.ThingId;
@@ -49,7 +48,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
     }
 
-    public void updateFeatureValue(String featureID, String featurePropertyName, Object featureAmount, String thingId) throws ExecutionException, InterruptedException {
+    public void updateFeatureValue(String featureID, String featurePropertyName, Object featureAmount, String thingId) {
         dittoClient.twin().startConsumption().toCompletableFuture();
         dittoClient.twin()
                 .forFeature(ThingId.of(thingId), featureID)

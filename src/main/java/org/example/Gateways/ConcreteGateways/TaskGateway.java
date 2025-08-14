@@ -31,12 +31,12 @@ public class TaskGateway extends AbstractGateway<Tasks> {
     }
 
     @Override
-    public void startGateway() throws ExecutionException, InterruptedException {
+    public void startGateway() {
         startUpdating(tasks);
     }
 
     @Override
-    public void startUpdating(Tasks tasks) throws ExecutionException, InterruptedException {
+    public void startUpdating(Tasks tasks)  {
         if(tasks.getTaskType() == TaskType.REFUEL){
             handleRefueling(dittoClient, truck, tasks);
         }
@@ -85,7 +85,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         }
     }
 
-    public void handleRefueling(DittoClient dittoClient, Truck truck, Tasks tasks) throws ExecutionException, InterruptedException {
+    public void handleRefueling(DittoClient dittoClient, Truck truck, Tasks tasks){
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
         //tasksEventsActions.handleRefuelTaskEvents(dittoClient, tasks);
@@ -95,7 +95,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         Runnable updateTask = () -> {
 
             updateAttributes(tasks);
-            double truckCurrentFuelAmount = 0;
+            double truckCurrentFuelAmount;
             try {
                 truckCurrentFuelAmount = (double) getFeatureValueFromDitto("FuelTank", truck.getThingId());
 
@@ -126,7 +126,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
     }
 
 
-    public void handleTirePressure(DittoClient dittoClient, Truck truck, Tasks tasks) throws ExecutionException, InterruptedException {
+    public void handleTirePressure(DittoClient dittoClient, Truck truck, Tasks tasks) {
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
 
@@ -136,7 +136,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         Runnable updateTask = () -> {
 
             updateAttributes(tasks);
-            double truckCurrentTirePressureAmount = 0;
+            double truckCurrentTirePressureAmount;
             try {
                 truckCurrentTirePressureAmount = (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
 
@@ -166,7 +166,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         future[0] = future1;
     }
 
-    public void handleLoading(DittoClient dittoClient, Truck truck, Tasks tasks) throws ExecutionException, InterruptedException {
+    public void handleLoading(DittoClient dittoClient, Truck truck, Tasks tasks){
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
 
@@ -176,8 +176,8 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         Runnable updateTask = () -> {
 
             updateAttributes(tasks);
-            double truckCapacity = 0;
-            double truckCurrentInventory = 0;
+            double truckCapacity;
+            double truckCurrentInventory;
             try {
                 truckCurrentInventory = (double) getFeatureValueFromDitto("Inventory", truck.getThingId());
                 truckCapacity = (double) getAttributeValueFromDitto("capacity", truck.getThingId());

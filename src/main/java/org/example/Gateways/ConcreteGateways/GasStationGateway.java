@@ -4,8 +4,7 @@ import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Gateways.AbstractGateway;
 import org.example.Things.GasStationThing.GasStation;
-import org.example.Things.TruckThing.Truck;
-import org.example.util.GeoConst;
+
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -28,7 +27,7 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
     }
 
     @Override
-    public void startUpdating(GasStation gasStation) throws ExecutionException, InterruptedException {
+    public void startUpdating(GasStation gasStation) {
         updateAttributes(gasStation);
         updateFeatures(gasStation);
     }
@@ -48,7 +47,7 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
 
     }
     @Override
-    public void updateFeatures(GasStation gasStation) throws ExecutionException, InterruptedException {
+    public void updateFeatures(GasStation gasStation) {
         updateFeatureValue("GasStationFuel", "amount", gasStation.getGasStationFuelAmount(), gasStation.getThingId());
     }
 

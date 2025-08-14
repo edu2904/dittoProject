@@ -3,7 +3,6 @@ package org.example.Gateways.ConcreteGateways;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Things.Location;
-import org.example.Things.TruckThing.TruckTargetDecision;
 import org.example.util.Config;
 import org.example.Gateways.AbstractGateway;
 import org.example.TaskManager;
@@ -11,11 +10,8 @@ import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
 import org.example.Things.TruckThing.TruckStatus;
-import org.example.util.GeoConst;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 public class TruckGateway extends AbstractGateway<Truck> {

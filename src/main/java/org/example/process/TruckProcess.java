@@ -1,10 +1,7 @@
 package org.example.process;
 
-import okio.Utf8;
 import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
-import org.eclipse.ditto.client.DittoClients;
-import org.eclipse.ditto.json.JsonObject;
 import org.example.Client.DittoClientBuilder;
 import org.example.Gateways.GatewayManager;
 import org.example.Things.TruckThing.Truck;
@@ -12,11 +9,9 @@ import org.example.Things.TruckThing.TruckEventsActions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class TruckProcess {
     DittoClient dittoClient;

@@ -50,7 +50,7 @@ public class TaskFactory implements DigitalTwinFactory<Tasks>
     }
 
     @Override
-    public void initializeThings() throws InterruptedException {
+    public void initializeThings() {
         task = new Tasks();
         switch (taskType){
             case REFUEL:

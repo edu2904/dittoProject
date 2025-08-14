@@ -4,13 +4,11 @@ import org.example.Things.Location;
 import org.example.util.Config;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckStatus;
-import org.example.util.GeoConst;
-import org.example.util.GeoUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.*;

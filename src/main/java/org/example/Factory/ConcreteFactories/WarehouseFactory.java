@@ -40,7 +40,7 @@ public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
     }
 
     @Override
-    public void initializeThings() throws InterruptedException {
+    public void initializeThings() {
         Warehouse warehouseMain = createDefaultWarehouse(0,48.0842, 11.5302, true);
         Warehouse warehouse1 = createDefaultWarehouse(1, 48.1145, 11.4859, false);
         Warehouse warehouse2 = createDefaultWarehouse(2, 48.1361, 11.5010, false);

@@ -8,6 +8,7 @@ import org.example.Things.EventActionHandler;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TasksEventsActions implements EventActionHandler {
@@ -27,6 +28,17 @@ public class TasksEventsActions implements EventActionHandler {
  //       dittoEventActionHandler.createEventLoggingForAttribute(thingID, "taskUndergoing");
  //       dittoEventActionHandler.createEventLoggingForAttribute(thingID, "taskFinished");
  //   }
+
+    public void sendStartEvent(DittoClient dittoClient, Tasks tasks){
+        String thingID = tasks.getThingId();
+        JsonObject startObject = JsonObject.newBuilder().set("message", "Refuel Task started for " + thingID).build();
+        sendEvent(dittoClient, thingID, startObject, TaskEventType.TASK_BEGIN.getEventName());
+    }
+    public void taskFinished(DittoClient dittoClient, Tasks tasks){
+        String thingID = tasks.getThingId();
+        JsonObject endObject = JsonObject.newBuilder().set("message", "Refuel Task finished for " + thingID).build();
+        sendEvent(dittoClient, thingID, endObject, TaskEventType.TASK_FINISHED.getEventName());
+    }
 
     public void handleRefuelTaskEvents(DittoClient dittoClient, Tasks tasks) throws InterruptedException {
 

@@ -3,10 +3,8 @@ package org.example.Gateways.ConcreteGateways;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Gateways.AbstractGateway;
-import org.example.Things.GasStationThing.GasStation;
-import org.example.Things.TruckThing.TruckEventsActions;
 import org.example.Things.WarehouseThing.Warehouse;
-import org.example.util.GeoConst;
+
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -42,13 +40,13 @@ public class WarehouseGateway extends AbstractGateway<Warehouse> {
     }
 
     @Override
-    public void startUpdating(Warehouse warehouse) throws ExecutionException, InterruptedException {
+    public void startUpdating(Warehouse warehouse)  {
         updateAttributes(warehouse);
         updateFeatures(warehouse);
     }
 
     @Override
-    public void updateFeatures(Warehouse warehouse) throws ExecutionException, InterruptedException {
+    public void updateFeatures(Warehouse warehouse)  {
         updateFeatureValue("Inventory", "amount", warehouse.getInventory(), warehouse.getThingId());
         updateFeatureValue("Workers", "amount", warehouse.getWorkers(), warehouse.getThingId());
     }

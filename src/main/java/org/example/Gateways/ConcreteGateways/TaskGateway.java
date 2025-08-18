@@ -47,6 +47,9 @@ public class TaskGateway extends AbstractGateway<Task> {
             updateAttributes(task);
          //   handleLoading(dittoClient, truck, task);
         }
+        if(task.getTaskType() == TaskType.UNLOAD){
+            updateAttributes(task);
+        }
     }
 
     @Override
@@ -70,24 +73,24 @@ public class TaskGateway extends AbstractGateway<Task> {
     @Override
     public void updateAttributes(Task task) {
         if(task.getTaskType() == TaskType.REFUEL) {
-            updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
-            updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
-            updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
-            updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
-
+           updateStandardTask(task);
         }
         if(task.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
-            updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
-            updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
-            updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
-            updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
+            updateStandardTask(task);
         }
         if(task.getTaskType() == TaskType.LOAD){
-            updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
-            updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
-            updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
-            updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
+            updateStandardTask(task);
         }
+        if(task.getTaskType() == TaskType.UNLOAD){
+            updateStandardTask(task);
+        }
+    }
+
+    public void updateStandardTask(Task task){
+        updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
+        //updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
+        updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
+        updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
     }
 
    /* public void handleRefueling(DittoClient dittoClient, Truck truck, Task task){

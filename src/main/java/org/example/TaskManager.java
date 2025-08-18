@@ -24,6 +24,7 @@ public class TaskManager {
     private final DittoClient dittoClient;
     private InfluxDBClient influxDBClient;
     ThingHandler thingHandler = new ThingHandler();
+    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public TaskManager(DittoClient dittoClient, InfluxDBClient influxDBClient){
         this.dittoClient = dittoClient;
@@ -32,13 +33,13 @@ public class TaskManager {
     public TaskManager(DittoClient dittoClient){
         this.dittoClient = dittoClient;
     }
-    public void startTask(TaskType taskType) throws ExecutionException, InterruptedException {
-        Task task = createNewTask(taskType);
+    public void startTask(Task task) throws ExecutionException, InterruptedException {
+        //Task task = createNewTask(taskType);
         startTaskGateway(task);
 
     }
 
-    public Task createNewTask(TaskType taskType){
+   /* public Task createNewTask(TaskType taskType){
         TaskFactory taskFactory = new TaskFactory(dittoClient, taskType);
         try {
             taskFactory.createTwinsForDitto();
@@ -47,9 +48,10 @@ public class TaskManager {
         }
         return taskFactory.getTask();
     }
+
+    */
     public void startTaskGateway(Task task){
         TaskGateway taskGateway = new TaskGateway(dittoClient, influxDBClient, task);
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
         scheduler.schedule(() -> {
         taskGateway.startUpdating(task);

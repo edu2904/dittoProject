@@ -8,8 +8,10 @@ import org.eclipse.ditto.client.messaging.MessagingProviders;
 import org.example.Client.DittoClientBuilder;
 import org.example.Factory.DigitalTwinFactoryMain;
 import org.example.Gateways.GatewayManager;
+import org.example.Things.TruckThing.Truck;
 import org.example.process.TruckProcess;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
@@ -29,17 +31,20 @@ public class Main {
         engineClient.twin().startConsumption().toCompletableFuture();
 
 
-        //char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
-        char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
-        //String org = "admin";
-        String org = "dittoProject";
+        char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
+        //char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
+        String org = "admin";
+        //String org = "dittoProject";
         String bucket = "ditto";
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 
-        GatewayManager gatewayManager = new GatewayManager(engineClient, influxDBClient);
-        TruckProcess truckProcess = new TruckProcess(processClient, engineClient, influxDBClient);
 
+
+        GatewayManager gatewayManager = new GatewayManager(engineClient, influxDBClient);
         gatewayManager.startGateways();
+
+        TruckProcess truckProcess = new TruckProcess(processClient, engineClient, influxDBClient, gatewayManager);
+
 
 
 
@@ -110,6 +115,19 @@ public class Main {
     }
 
 
+/*
+    public Truck selectTrucks(){
+        List<Truck> truckList = gatewayManager.getTruckList();
+        Truck bestTruck;
+        bestTruck = truckList.get(0);
+        for(Truck truck : truckList){
+            if(truck.getUtilization() < bestTruck.getUtilization()){
+                bestTruck = truck;
+            }
+        }
+        return bestTruck;
+    }
 
-
+ */
 }
+

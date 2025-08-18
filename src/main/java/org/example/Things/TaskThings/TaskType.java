@@ -5,7 +5,9 @@ public enum TaskType {
 
     TIREPRESSUREADJUSTMENT("https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/tirePressureTask"),
 
-    LOAD("https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/loadTruck");
+    LOAD("https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/loadTruck"),
+
+    UNLOAD("https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/instructionThings/unloadTruck");
 
     private final  String wot;
 

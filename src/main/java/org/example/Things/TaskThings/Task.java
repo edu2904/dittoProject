@@ -1,10 +1,15 @@
 package org.example.Things.TaskThings;
 
+import org.example.TaskManager;
 import org.example.Things.TruckThing.Truck;
 
 import javax.security.auth.Subject;
 import javax.swing.table.TableRowSorter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Task {
 
@@ -14,6 +19,17 @@ public class Task {
     private String creationTime;
     private  TaskType taskType;
 
+    private final Map<String, Object> data = new HashMap<>();
+
+    public Task(String thingId, TaskType taskType){
+        this.thingId = thingId;
+        this.taskType = taskType;
+        this.status = TaskStatus.STARTING;
+        this.creationTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+    }
+
+    public Task(){
+    }
 
 
     public String getThingId() {
@@ -54,6 +70,14 @@ public class Task {
 
     public void setTaskType(TaskType taskType) {
         this.taskType = taskType;
+    }
+
+    public void putData(String key, Object value){
+        data.put(key, value);
+    }
+
+    public Object getData(String key) {
+        return data.get(key);
     }
 
     public Truck lookForOperator(List<Truck> trucks){

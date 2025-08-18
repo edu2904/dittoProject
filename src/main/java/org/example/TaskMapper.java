@@ -15,7 +15,6 @@ public class TaskMapper {
                     .map(Object::toString)
                     .map(s -> s.replace("\"", ""))
                     .orElse("STARTING");
-            System.out.println(taskStatus);
             task.setStatus(TaskStatus.valueOf(taskStatus));
             String taskType = attributes.getValue("type")
                     .map(Object::toString)

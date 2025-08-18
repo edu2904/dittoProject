@@ -122,6 +122,14 @@ public class GatewayManager {
         scheduler.scheduleAtFixedRate(updateTask, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
 
+    public List<Warehouse> getWarehouseList() {
+        return warehouseList;
+    }
+
+    public List<Truck> getTruckList() {
+        return truckList;
+    }
+
     public void setDecisionForNextDestination(Truck truck) throws ExecutionException, InterruptedException {
         double fuel = truckGateway.getFuelFromDitto(truck);
         Map<String, Double> distances = truck.calculateDistances();

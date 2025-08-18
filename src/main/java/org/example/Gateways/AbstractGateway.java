@@ -115,8 +115,6 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
         }catch (InfluxException e){
             logger.error(e.getMessage());
         }
-        System.out.println("Logging to InfluxDB: measurement=" + measurement + ", thingID=" + thingID + ", subject=" + subject + ", amount=" + amount);
-
     }
 
     @Override

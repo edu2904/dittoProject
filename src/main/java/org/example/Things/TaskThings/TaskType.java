@@ -16,4 +16,7 @@ public enum TaskType {
     public String getWot() {
         return wot;
     }
+    public String getPolicy(){
+        return "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/taskPolicy";
+    }
 }

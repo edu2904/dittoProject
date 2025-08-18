@@ -54,7 +54,7 @@ public class GasStationFactory implements DigitalTwinFactory<GasStation> {
 
     public GasStation createDefaultGasStation(int number, double lat, double lon){
         GasStation gasStation = new GasStation();
-        gasStation.setThingId("mything:GasStation-" + number);
+        gasStation.setThingId("gasstation:GasStation-" + number);
         gasStation.setGasStationStatus(GasStationStatus.WAITING);
         gasStation.setGasStationFuelAmount(3000);
         gasStation.setLocation(lat, lon);

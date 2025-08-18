@@ -7,49 +7,50 @@ import org.example.Gateways.AbstractGateway;
 import org.example.util.ThingHandler;
 import org.example.Things.TaskThings.TaskStatus;
 import org.example.Things.TaskThings.TaskType;
-import org.example.Things.TaskThings.Tasks;
+import org.example.Things.TaskThings.Task;
 import org.example.Things.TaskThings.TasksEventsActions;
 import org.example.Things.TruckThing.Truck;
 
 import java.util.concurrent.*;
 
-public class TaskGateway extends AbstractGateway<Tasks> {
+public class TaskGateway extends AbstractGateway<Task> {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     TasksEventsActions tasksEventsActions = new TasksEventsActions();
 
-    Truck truck;
 
     ThingHandler thingHandler = new ThingHandler();
 
-    Tasks tasks;
+    Task task;
 
-    public TaskGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, Tasks tasks, Truck truck) {
+    public TaskGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, Task task) {
         super(dittoClient, influxDBClient);
-        this.truck = truck;
-        this.tasks = tasks;
+        this.task = task;
        // tasksEventsActions.startLogging(tasks.getThingId());
     }
 
     @Override
     public void startGateway() {
-        startUpdating(tasks);
+        startUpdating(task);
     }
 
     @Override
-    public void startUpdating(Tasks tasks)  {
-        if(tasks.getTaskType() == TaskType.REFUEL){
-            handleRefueling(dittoClient, truck, tasks);
+    public void startUpdating(Task task)  {
+        if(task.getTaskType() == TaskType.REFUEL){
+            updateAttributes(task);
+           // handleRefueling(dittoClient, truck, task);
         }
-        if(tasks.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
-            handleTirePressure(dittoClient, truck, tasks);
+        if(task.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
+            updateAttributes(task);
+        //    handleTirePressure(dittoClient, truck, task);
         }
-        if(tasks.getTaskType() == TaskType.LOAD){
-            handleLoading(dittoClient, truck, tasks);
+        if(task.getTaskType() == TaskType.LOAD){
+            updateAttributes(task);
+         //   handleLoading(dittoClient, truck, task);
         }
     }
 
     @Override
-    public void logToInfluxDB(Tasks thing, String measurementType) {
+    public void logToInfluxDB(Task thing, String measurementType) {
 
     }
 
@@ -62,51 +63,55 @@ public class TaskGateway extends AbstractGateway<Tasks> {
 
     @Override
     public String getWOTURL() {
-        return tasks.getTaskType().getWot();
+        return task.getTaskType().getWot();
     }
 
 
     @Override
-    public void updateAttributes(Tasks tasks) {
-        if(tasks.getTaskType() == TaskType.REFUEL) {
-            updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
-            updateAttributeValue("targetThing", tasks.getTargetTruck(), tasks.getThingId());
-            updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
+    public void updateAttributes(Task task) {
+        if(task.getTaskType() == TaskType.REFUEL) {
+            updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
+            updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
+            updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
+            updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
+
         }
-        if(tasks.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
-            updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
-            updateAttributeValue("targetThing", tasks.getTargetTruck(), tasks.getThingId());
-            updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
+        if(task.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
+            updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
+            updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
+            updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
+            updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
         }
-        if(tasks.getTaskType() == TaskType.LOAD){
-            updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
-            updateAttributeValue("targetThing", tasks.getTargetTruck(), tasks.getThingId());
-            updateAttributeValue("creationDate", tasks.getCreationTime(), tasks.getThingId());
+        if(task.getTaskType() == TaskType.LOAD){
+            updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
+            updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
+            updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
+            updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
         }
     }
 
-    public void handleRefueling(DittoClient dittoClient, Truck truck, Tasks tasks){
+   /* public void handleRefueling(DittoClient dittoClient, Truck truck, Task task){
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
         //tasksEventsActions.handleRefuelTaskEvents(dittoClient, tasks);
-        tasks.setStatus(TaskStatus.UNDERGOING);
+        task.setStatus(TaskStatus.UNDERGOING);
 
 
         Runnable updateTask = () -> {
 
-            updateAttributes(tasks);
+            updateAttributes(task);
             double truckCurrentFuelAmount;
             try {
                 truckCurrentFuelAmount = (double) getFeatureValueFromDitto("FuelTank", truck.getThingId());
 
 
             if(truckCurrentFuelAmount == Config.FUEL_MAX_VALUE_STANDARD_TRUCK){
-                tasks.setStatus(TaskStatus.FINISHED);
-                updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
+                task.setStatus(TaskStatus.FINISHED);
+                updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
 
                 try {
                     Thread.sleep(1000);
-                    thingHandler.deleteThing(dittoClient, tasks.getThingId());
+                    thingHandler.deleteThing(dittoClient, task.getThingId());
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -115,7 +120,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                 truck.setTaskActive(false);
             }
 
-                tasksEventsActions.handleRefuelTaskEvents(dittoClient, tasks);
+                tasksEventsActions.handleRefuelTaskEvents(dittoClient, task);
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
@@ -126,28 +131,28 @@ public class TaskGateway extends AbstractGateway<Tasks> {
     }
 
 
-    public void handleTirePressure(DittoClient dittoClient, Truck truck, Tasks tasks) {
+    public void handleTirePressure(DittoClient dittoClient, Truck truck, Task task) {
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
 
-        tasks.setStatus(TaskStatus.UNDERGOING);
+        task.setStatus(TaskStatus.UNDERGOING);
 
 
         Runnable updateTask = () -> {
 
-            updateAttributes(tasks);
+            updateAttributes(task);
             double truckCurrentTirePressureAmount;
             try {
                 truckCurrentTirePressureAmount = (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
 
 
                 if(truckCurrentTirePressureAmount == Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK){
-                    tasks.setStatus(TaskStatus.FINISHED);
-                    updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
+                    task.setStatus(TaskStatus.FINISHED);
+                    updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
 
                     try {
                         Thread.sleep(1000);
-                        thingHandler.deleteThing(dittoClient, tasks.getThingId());
+                        thingHandler.deleteThing(dittoClient, task.getThingId());
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -156,7 +161,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                     truck.setTaskActive(false);
                 }
 
-                tasksEventsActions.handleTirePressureLowTaskEvents(dittoClient, tasks);
+                tasksEventsActions.handleTirePressureLowTaskEvents(dittoClient, task);
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
@@ -166,16 +171,16 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         future[0] = future1;
     }
 
-    public void handleLoading(DittoClient dittoClient, Truck truck, Tasks tasks){
+    public void handleLoading(DittoClient dittoClient, Truck truck, Task task){
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];
 
 
-        tasks.setStatus(TaskStatus.UNDERGOING);
+        task.setStatus(TaskStatus.UNDERGOING);
 
 
         Runnable updateTask = () -> {
 
-            updateAttributes(tasks);
+            updateAttributes(task);
             double truckCapacity;
             double truckCurrentInventory;
             try {
@@ -184,12 +189,12 @@ public class TaskGateway extends AbstractGateway<Tasks> {
 
 
                 if(truckCurrentInventory == truckCapacity){
-                    tasks.setStatus(TaskStatus.FINISHED);
-                    updateAttributeValue("status", tasks.getStatus().toString(), tasks.getThingId());
+                    task.setStatus(TaskStatus.FINISHED);
+                    updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
 
                     try {
                         Thread.sleep(1000);
-                        thingHandler.deleteThing(dittoClient, tasks.getThingId());
+                        thingHandler.deleteThing(dittoClient, task.getThingId());
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -198,7 +203,7 @@ public class TaskGateway extends AbstractGateway<Tasks> {
                     truck.setTaskActive(false);
                 }
 
-                tasksEventsActions.handleLoadingTruckTaskEvents(dittoClient, tasks);
+                tasksEventsActions.handleLoadingTruckTaskEvents(dittoClient, task);
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
@@ -207,6 +212,8 @@ public class TaskGateway extends AbstractGateway<Tasks> {
         ScheduledFuture<?> future1 = scheduler.scheduleAtFixedRate(updateTask, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
         future[0] = future1;
     }
+
+    */
 
 
 }

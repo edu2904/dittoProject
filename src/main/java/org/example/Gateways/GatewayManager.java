@@ -106,12 +106,14 @@ public class GatewayManager {
                 truckGateway.startGateway();
                 gasStationGateway.startGateway();
                 warehouseGateway.startGateway();
-
+/*
                 for (Truck truck : truckList){
                     if(truck.getTarget() == null){
                         setDecisionForNextDestination(truck);
                     }
                 }
+
+ */
             } catch (ExecutionException | InterruptedException e) {
                 logger.error("ERROR in updating", e);
             }

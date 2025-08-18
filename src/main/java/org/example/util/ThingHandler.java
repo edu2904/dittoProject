@@ -15,22 +15,11 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class ThingHandler {
     private final Logger logger = LoggerFactory.getLogger(ThingHandler.class);
-
-
-    public Feature fuelTankFeature;
-    public Feature tirePressureFeature;
-    public Feature velocityFeature;
-    public Feature progressFeature;
-
-    private String status;
-    private int weight;
-
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     public ThingHandler() {
 
 
@@ -171,7 +160,7 @@ public class ThingHandler {
 
     public CompletableFuture<Void> deleteThing(DittoClient dittoClient, String thingID) {
         return dittoClient.twin().delete(ThingId.of(thingID)).thenAccept(thing -> {
-            logger.info("Deleted thing: {}" , thingID);
+            logger.info("Deleted thing: {}", thingID);
         }).exceptionally(ex -> {
             logger.error("Error deleting thing: {}", ex.getMessage());
             return null;
@@ -179,11 +168,12 @@ public class ThingHandler {
     }
 
 
-    public CompletableFuture<Void> deleteThingandPolicy(DittoClient dittoClient, String policyID, String thingId) {
+    public CompletableFuture<Void> deleteThingAndPolicy(DittoClient dittoClient, String policyID, String thingId) {
         deleteThing(dittoClient, thingId);
         deletePolicy(dittoClient, policyID);
         return null;
     }
+
     public CompletableFuture<Void> getThingPayload(DittoClient dittoClient, String thingId) {
         return dittoClient.twin().retrieve(ThingId.of(thingId)).thenAccept(thing -> {
             logger.info("Payload: {}", thing.toString());

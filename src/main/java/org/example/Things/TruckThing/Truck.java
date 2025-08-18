@@ -33,6 +33,7 @@ public class Truck {
     private double fuel;
     private double capacity;
     private double inventory;
+    private double utilization;
     private ArrayList<Integer> stops;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ThingHandler thingHandler = new ThingHandler();
@@ -153,6 +154,14 @@ public class Truck {
         this.location = new Location(currentLocation.getLat(), currentLocation.getLon());
     }
 
+    public double getUtilization() {
+        return utilization;
+    }
+
+    public void setUtilization(double utilization) {
+        this.utilization = utilization;
+    }
+
     public synchronized TruckTargetDecision<?> getTarget() {
         return target;
     }
@@ -186,6 +195,14 @@ public class Truck {
         setStops(listDestinations);
     }
 
+    public double calculateUtilization(){
+        double weightFuel = 1;
+        double combinedUtilization = weightFuel * getFuel();
+
+        return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
+
+    }
+
     public void runSimulation(int destinations, double fuelConsumption, double progressMade, DittoClient dittoClient){
         setDestinations(destinations);
         setStarterLocation();
@@ -196,7 +213,7 @@ public class Truck {
 
             if (getFuel() <= 0 || getTarget() == null) {
                 stopTruck();
-                logger.info("Truck {} ran out of fuel", getThingId());
+                logger.debug("Truck {} ran out of fuel", getThingId());
 
             }else if(getTarget() != null) {
 

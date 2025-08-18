@@ -63,7 +63,7 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
 
     private Truck createDefaultTruck(int number) {
         Truck truck = new Truck();
-        truck.setThingId("mytest:LKW-" + number);
+        truck.setThingId("truck:Truck-" + number);
         truck.setStatus(TruckStatus.IDLE);
         truck.setWeight(Config.WEIGHT_STANDARD_TRUCK);
         truck.setVelocity(0);

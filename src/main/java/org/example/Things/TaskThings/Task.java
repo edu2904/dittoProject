@@ -2,16 +2,18 @@ package org.example.Things.TaskThings;
 
 import org.example.Things.TruckThing.Truck;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import javax.security.auth.Subject;
+import javax.swing.table.TableRowSorter;
+import java.util.List;
 
-public class Tasks {
+public class Task {
 
     private String thingId;
     private TaskStatus status;
     private String targetTruck;
     private String creationTime;
     private  TaskType taskType;
+
 
 
     public String getThingId() {
@@ -52,6 +54,19 @@ public class Tasks {
 
     public void setTaskType(TaskType taskType) {
         this.taskType = taskType;
+    }
+
+    public Truck lookForOperator(List<Truck> trucks){
+        if(trucks == null || trucks.isEmpty()){
+            return null;
+        }
+        Truck minTruck = trucks.get(0);
+        for(Truck truck : trucks){
+            if(minTruck.getUtilization() > truck.getUtilization()){
+                minTruck = truck;
+            }
+        }
+        return minTruck;
     }
 
 }

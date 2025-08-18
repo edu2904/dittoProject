@@ -59,9 +59,9 @@ public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
         Warehouse warehouse = new Warehouse();
 
         if(mainWarehouse){
-            warehouse.setThingId("mything:Warehouse-Main");
+            warehouse.setThingId("warehousemain:Warehouse-Main");
         }else {
-            warehouse.setThingId("mything:Warehouse-" + number);
+            warehouse.setThingId("warehouse:Warehouse-" + number);
         }
 
         int capacity = (int) ((Math.random() * 101) + 400);

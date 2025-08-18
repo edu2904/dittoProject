@@ -50,9 +50,9 @@ public class TruckGateway extends AbstractGateway<Truck> {
                 truckEventsActions.arrivalEvent(truck.getThingId(), getTargetLocationFromDitto(truck), getLocationFromDitto(truck), getTargetNameFromDitto(truck));
                 truckEventsActions.checkForTruckWithoutTask(truck.getThingId(), truck.getStatus());
 
-                checkRefuelTask(getFuelFromDitto(truck), truck);
-                checkTirePressureTask(getTirePressureFromDitto(truck), truck);
-                checkLoadingTask(getInventoryFromDitto(truck), truck);
+                //checkRefuelTask(getFuelFromDitto(truck), truck);
+                //checkTirePressureTask(getTirePressureFromDitto(truck), truck);
+                //checkLoadingTask(getInventoryFromDitto(truck), truck);
 
                 logToInfluxDB(truck, "Truck");
             } catch (ExecutionException | InterruptedException e) {
@@ -96,18 +96,17 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
     @Override
     public void logToInfluxDB(Truck truck, String measurementType) throws ExecutionException, InterruptedException {
-        System.out.println("Fuel before logging " + getProgressFromDitto(truck));
         String thingID = truck.getThingId();
-        //startLoggingToInfluxDB(measurementType, thingID, "FuelAmount", getFuelFromDitto(truck));
+        startLoggingToInfluxDB(measurementType, thingID, "FuelAmount", getFuelFromDitto(truck));
         startLoggingToInfluxDB(measurementType, thingID, "ProgressAmount", getProgressFromDitto(truck));
-        //startLoggingToInfluxDB(measurementType, thingID, "TirePressureAmount", getTirePressureFromDitto(truck));
-        //startLoggingToInfluxDB(measurementType, thingID, "VelocityAmount", truck.getVelocity());
-       // startLoggingToInfluxDB(measurementType, thingID, "InventoryAmount", getInventoryFromDitto(truck));
+        startLoggingToInfluxDB(measurementType, thingID, "TirePressureAmount", getTirePressureFromDitto(truck));
+        startLoggingToInfluxDB(measurementType, thingID, "VelocityAmount", truck.getVelocity());
+        startLoggingToInfluxDB(measurementType, thingID, "InventoryAmount", getInventoryFromDitto(truck));
 
 
     }
 
-    public void checkRefuelTask(double currentFuel, Truck truck){
+   /* public void checkRefuelTask(double currentFuel, Truck truck){
         try {
             if (currentFuel < Config.FUEL_MIN_VALUE_STANDARD_TRUCK) {
                 taskManager.startTask(TaskType.REFUEL, truck);
@@ -136,6 +135,8 @@ public class TruckGateway extends AbstractGateway<Truck> {
             logger.error("Error creating Loading Task for " + truck.getThingId(), e);
         }
     }
+
+    */
 
     public double getWeightFromDitto(Truck truck) throws ExecutionException, InterruptedException {
         return (double) getAttributeValueFromDitto("weight", truck.getThingId());

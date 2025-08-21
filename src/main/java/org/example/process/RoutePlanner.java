@@ -7,6 +7,7 @@ import org.example.Things.WarehouseThing.Warehouse;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -33,13 +34,15 @@ public class RoutePlanner {
     public static class Segment{
         private final Warehouse from;
         private final Warehouse to;
-        private TaskType taskType;
-        private double quantity;
-        public Segment(Warehouse from, Warehouse to, TaskType taskType, double quantity){
+        private final TaskType taskType;
+        private final double quantity;
+        private final String setId;
+        public Segment(Warehouse from, Warehouse to, TaskType taskType, double quantity, String routeId){
             this.from = from;
             this.to = to;
             this.taskType = taskType;
             this.quantity = quantity;
+            this.setId = routeId;
         }
 
         public Warehouse getFrom() {
@@ -57,6 +60,10 @@ public class RoutePlanner {
             return quantity;
         }
 
+        public String getSetId() {
+            return setId;
+        }
+
         @Override
         public String toString(){
             return from.getThingId() + " to " + to.getThingId() + " which task: " + taskType.toString();
@@ -72,6 +79,7 @@ public class RoutePlanner {
         }
     }
     public Route createRoute(){
+        String routeId = "route-" + UUID.randomUUID().toString().substring(0, 6);
         List<Segment> segments = new ArrayList<>();
         List<Warehouse> warehouses = gatewayManager.getWarehouseList();
         double quantitiy = 100;
@@ -80,7 +88,7 @@ public class RoutePlanner {
             Warehouse to = warehouses.get(i+1);
 
             TaskType taskType = (i % 2 == 0) ? TaskType.LOAD : TaskType.UNLOAD;
-            segments.add(new Segment(from, to, taskType, quantitiy));
+            segments.add(new Segment(from, to, taskType, quantitiy, routeId));
         }
         return new Route(segments);
     }

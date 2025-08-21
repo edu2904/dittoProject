@@ -1,34 +1,38 @@
 package org.example.process;
 
+import com.eclipsesource.json.Json;
 import com.influxdb.client.InfluxDBClient;
-import com.influxdb.client.domain.OnboardingRequest;
 import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
+import org.eclipse.ditto.client.changes.ChangeAction;
+import org.eclipse.ditto.client.options.Options;
+import org.eclipse.ditto.json.JsonFieldSelector;
 import org.example.Client.DittoClientBuilder;
 import org.example.Factory.ConcreteFactories.TaskFactory;
 import org.example.Gateways.GatewayManager;
 import org.example.TaskManager;
 import org.example.Things.TaskThings.Task;
-import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TruckThing.Truck;
-import org.example.Things.TruckThing.TruckEventsActions;
+import org.example.Things.TaskThings.TasksEventsActions;
 import org.example.util.ThingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class TruckProcess {
-    DittoClient processClient;
-    DittoClient taskClient;
-    DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
+    private final DittoClient processClient;
+    private final DittoClient taskClient;
+    private final DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
     private final Logger logger = LoggerFactory.getLogger(Truck.class);
-    GatewayManager gatewayManager;
-    private TaskFactory taskFactory;
-    ThingHandler thingHandler = new ThingHandler();
-    InfluxDBClient influxDBClient;
-    TaskManager taskManager;
+    private final GatewayManager gatewayManager;
+    private final TaskFactory taskFactory;
+    private final ThingHandler thingHandler = new ThingHandler();
+    private final InfluxDBClient influxDBClient;
+    private TaskManager taskManager;
+    private final RouteRegister routeRegister = new RouteRegister();
     public TruckProcess(DittoClient processClient, DittoClient taskClient, InfluxDBClient influxDBClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
         this.taskClient = taskClient;
         this.processClient = processClient;
@@ -43,45 +47,63 @@ public class TruckProcess {
 
     public void subscribeForChanges(DittoClient dittoClient) {
 
-            dittoClient.twin().registerForThingChanges(UUID.randomUUID().toString(), thingChange -> {
-                if(!Objects.equals(thingChange.getAction().toString(), "MERGED")) {
-                    logger.info("{}", thingChange.getAction());
+
+
+        dittoClient.twin().registerForThingChanges(UUID.randomUUID().toString(), thingChange -> {
+            CompletableFuture.runAsync(() -> {
+                if (thingChange.getAction() != ChangeAction.MERGED) {
+                    logger.info(thingChange.getAction().toString() + " " + thingChange.getThing().toString());
+                }
+                if (Objects.equals(thingChange.getAction(), ChangeAction.CREATED)) {
+                    logger.info("{}, {}", thingChange.getAction(), thingChange.getThing());
                 }
             });
+        });
+
 
     }
     public void receiveMessages(DittoClient dittoClient) {
-         dittoClient.live().registerForMessage("test2", "*", message -> {
+            dittoClient.live().registerForMessage("test2", "*", message -> {
+
                 switch (message.getSubject()) {
-                    case TruckEventsActions.TRUCKARRIVED, TruckEventsActions.TRUCKWAITNGTOOLONG:
-                        logger.info(message.getPayload().toString());
+                    case TasksEventsActions.TASKFINISHED:
+                        Optional<?> optionalObject = message.getPayload();
+                        if(optionalObject.isPresent()) {
+                            String rawPayload = optionalObject.get().toString();
+                            var parsePayload = Json.parse(rawPayload).asObject();
+                            String finishedSetId = parsePayload.get("setId").asString();
+                            RouteExecutor routeExecutor = routeRegister.getRegister(finishedSetId);
+                            if(routeExecutor != null){
+                                routeExecutor.startNewTask();
+                            }
+                        }
                         break;
                 }
                 message.reply().httpStatus(HttpStatus.OK).payload("response sent for " + message.getPayload()).send();
             });
-
-
     }
     public void startProcess(){
-        taskManager = new TaskManager(processClient, influxDBClient);
+        String routeId = "route-" + UUID.randomUUID().toString().substring(0, 6);
+        Queue<Task> taskQueue = new LinkedList<>();
+        taskManager = new TaskManager(taskClient, influxDBClient);
         RoutePlanner routePlanner = new RoutePlanner(taskManager, gatewayManager);
         RoutePlanner.Route route = routePlanner.createRoute();
         deleteAllTasksForNewIteration();
 
         for(RoutePlanner.Segment segment : route.getSegments()) {
-            try {
                 Map<String, Object> data = new HashMap<>();
                 data.put("from", segment.getFrom());
                 data.put("to", segment.getTo());
                 data.put("quantity", segment.getQuantity());
+                data.put("setId", segment.getSetId());
 
-                Task task = taskFactory.startTask(segment.getTaskType(), data);
-                taskManager.startTask(task);
-
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+                Task task = taskFactory.createTask(segment.getTaskType(), data);
+                task.setSetId(routeId);
+                taskQueue.add(task);
         }
+        RouteExecutor routeExecutor = new RouteExecutor(taskManager, taskQueue, taskFactory);
+        routeRegister.registerExecutor(routeId, routeExecutor);
+        routeExecutor.startNewTask();
     }
 
     public void deleteAllTasksForNewIteration(){

@@ -5,6 +5,8 @@ import com.influxdb.client.InfluxDBClientFactory;
 import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.client.messaging.MessagingProviders;
+import org.eclipse.ditto.client.options.Options;
+import org.eclipse.ditto.json.JsonFieldSelector;
 import org.example.Client.DittoClientBuilder;
 import org.example.Factory.DigitalTwinFactoryMain;
 import org.example.Gateways.GatewayManager;
@@ -25,16 +27,16 @@ public class Main {
         DittoClient engineClient = dittoClientBuilder.getDittoClient();
 
 
-        processClient.live().startConsumption().toCompletableFuture();
-        engineClient.live().startConsumption().toCompletableFuture();
-        processClient.twin().startConsumption().toCompletableFuture();
-        engineClient.twin().startConsumption().toCompletableFuture();
+        engineClient.live().startConsumption().toCompletableFuture().join();
+        engineClient.twin().startConsumption().toCompletableFuture().join();
+        processClient.live().startConsumption().toCompletableFuture().join();
+        processClient.twin().startConsumption().toCompletableFuture().join();
 
 
-        char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
-        //char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
-        String org = "admin";
-        //String org = "dittoProject";
+        //char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
+        char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
+        //String org = "admin";
+        String org = "dittoProject";
         String bucket = "ditto";
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 

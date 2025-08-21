@@ -2,12 +2,9 @@ package org.example;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.example.Factory.ConcreteFactories.TaskFactory;
 import org.example.Gateways.ConcreteGateways.TaskGateway;
-import org.example.Gateways.GatewayManager;
-import org.example.Things.TaskThings.TaskType;
+import org.example.Mapper.TaskMapper;
 import org.example.Things.TaskThings.Task;
-import org.example.Things.TruckThing.Truck;
 import org.example.util.Config;
 import org.example.util.ThingHandler;
 
@@ -38,8 +35,8 @@ public class TaskManager {
         startTaskGateway(task);
 
     }
-
-   /* public Task createNewTask(TaskType taskType){
+/*
+    public Task createNewTask(TaskType taskType){
         TaskFactory taskFactory = new TaskFactory(dittoClient, taskType);
         try {
             taskFactory.createTwinsForDitto();
@@ -49,13 +46,15 @@ public class TaskManager {
         return taskFactory.getTask();
     }
 
-    */
+ */
+
+
     public void startTaskGateway(Task task){
         TaskGateway taskGateway = new TaskGateway(dittoClient, influxDBClient, task);
 
-        scheduler.schedule(() -> {
+        scheduler.scheduleAtFixedRate(() -> {
         taskGateway.startUpdating(task);
-        }, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
+        },0 , Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
     public void deleteTask(Task task){
         thingHandler.deleteThing(dittoClient, task.getThingId());
@@ -75,11 +74,12 @@ public class TaskManager {
         dittoClient.twin().search()
                 .stream(queryBuilder -> queryBuilder.filter("like(thingId,'task:*')")
                         .options(o -> o.size(20)
-                                .sort(s -> s.asc("thingId"))))
-                .map(TaskMapper::fromThing).toList()
+                                .sort(s -> s.asc("thingId"))).fields("thingId"))
+                .toList()
                 .forEach(foundThing -> {
+                    Task task = TaskMapper.fromThing(foundThing);
                     System.out.println("Found thing: " + foundThing);
-                    currentTasks.add(foundThing);
+                    currentTasks.add(task);
                 });
         return currentTasks;
     }

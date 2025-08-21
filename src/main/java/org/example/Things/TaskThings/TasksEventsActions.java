@@ -14,6 +14,8 @@ public class TasksEventsActions implements EventActionHandler {
 
     private final Map<String, Boolean> loadingTaskStarted = new ConcurrentHashMap<>();
 
+    public static final String TASKFINISHED = "taskFinished";
+
 
 
   //  DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
@@ -32,8 +34,12 @@ public class TasksEventsActions implements EventActionHandler {
     }
     public void taskFinished(DittoClient dittoClient, Task task){
         String thingID = task.getThingId();
-        JsonObject endObject = JsonObject.newBuilder().set("message", "Refuel Task finished for " + thingID).build();
-        sendEvent(dittoClient, thingID, endObject, TaskEventType.TASK_FINISHED.getEventName());
+        JsonObject endObject = JsonObject
+                .newBuilder()
+                .set("message", "Refuel Task finished for " + thingID)
+                .set("setId", task.getSetId())
+                .build();
+        sendEvent(dittoClient, thingID, endObject, TASKFINISHED);
     }
 
     public void handleRefuelTaskEvents(DittoClient dittoClient, Task task) throws InterruptedException {

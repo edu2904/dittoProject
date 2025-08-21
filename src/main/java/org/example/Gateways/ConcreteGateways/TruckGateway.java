@@ -44,11 +44,11 @@ public class TruckGateway extends AbstractGateway<Truck> {
                 updateFeatures(truck);
 
                 //truckEventsActions.progressResetAction(this.dittoClient, truck.getThingId(), truck, getProgressFromDitto(truck));
-                truckEventsActions.weightEvent(truck.getThingId(), getWeightFromDitto(truck));
-                truckEventsActions.fuelAmountEvents(truck.getThingId(), getFuelFromDitto(truck));
+                //truckEventsActions.weightEvent(truck.getThingId(), getWeightFromDitto(truck));
+                //truckEventsActions.fuelAmountEvents(truck.getThingId(), getFuelFromDitto(truck));
                // truckEventsActions.taskSearchAction(truck.getThingId(), getWeightFromDitto(truck), 7000);
-                truckEventsActions.arrivalEvent(truck.getThingId(), getTargetLocationFromDitto(truck), getLocationFromDitto(truck), getTargetNameFromDitto(truck));
-                truckEventsActions.checkForTruckWithoutTask(truck.getThingId(), truck.getStatus());
+                //truckEventsActions.arrivalEvent(truck.getThingId(), getTargetLocationFromDitto(truck), getLocationFromDitto(truck), getTargetNameFromDitto(truck));
+                //truckEventsActions.checkForTruckWithoutTask(truck.getThingId(), truck.getStatus());
 
                 //checkRefuelTask(getFuelFromDitto(truck), truck);
                 //checkTirePressureTask(getTirePressureFromDitto(truck), truck);

@@ -1,4 +1,4 @@
-package org.example;
+package org.example.Mapper;
 
 import org.eclipse.ditto.things.model.Thing;
 import org.example.Things.TaskThings.Task;

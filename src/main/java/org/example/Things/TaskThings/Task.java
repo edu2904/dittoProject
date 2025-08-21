@@ -18,6 +18,7 @@ public class Task {
     private String targetTruck;
     private String creationTime;
     private  TaskType taskType;
+    private String setId;
 
     private final Map<String, Object> data = new HashMap<>();
 
@@ -78,6 +79,13 @@ public class Task {
 
     public Object getData(String key) {
         return data.get(key);
+    }
+
+    public void setSetId(String setId) {
+        this.setId = setId;
+    }
+    public String getSetId() {
+        return setId;
     }
 
     public Truck lookForOperator(List<Truck> trucks){

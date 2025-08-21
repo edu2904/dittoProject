@@ -34,15 +34,17 @@ public class TaskFactory
         this.dittoClient = dittoClient;
     }
 
-    public Task startTask(TaskType taskType, Map<String, Object> useCaseData){
-        String thingId = "task:" + taskType + "_" + UUID.randomUUID().toString().substring(0,6);
-        Task task = new Task(thingId, taskType);
-        useCaseData.forEach(task::putData);
+    public void startTask(Task task){
         try {
-            thingHandler.createTwinAndPolicy(dittoClient, taskType.getWot(), taskType.getPolicy(), task.getThingId()).toCompletableFuture();
+            thingHandler.createTwinAndPolicy(dittoClient, task.getTaskType().getWot(), task.getTaskType().getPolicy(), task.getThingId()).toCompletableFuture();
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+    public Task createTask(TaskType taskType, Map<String, Object> useCaseData){
+        String thingId = "task:" + taskType + "_" + UUID.randomUUID().toString().substring(0,6);
+        Task task = new Task(thingId, taskType);
+        useCaseData.forEach(task::putData);
         return task;
     }
 /*

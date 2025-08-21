@@ -2,6 +2,10 @@ package org.example.Gateways.ConcreteGateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
+import org.eclipse.ditto.things.model.Thing;
+import org.example.Mapper.TaskMapper;
+import org.example.Mapper.ThingMapper;
+import org.example.Mapper.TruckMapper;
 import org.example.util.Config;
 import org.example.Gateways.AbstractGateway;
 import org.example.util.ThingHandler;
@@ -11,7 +15,12 @@ import org.example.Things.TaskThings.Task;
 import org.example.Things.TaskThings.TasksEventsActions;
 import org.example.Things.TruckThing.Truck;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 
 public class TaskGateway extends AbstractGateway<Task> {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -25,6 +34,11 @@ public class TaskGateway extends AbstractGateway<Task> {
     public TaskGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, Task task) {
         super(dittoClient, influxDBClient);
         this.task = task;
+        TruckMapper truckMapper = new TruckMapper();
+        List<Truck> trucks = getAvailableThings(truckMapper::fromThing, "truck");
+        Truck truck = selectBestThing(trucks, Truck::getUtilization);
+        System.out.println("BEST TRUCK = " + truck.getThingId());
+
        // tasksEventsActions.startLogging(tasks.getThingId());
     }
 
@@ -92,6 +106,25 @@ public class TaskGateway extends AbstractGateway<Task> {
         updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
         updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
     }
+
+    public <T> List<T> getAvailableThings(Function<Thing, T> mapper, String filter){
+
+            List<T> currentTasks = new ArrayList<>();
+        System.out.println("ASDASDASDASDASDASDASD");
+            dittoClient.twin().search()
+                    .stream(queryBuilder -> queryBuilder.filter("like(thingId,\"" + filter + ":*\" )")
+                            .options(o -> o.sort(s -> s.desc("thingId")).size(20)).fields("thingId"))
+                    .map(mapper).toList()
+                    .forEach(foundThing -> {
+                        System.out.println("Found thing: " + foundThing);
+                        currentTasks.add(foundThing);
+                    });
+            return currentTasks;
+    }
+    public <T> T selectBestThing(List<T> things, ToDoubleFunction<T> score){
+        return things.stream().min(Comparator.comparingDouble(score)).orElse(null);
+    }
+
 
    /* public void handleRefueling(DittoClient dittoClient, Truck truck, Task task){
         final ScheduledFuture<?>[] future = new ScheduledFuture<?>[1];

@@ -59,7 +59,7 @@ public class TruckEventsActions implements EventActionHandler {
             waitingSince.putIfAbsent(thingId, System.currentTimeMillis());
             long waited = System.currentTimeMillis() - waitingSince.get(thingId);
             if(waited >= TimeUnit.SECONDS.toMillis(10)){
-                JsonObject withoutTaskMessage = JsonObject.newBuilder().set("message", thingId + " waitinge for too long. Requesting task search").build();
+                JsonObject withoutTaskMessage = JsonObject.newBuilder().set("message", thingId + " waiting for too long. Requesting task search").build();
                 sendEvent(dittoClient, thingId, withoutTaskMessage, TRUCKWAITNGTOOLONG);
                 eventState.put("withoutTask_" + thingId, true);
             }

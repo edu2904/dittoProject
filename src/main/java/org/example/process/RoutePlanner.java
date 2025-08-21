@@ -26,11 +26,6 @@ public class RoutePlanner {
         this.gatewayManager = gatewayManager;
     }
 
-
-
-
-
-
     public static class Segment{
         private final Warehouse from;
         private final Warehouse to;

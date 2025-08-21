@@ -28,15 +28,20 @@ public class Main {
 
 
         engineClient.live().startConsumption().toCompletableFuture().join();
+        System.out.println("ENGINE LIVE CLIENT ESTABLISHED");
         engineClient.twin().startConsumption().toCompletableFuture().join();
+        System.out.println("ENGINE TWIN CLIENT ESTABLISHED");
         processClient.live().startConsumption().toCompletableFuture().join();
+        System.out.println("PROCESS LIVE CLIENT ESTABLISHED");
         processClient.twin().startConsumption().toCompletableFuture().join();
+        System.out.println("PROCESS TWIN CLIENT ESTABLISHED");
 
 
-        //char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
-        char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
-        //String org = "admin";
-        String org = "dittoProject";
+
+        char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
+        //char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
+        String org = "admin";
+        //String org = "dittoProject";
         String bucket = "ditto";
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 

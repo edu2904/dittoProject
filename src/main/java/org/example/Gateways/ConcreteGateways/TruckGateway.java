@@ -20,11 +20,9 @@ public class TruckGateway extends AbstractGateway<Truck> {
     List<Truck> trucks;
     private final TruckEventsActions truckEventsActions = new TruckEventsActions(dittoClient);
 
-    private final TaskManager taskManager;
     public TruckGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, List<Truck> trucks){
         super(dittoClient, influxDBClient);
         this.trucks = trucks;
-        this.taskManager = new TaskManager(dittoClient, influxDBClient);
 
     }
 

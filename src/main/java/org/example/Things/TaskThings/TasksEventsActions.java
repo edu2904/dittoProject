@@ -29,14 +29,24 @@ public class TasksEventsActions implements EventActionHandler {
 
     public void sendStartEvent(DittoClient dittoClient, Task task){
         String thingID = task.getThingId();
-        JsonObject startObject = JsonObject.newBuilder().set("message", "Refuel Task started for " + thingID).build();
+        JsonObject startObject = JsonObject.newBuilder()
+                .set("message", "Task started for " + thingID)
+                .set("setId", task.getSetId()).build();
+        sendEvent(dittoClient, thingID, startObject, TaskEventType.TASK_BEGIN.getEventName());
+    }
+    public void sendFailEvent(DittoClient dittoClient, Task task){
+        String thingID = task.getThingId();
+        JsonObject startObject = JsonObject
+                .newBuilder()
+                .set("message", "Task failed for " + thingID)
+                .set("setId", task.getSetId()).build();
         sendEvent(dittoClient, thingID, startObject, TaskEventType.TASK_BEGIN.getEventName());
     }
     public void taskFinished(DittoClient dittoClient, Task task){
         String thingID = task.getThingId();
         JsonObject endObject = JsonObject
                 .newBuilder()
-                .set("message", "Refuel Task finished for " + thingID)
+                .set("message", "Task finished for " + thingID)
                 .set("setId", task.getSetId())
                 .build();
         sendEvent(dittoClient, thingID, endObject, TASKFINISHED);

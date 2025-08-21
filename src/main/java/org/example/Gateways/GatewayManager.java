@@ -48,19 +48,6 @@ public class GatewayManager {
         this.digitalTwinFactoryMain = new DigitalTwinFactoryMain(dittoClient);
     }
 
-    public void safeDeleteTasksBeforeRestart(List<Truck> truckList) throws ExecutionException, InterruptedException {
-        for (Truck truck : truckList) {
-            if (thingHandler.thingExists(dittoClient, "task:refuel_" + truck.getThingId()).get()) {
-                thingHandler.deleteThing(dittoClient, "task:refuel_" + truck.getThingId()).toCompletableFuture().get();
-            }
-            if (thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + truck.getThingId()).get()) {
-                thingHandler.deleteThing(dittoClient, "task:tirePressureLow_" + truck.getThingId()).toCompletableFuture().get();
-            }
-            if (thingHandler.thingExists(dittoClient, "task:loadingTruck_" + truck.getThingId()).get()) {
-                thingHandler.deleteThing(dittoClient, "task:loadingTruck_" + truck.getThingId()).toCompletableFuture().get();
-            }
-        }
-    }
 
     public void createPermanentThings() throws ExecutionException, InterruptedException {
         digitalTwinFactoryMain.getTruckFactory().createTwinsForDitto();
@@ -89,16 +76,9 @@ public class GatewayManager {
             truck.featureSimulation1(dittoClient);
         }
 
-
-
         truckGateway = new TruckGateway(dittoClient, influxDBClient,truckList);
         gasStationGateway = new GasStationGateway(dittoClient, influxDBClient, gasStationList);
         warehouseGateway = new WarehouseGateway(dittoClient, influxDBClient, warehouseList);
-
-
-
-        safeDeleteTasksBeforeRestart(truckList);
-
 
         Runnable updateTask = () -> {
             try {
@@ -106,15 +86,7 @@ public class GatewayManager {
                 truckGateway.startGateway();
                 gasStationGateway.startGateway();
                 warehouseGateway.startGateway();
-/*
-                for (Truck truck : truckList){
-                    if(truck.getTarget() == null){
-                        setDecisionForNextDestination(truck);
-                    }
-                }
-
- */
-            } catch (ExecutionException | InterruptedException e) {
+      } catch (ExecutionException | InterruptedException e) {
                 logger.error("ERROR in updating", e);
             }
 
@@ -129,6 +101,11 @@ public class GatewayManager {
     public List<Truck> getTruckList() {
         return truckList;
     }
+
+
+
+
+
 
     public void setDecisionForNextDestination(Truck truck) throws ExecutionException, InterruptedException {
         double fuel = truckGateway.getFuelFromDitto(truck);
@@ -147,16 +124,12 @@ public class GatewayManager {
                 continue;
             }
             double utilizationGasStation = gasStationGateway.getUtilizationFromDitto(gasStation);
-            System.out.println("Gasstation utilization " + utilizationGasStation);
-
-            System.out.println(fuel);
             double urgencyLowFuel = fuel < 40 ? (1-(fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK)) * 75 : 0;
             double urgencyHighFuel = fuel > 150 ? (fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK) * 75 : 0;
 
 
             double cost = weightDistance * distanceGasStation + weightUtilization * utilizationGasStation - urgencyLowFuel + urgencyHighFuel;
 
-            System.out.println(gasStation.getThingId() + ": " + cost);
             if(cost < bestScore){
                 bestScore = cost;
                 bestTarget = new TruckTargetDecision<>(gasStation, distanceGasStation, gasStation.getLocation(), gasStation.getThingId());

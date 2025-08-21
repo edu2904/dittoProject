@@ -2,6 +2,7 @@ package org.example.Things.TruckThing;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Things.Location;
+import org.example.Things.TaskThings.Task;
 import org.example.util.Config;
 import org.example.util.GeoConst;
 import org.example.util.GeoUtil;
@@ -42,6 +43,7 @@ public class Truck {
     private final List<GasStation> gasStationList = new ArrayList<>();
     private TruckTargetDecision<?> target;
     private TruckTargetDecision<?> recommendedTarget;
+    private Task task;
 
 
 
@@ -173,6 +175,16 @@ public class Truck {
     public void setRecommendedTarget(TruckTargetDecision<?> recommendedTarget) {
         this.recommendedTarget = recommendedTarget;
     }
+
+
+    public Task getTask() {
+        return task;
+    }
+
+    public void setTask(Task task) {
+        this.task = task;
+    }
+
     public void updateTarget(){
         if(this.target == null && this.recommendedTarget != null){
             this.target = this.recommendedTarget;

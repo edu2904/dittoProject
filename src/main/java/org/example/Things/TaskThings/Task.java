@@ -88,17 +88,5 @@ public class Task {
         return setId;
     }
 
-    public Truck lookForOperator(List<Truck> trucks){
-        if(trucks == null || trucks.isEmpty()){
-            return null;
-        }
-        Truck minTruck = trucks.get(0);
-        for(Truck truck : trucks){
-            if(minTruck.getUtilization() > truck.getUtilization()){
-                minTruck = truck;
-            }
-        }
-        return minTruck;
-    }
 
 }

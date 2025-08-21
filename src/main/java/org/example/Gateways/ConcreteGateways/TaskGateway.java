@@ -34,95 +34,57 @@ public class TaskGateway extends AbstractGateway<Task> {
     public TaskGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, Task task) {
         super(dittoClient, influxDBClient);
         this.task = task;
-        TruckMapper truckMapper = new TruckMapper();
-        List<Truck> trucks = getAvailableThings(truckMapper::fromThing, "truck");
-        Truck truck = selectBestThing(trucks, Truck::getUtilization);
-        System.out.println("BEST TRUCK = " + truck.getThingId());
-
-       // tasksEventsActions.startLogging(tasks.getThingId());
     }
 
     @Override
     public void startGateway() {
+        assignThingToTask();
         startUpdating(task);
     }
 
     @Override
     public void startUpdating(Task task)  {
-        if(task.getTaskType() == TaskType.REFUEL){
-            updateAttributes(task);
-           // handleRefueling(dittoClient, truck, task);
-        }
-        if(task.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
-            updateAttributes(task);
-        //    handleTirePressure(dittoClient, truck, task);
-        }
-        if(task.getTaskType() == TaskType.LOAD){
-            updateAttributes(task);
-         //   handleLoading(dittoClient, truck, task);
-        }
-        if(task.getTaskType() == TaskType.UNLOAD){
-            updateAttributes(task);
-        }
+       updateAttributes(task);
     }
 
     @Override
     public void logToInfluxDB(Task thing, String measurementType) {
 
     }
-
-
-   // @Override
-   // public void subscribeForEventsAndActions() {
-    //    tasksEventsActions.startLogging(tasks.getThingId());
-   // }
-
-
     @Override
     public String getWOTURL() {
         return task.getTaskType().getWot();
     }
 
-
     @Override
     public void updateAttributes(Task task) {
-        if(task.getTaskType() == TaskType.REFUEL) {
-           updateStandardTask(task);
-        }
-        if(task.getTaskType() == TaskType.TIREPRESSUREADJUSTMENT){
-            updateStandardTask(task);
-        }
-        if(task.getTaskType() == TaskType.LOAD){
-            updateStandardTask(task);
-        }
-        if(task.getTaskType() == TaskType.UNLOAD){
-            updateStandardTask(task);
-        }
+        updateStandardTask(task);
     }
 
     public void updateStandardTask(Task task){
         updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
-        //updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
         updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
         updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());
     }
 
-    public <T> List<T> getAvailableThings(Function<Thing, T> mapper, String filter){
 
-            List<T> currentTasks = new ArrayList<>();
-        System.out.println("ASDASDASDASDASDASDASD");
-            dittoClient.twin().search()
-                    .stream(queryBuilder -> queryBuilder.filter("like(thingId,\"" + filter + ":*\" )")
-                            .options(o -> o.sort(s -> s.desc("thingId")).size(20)).fields("thingId"))
-                    .map(mapper).toList()
-                    .forEach(foundThing -> {
-                        System.out.println("Found thing: " + foundThing);
-                        currentTasks.add(foundThing);
-                    });
-            return currentTasks;
-    }
     public <T> T selectBestThing(List<T> things, ToDoubleFunction<T> score){
         return things.stream().min(Comparator.comparingDouble(score)).orElse(null);
+    }
+
+    public void assignThingToTask(){
+        List<Truck> trucks = thingHandler.searchThings(dittoClient, new TruckMapper()::fromThing, "truck");
+
+        Truck truck = selectBestThing(trucks, Truck::getUtilization);
+        if(truck != null){
+            task.setTargetTruck(truck.getThingId());
+            updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
+            tasksEventsActions.sendStartEvent(dittoClient, task);
+        }else {
+            logger.warn("NO BEST THING FOUND");
+            task.setStatus(TaskStatus.FAILED);
+            tasksEventsActions.sendFailEvent(dittoClient, task);
+        }
     }
 
 

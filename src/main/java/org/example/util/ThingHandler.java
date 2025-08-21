@@ -15,8 +15,10 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.function.Function;
 
 public class ThingHandler {
     private final Logger logger = LoggerFactory.getLogger(ThingHandler.class);
@@ -165,6 +167,20 @@ public class ThingHandler {
             logger.error("Error deleting thing: {}", ex.getMessage());
             return null;
         }).toCompletableFuture();
+    }
+
+    public <T> List<T> searchThings(DittoClient dittoClient, Function<Thing, T> mapper, String filter){
+        List<T> foundThings = new ArrayList<>();
+        dittoClient.twin().search()
+                .stream(queryBuilder -> queryBuilder.filter("like(thingId,\"" + filter + ":*\" )")
+                        .options(o -> o.sort(s -> s.desc("thingId")).size(20)).fields("thingId"))
+                .map(mapper).toList()
+                .forEach(foundThing -> {
+                    logger.info("Found thing: {}", foundThing);
+                    System.out.println("Found thing: " + foundThing);
+                    foundThings.add(foundThing);
+                });
+        return foundThings;
     }
 
 

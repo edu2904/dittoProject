@@ -19,8 +19,8 @@ public class RouteExecutor {
     }
     public void startNewTask(){
         Task task = taskQueue.poll();
-        System.out.println(task.getThingId());
         try {
+            assert task != null;
             taskFactory.startTask(task);
             taskManager.startTask(task);
         } catch (ExecutionException | InterruptedException e) {

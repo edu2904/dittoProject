@@ -5,7 +5,8 @@ import org.example.Things.DigitalTwinStatus;
 public enum TaskStatus implements DigitalTwinStatus {
     STARTING,
     UNDERGOING,
-    FINISHED;
+    FINISHED,
+    FAILED;
 
     @Override
     public String status() {

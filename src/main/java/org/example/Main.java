@@ -22,45 +22,44 @@ public class Main {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
         DittoClientBuilder dittoClientBuilder1 = new DittoClientBuilder();
-        DittoClientBuilder dittoClientBuilder2 = new DittoClientBuilder();
 
-        DittoClient processClient = dittoClientBuilder1.getDittoClient();
-        DittoClient taskClient = dittoClientBuilder.getDittoClient();
+        DittoClient listenerClient = dittoClientBuilder1.getDittoClient();
         DittoClient thingClient = dittoClientBuilder.getDittoClient();
 
 
-        taskClient.live().startConsumption().toCompletableFuture().get();
-        System.out.println("ENGINE LIVE CLIENT ESTABLISHED");
-        taskClient.twin().startConsumption().toCompletableFuture().get();
-        System.out.println("ENGINE TWIN CLIENT ESTABLISHED");
-        processClient.live().startConsumption().toCompletableFuture().get();
+
+        listenerClient.live().startConsumption().toCompletableFuture().join();
         System.out.println("PROCESS LIVE CLIENT ESTABLISHED");
-        processClient.twin().startConsumption().toCompletableFuture().get();
+        listenerClient.twin().startConsumption(Options.Consumption.filter("exists(attributes/targetThing)")).toCompletableFuture().join();
         System.out.println("PROCESS TWIN CLIENT ESTABLISHED");
+
+
         thingClient.live().startConsumption(
                 Options.Consumption.filter("exists(attributes/targetThing)")
-        ).toCompletableFuture().get();
+        ).toCompletableFuture().join();
         System.out.println("THING LIVE CLIENT ESTABLISHED");
+
+
         thingClient.twin().startConsumption(
-                Options.Consumption.filter("exists(attributes/targetThing)")
-        ).toCompletableFuture().get();
+                Options.Consumption.filter("and(exists(attributes/targetThing),ne(attributes/targetThing,\"\"))")
+        ).toCompletableFuture().join();
         System.out.println("THING TWIN CLIENT ESTABLISHED");
 
 
 
-        //char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
-        char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
-        //String org = "admin";
-        String org = "dittoProject";
+        char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
+        //char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
+        String org = "admin";
+        //String org = "dittoProject";
         String bucket = "ditto";
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 
 
 
-        GatewayManager gatewayManager = new GatewayManager(thingClient, influxDBClient);
+        GatewayManager gatewayManager = new GatewayManager(thingClient, listenerClient, influxDBClient);
         gatewayManager.startGateways();
 
-        TruckProcess truckProcess = new TruckProcess(processClient, taskClient, influxDBClient, gatewayManager);
+        TruckProcess truckProcess = new TruckProcess(listenerClient, thingClient, influxDBClient, gatewayManager);
 
 
 

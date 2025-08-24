@@ -6,6 +6,7 @@ import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.exceptions.InfluxException;
 import org.eclipse.ditto.client.DittoClient;
+import org.eclipse.ditto.client.changes.ChangeAction;
 import org.eclipse.ditto.json.JsonValue;
 import org.eclipse.ditto.things.model.Feature;
 import org.eclipse.ditto.things.model.ThingId;
@@ -20,14 +21,16 @@ import java.util.concurrent.ExecutionException;
 public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
     protected final DittoClient dittoClient;
+    protected final DittoClient listenerClient;
     protected InfluxDBClient influxDBClient;
 
     protected final Logger logger = LoggerFactory.getLogger(AbstractGateway.class);
     WriteApiBlocking writeApi;
 
 
-    public AbstractGateway(DittoClient dittoClient, InfluxDBClient influxDBClient){
+    public AbstractGateway(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient){
         this.dittoClient = dittoClient;
+        this.listenerClient = listenerClient;
         this.influxDBClient = influxDBClient;
         this.writeApi = influxDBClient.getWriteApiBlocking();
 
@@ -116,6 +119,44 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
             logger.error(e.getMessage());
         }
     }
+
+    public void subscribeToAttributeChanges(){
+        listenerClient.twin().registerForAttributesChanges("globalAttributeHandler", change -> {
+            if(change.isFull()){
+                logger.info("Received full Attribute change for {}" , change);
+            }else {
+                logger.info("Received Attribute change for {}", change);
+            }
+        });
+    }
+    public void subscribeToSpecificAttributeChange(String path){
+        listenerClient.twin().registerForAttributeChanges("globalAttributeHandler", path, change -> {
+            if(change.isFull()){
+                logger.info("Received full Attribute change for {}" , change);
+            }else {
+                logger.info("Received Attribute change for {}", change);
+            }
+        });
+    }
+    public void subscribeForSpecificFeatureChanges(String feature){
+        listenerClient.twin().registerForFeaturePropertyChanges("globalFeatureHandler", feature, change -> {
+            if(change.isFull()){
+                logger.info("Received full feature change for {} with change {}", feature, change);
+            }else {
+                logger.info("Received feature change for {} with change {}", feature, change);
+            }
+        });
+    }
+    public void subscribeForSpecificFeaturePropertyChange(String feature, String property){
+        listenerClient.twin().registerForFeaturePropertyChanges("globalFeatureHandler", feature, property, change -> {
+            if(change.isFull() && change.getAction() == ChangeAction.MERGED){
+                logger.info("Received full feature change for {}, {} with change {}", feature, property, change);
+            }else {
+                logger.info("Received feature change for {}, {} with change {}", feature, property, change);
+            }
+        });
+    }
+
 
     @Override
     public void updateFeatures(T thing) throws ExecutionException, InterruptedException {

@@ -13,8 +13,8 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
 
     List<GasStation> gasStations;
 
-    public GasStationGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, List<GasStation> gasStations) {
-        super(dittoClient, influxDBClient);
+    public GasStationGateway(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient, List<GasStation> gasStations) {
+        super(dittoClient, listenerClient, influxDBClient);
         this.gasStations = gasStations;
     }
 

@@ -19,17 +19,17 @@ import java.util.stream.Collectors;
 
 public class TaskManager {
     private final DittoClient dittoClient;
+    private final DittoClient listenerClient;
     private InfluxDBClient influxDBClient;
     ThingHandler thingHandler = new ThingHandler();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    public TaskManager(DittoClient dittoClient, InfluxDBClient influxDBClient){
+    public TaskManager(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient){
         this.dittoClient = dittoClient;
+        this.listenerClient = listenerClient;
         this.influxDBClient = influxDBClient;
     }
-    public TaskManager(DittoClient dittoClient){
-        this.dittoClient = dittoClient;
-    }
+
     public void startTask(Task task) throws ExecutionException, InterruptedException {
         //Task task = createNewTask(taskType);
         startTaskGateway(task);
@@ -50,7 +50,7 @@ public class TaskManager {
 
 
     public void startTaskGateway(Task task){
-        TaskGateway taskGateway = new TaskGateway(dittoClient, influxDBClient, task);
+        TaskGateway taskGateway = new TaskGateway(dittoClient, listenerClient, influxDBClient, task);
 
         scheduler.scheduleAtFixedRate(taskGateway::startGateway,0 , Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }

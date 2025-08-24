@@ -3,6 +3,10 @@ package org.example.Gateways.ConcreteGateways;
 import com.eclipsesource.json.Json;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
+import org.eclipse.ditto.client.changes.ChangeAction;
+import org.eclipse.ditto.protocol.TopicPath;
+import org.eclipse.ditto.wot.model.Action;
+import org.eclipse.ditto.wot.model.Actions;
 import org.example.Things.Location;
 import org.example.util.Config;
 import org.example.Gateways.AbstractGateway;
@@ -13,6 +17,7 @@ import org.example.Things.TruckThing.TruckEventsActions;
 import org.example.Things.TruckThing.TruckStatus;
 import org.example.Things.TaskThings.TaskActions;
 
+import javax.swing.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -23,15 +28,18 @@ public class TruckGateway extends AbstractGateway<Truck> {
     List<Truck> trucks;
     private final TruckEventsActions truckEventsActions = new TruckEventsActions(dittoClient);
 
-    public TruckGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, List<Truck> trucks){
-        super(dittoClient, influxDBClient);
+    public TruckGateway(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient, List<Truck> trucks){
+        super(dittoClient, listenerClient, influxDBClient);
         this.trucks = trucks;
+        subscribeToAttributeChanges();
+        registerForTasks();
 
     }
 
     @Override
     public void startGateway() {
-        registerForTasks();
+        //registerForTasks();
+        //subscribeToAttributeChanges();
           for(Truck truck : trucks){
               startUpdating(truck);
           }
@@ -151,8 +159,10 @@ public class TruckGateway extends AbstractGateway<Truck> {
     }
 
     public void registerForTasks(){
-        dittoClient.live().registerForMessage("test9999", "*", message -> {
+        listenerClient.live().registerForMessage("test9999", TaskActions.TASK_LOAD_START, message -> {
             Optional<?> optionalObject = message.getPayload();
+            System.out.println(message.getSubject());
+            System.out.println(message.getPayload());
             if(optionalObject.isPresent()) {
                 System.out.println("ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ");
                 String rawPayload = optionalObject.get().toString();

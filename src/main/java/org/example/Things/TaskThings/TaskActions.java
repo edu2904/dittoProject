@@ -16,6 +16,7 @@ public class TaskActions implements EventActionHandler {
         double quantity = (double) task.getData("quantity");
         JsonObject startObject = JsonObject.newBuilder()
                 .set("message", "Load task started for " + task.getTargetTruck())
+                .set("thingId", task.getTargetTruck())
                 .set("from", task.getData("from").toString())
                 .set("to", task.getData("to").toString())
                 .set("quantity", quantity)
@@ -27,6 +28,7 @@ public class TaskActions implements EventActionHandler {
         double quantity = (double) task.getData("quantity");
         JsonObject startObject = JsonObject.newBuilder()
                 .set("message", "Unload task started for " + task.getTargetTruck())
+                .set("thingId", task.getTargetTruck())
                 .set("from", task.getData("from").toString())
                 .set("to", task.getData("to").toString())
                 .set("quantity", quantity)

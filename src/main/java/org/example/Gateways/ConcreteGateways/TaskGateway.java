@@ -23,14 +23,14 @@ public class TaskGateway extends AbstractGateway<Task> {
 
     Task task;
 
-    public TaskGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, Task task) {
-        super(dittoClient, influxDBClient);
+    public TaskGateway(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient, Task task) {
+        super(dittoClient,listenerClient, influxDBClient);
         this.task = task;
+        assignThingToTask();
     }
 
     @Override
     public void startGateway() {
-        assignThingToTask();
         startUpdating(task);
     }
 
@@ -74,8 +74,10 @@ public class TaskGateway extends AbstractGateway<Task> {
             tasksEvents.sendStartEvent(dittoClient, task);
             if(task.getTaskType() == TaskType.LOAD){
                 taskActions.sendLoadEvent(dittoClient, task);
+                System.out.println("LOAD EVENT SENT");
             }else if(task.getTaskType() == TaskType.UNLOAD){
                 taskActions.sendUnloadEvent(dittoClient, task);
+                System.out.println("UNLOAD EVENT SENT");
             }
         }else {
             logger.warn("NO BEST THING FOUND");

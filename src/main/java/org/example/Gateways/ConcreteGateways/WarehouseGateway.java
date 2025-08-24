@@ -13,8 +13,8 @@ public class WarehouseGateway extends AbstractGateway<Warehouse> {
 
     List<Warehouse> warehouseList;
 
-    public WarehouseGateway(DittoClient dittoClient, InfluxDBClient influxDBClient, List<Warehouse> warehouseList){
-        super(dittoClient, influxDBClient);
+    public WarehouseGateway(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient, List<Warehouse> warehouseList){
+        super(dittoClient, listenerClient, influxDBClient);
         this.warehouseList = warehouseList;
 
     }

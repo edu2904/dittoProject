@@ -21,8 +21,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class TruckProcess {
-    private final DittoClient processClient;
-    private final DittoClient taskClient;
+    private final DittoClient listenerClient;
+    private final DittoClient thingClient;
     private final DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
     private final Logger logger = LoggerFactory.getLogger(Truck.class);
     private final GatewayManager gatewayManager;
@@ -31,15 +31,16 @@ public class TruckProcess {
     private final InfluxDBClient influxDBClient;
     private TaskManager taskManager;
     private final RouteRegister routeRegister = new RouteRegister();
-    public TruckProcess(DittoClient processClient, DittoClient taskClient, InfluxDBClient influxDBClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
-        this.taskClient = taskClient;
-        this.processClient = processClient;
+    public TruckProcess(DittoClient listenerClient, DittoClient thingClient, InfluxDBClient influxDBClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
+        this.thingClient = thingClient;
+        this.listenerClient = listenerClient;
         this.influxDBClient = influxDBClient;
         this.gatewayManager = gatewayManager;
-        this.taskFactory = new TaskFactory(processClient);
-        subscribeForChanges(processClient);
-        receiveMessages(processClient);
+        this.taskFactory = new TaskFactory(thingClient);
+        subscribeForChanges(listenerClient);
+        receiveMessages(listenerClient);
         startProcess();
+
         //receiveActions(processClient);
     }
 
@@ -83,7 +84,7 @@ public class TruckProcess {
     public void startProcess(){
         String routeId = "route-" + UUID.randomUUID().toString().substring(0, 6);
         Queue<Task> taskQueue = new LinkedList<>();
-        taskManager = new TaskManager(taskClient, influxDBClient);
+        taskManager = new TaskManager(thingClient, listenerClient, influxDBClient);
         RoutePlanner routePlanner = new RoutePlanner(taskManager, gatewayManager);
         RoutePlanner.Route route = routePlanner.createRoute();
         deleteAllTasksForNewIteration();

@@ -26,6 +26,7 @@ public class GatewayManager {
 
     private final DigitalTwinFactoryMain digitalTwinFactoryMain;
     private final DittoClient dittoClient;
+    private final DittoClient listenerClient;
     InfluxDBClient influxDBClient;
     ThingHandler thingHandler = new ThingHandler();
 
@@ -42,8 +43,9 @@ public class GatewayManager {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
-    public GatewayManager(DittoClient dittoClient, InfluxDBClient influxDBClient) throws ExecutionException, InterruptedException {
+    public GatewayManager(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient) throws ExecutionException, InterruptedException {
         this.dittoClient = dittoClient;
+        this.listenerClient =listenerClient;
         this.influxDBClient = influxDBClient;
         this.digitalTwinFactoryMain = new DigitalTwinFactoryMain(dittoClient);
     }
@@ -76,9 +78,9 @@ public class GatewayManager {
             truck.featureSimulation1(dittoClient);
         }
 
-        truckGateway = new TruckGateway(dittoClient, influxDBClient,truckList);
-        gasStationGateway = new GasStationGateway(dittoClient, influxDBClient, gasStationList);
-        warehouseGateway = new WarehouseGateway(dittoClient, influxDBClient, warehouseList);
+        truckGateway = new TruckGateway(dittoClient, listenerClient, influxDBClient,truckList);
+        gasStationGateway = new GasStationGateway(dittoClient, listenerClient, influxDBClient, gasStationList);
+        warehouseGateway = new WarehouseGateway(dittoClient, listenerClient, influxDBClient, warehouseList);
 
         Runnable updateTask = () -> {
             try {

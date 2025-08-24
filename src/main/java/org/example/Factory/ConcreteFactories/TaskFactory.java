@@ -47,7 +47,11 @@ public class TaskFactory
         useCaseData.forEach(task::putData);
         return task;
     }
-/*
+
+    public List<Task> getTaskList() {
+        return taskList;
+    }
+    /*
     @Override
     public void createTwinsForDitto() throws ExecutionException, InterruptedException {
         initializeTask();

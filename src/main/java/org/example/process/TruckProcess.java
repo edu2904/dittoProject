@@ -5,15 +5,13 @@ import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.client.changes.ChangeAction;
-import org.eclipse.ditto.client.options.Options;
-import org.eclipse.ditto.json.JsonFieldSelector;
 import org.example.Client.DittoClientBuilder;
 import org.example.Factory.ConcreteFactories.TaskFactory;
 import org.example.Gateways.GatewayManager;
 import org.example.TaskManager;
 import org.example.Things.TaskThings.Task;
 import org.example.Things.TruckThing.Truck;
-import org.example.Things.TaskThings.TasksEventsActions;
+import org.example.Things.TaskThings.TasksEvents;
 import org.example.util.ThingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +64,7 @@ public class TruckProcess {
             dittoClient.live().registerForMessage("test2", "*", message -> {
 
                 switch (message.getSubject()) {
-                    case TasksEventsActions.TASKFINISHED:
+                    case TasksEvents.TASKFINISHED:
                         Optional<?> optionalObject = message.getPayload();
                         if(optionalObject.isPresent()) {
                             String rawPayload = optionalObject.get().toString();

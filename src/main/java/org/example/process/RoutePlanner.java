@@ -27,12 +27,12 @@ public class RoutePlanner {
     }
 
     public static class Segment{
-        private final Warehouse from;
-        private final Warehouse to;
+        private final String from;
+        private final String to;
         private final TaskType taskType;
         private final double quantity;
         private final String setId;
-        public Segment(Warehouse from, Warehouse to, TaskType taskType, double quantity, String routeId){
+        public Segment(String from, String to, TaskType taskType, double quantity, String routeId){
             this.from = from;
             this.to = to;
             this.taskType = taskType;
@@ -40,10 +40,10 @@ public class RoutePlanner {
             this.setId = routeId;
         }
 
-        public Warehouse getFrom() {
+        public String getFrom() {
             return from;
         }
-        public Warehouse getTo() {
+        public String getTo() {
             return to;
         }
 
@@ -61,7 +61,7 @@ public class RoutePlanner {
 
         @Override
         public String toString(){
-            return from.getThingId() + " to " + to.getThingId() + " which task: " + taskType.toString();
+            return from + " to " + to + " which task: " + taskType.toString();
         }
     }
     public static class Route{
@@ -76,14 +76,17 @@ public class RoutePlanner {
     public Route createRoute(){
         String routeId = "route-" + UUID.randomUUID().toString().substring(0, 6);
         List<Segment> segments = new ArrayList<>();
-        List<Warehouse> warehouses = gatewayManager.getWarehouseList();
-        double quantitiy = 100;
-        for(int i = 0; i < warehouses.size()-1; i++){
-            Warehouse from = warehouses.get(i);
-            Warehouse to = warehouses.get(i+1);
+        List<String> warehousesThingIds = new ArrayList<>();
+           for(Warehouse warehouse : gatewayManager.getWarehouseList()){
+               warehousesThingIds.add(warehouse.getThingId());
+        }
+        double quantity = 100;
+        for(int i = 0; i < warehousesThingIds.size()-1; i++){
+            String from = warehousesThingIds.get(i);
+            String to = warehousesThingIds.get(i+1);
 
             TaskType taskType = (i % 2 == 0) ? TaskType.LOAD : TaskType.UNLOAD;
-            segments.add(new Segment(from, to, taskType, quantitiy, routeId));
+            segments.add(new Segment(from, to, taskType, quantity, routeId));
         }
         return new Route(segments);
     }

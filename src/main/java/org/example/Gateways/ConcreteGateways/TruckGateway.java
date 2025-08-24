@@ -1,5 +1,6 @@
 package org.example.Gateways.ConcreteGateways;
 
+import com.eclipsesource.json.Json;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Things.Location;
@@ -10,8 +11,10 @@ import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
 import org.example.Things.TruckThing.TruckStatus;
+import org.example.Things.TaskThings.TaskActions;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 public class TruckGateway extends AbstractGateway<Truck> {
@@ -28,6 +31,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
     @Override
     public void startGateway() {
+        registerForTasks();
           for(Truck truck : trucks){
               startUpdating(truck);
           }
@@ -104,37 +108,6 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
     }
 
-   /* public void checkRefuelTask(double currentFuel, Truck truck){
-        try {
-            if (currentFuel < Config.FUEL_MIN_VALUE_STANDARD_TRUCK) {
-                taskManager.startTask(TaskType.REFUEL, truck);
-            }
-        } catch (ExecutionException | InterruptedException e) {
-            logger.error("Error creating Refuel Task for " + truck.getThingId(), e);
-        }
-    }
-
-    public void checkTirePressureTask(double currentTirePressure, Truck truck) throws ExecutionException, InterruptedException {
-        try {
-            if(currentTirePressure < Config.TIRE_PRESSURE_MIN_VALUE_STANDARD_TRUCK){
-            taskManager.startTask(TaskType.TIREPRESSUREADJUSTMENT, truck);
-            }
-        } catch (ExecutionException | InterruptedException e) {
-        logger.error("Error Creating TirePressure task for " + truck.getThingId(), e);
-        }
-
-    }
-    public void checkLoadingTask(double currentInventory, Truck truck) {
-        try{
-            if(currentInventory == 0 && !(truck.getStatus() == TruckStatus.WAITING)){
-                taskManager.startTask(TaskType.LOAD, truck);
-            }
-        }catch (ExecutionException | InterruptedException e) {
-            logger.error("Error creating Loading Task for " + truck.getThingId(), e);
-        }
-    }
-
-    */
 
     public double getWeightFromDitto(Truck truck) throws ExecutionException, InterruptedException {
         return (double) getAttributeValueFromDitto("weight", truck.getThingId());
@@ -171,6 +144,35 @@ public class TruckGateway extends AbstractGateway<Truck> {
         return (String) getAttributeValueFromDitto("targetLocation/name", truck.getThingId());
         }
         return null;
+    }
+
+    public void checkForTask(){
+
+    }
+
+    public void registerForTasks(){
+        dittoClient.live().registerForMessage("test9999", "*", message -> {
+            Optional<?> optionalObject = message.getPayload();
+            if(optionalObject.isPresent()) {
+                System.out.println("ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ");
+                String rawPayload = optionalObject.get().toString();
+                var parsePayload = Json.parse(rawPayload).asObject();
+                String thingId = parsePayload.get("thingId").asString();
+                String to = parsePayload.get("to").asString();
+                String from = parsePayload.get("from").asString();
+                double quantity = parsePayload.get("quantity").asDouble();
+                Truck truck = trucks.stream().filter(t -> t.getThingId().equals(thingId)).findFirst().orElse(null);
+                switch (message.getSubject()) {
+                    case TaskActions.TASK_LOAD_START:
+                        System.out.println("*******************************++");
+                        System.out.println(truck.getThingId() + " received order");
+                        System.out.println("********************************");
+                        //truck.drive();
+
+
+                }
+            }
+        });
     }
 
 }

@@ -81,6 +81,10 @@ public class Task {
         return data.get(key);
     }
 
+    public Map<String, Object> getAllData(){
+        return data;
+    }
+
     public void setSetId(String setId) {
         this.setId = setId;
     }

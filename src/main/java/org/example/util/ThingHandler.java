@@ -177,7 +177,6 @@ public class ThingHandler {
                 .map(mapper).toList()
                 .forEach(foundThing -> {
                     logger.info("Found thing: {}", foundThing);
-                    System.out.println("Found thing: " + foundThing);
                     foundThings.add(foundThing);
                 });
         return foundThings;

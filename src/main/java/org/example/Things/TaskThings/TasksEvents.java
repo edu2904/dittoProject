@@ -7,7 +7,7 @@ import org.example.Things.EventActionHandler;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TasksEventsActions implements EventActionHandler {
+public class TasksEvents implements EventActionHandler {
     private final Map<String, Boolean> refuelStarted = new ConcurrentHashMap<>();
 
     private final Map<String, Boolean> tirePressureTaskStarted = new ConcurrentHashMap<>();
@@ -15,6 +15,8 @@ public class TasksEventsActions implements EventActionHandler {
     private final Map<String, Boolean> loadingTaskStarted = new ConcurrentHashMap<>();
 
     public static final String TASKFINISHED = "taskFinished";
+    public static final String TASK_BEGIN = "taskBegins";
+    public static final String TASK_FAILED = "taskFailed";
 
 
 
@@ -32,7 +34,7 @@ public class TasksEventsActions implements EventActionHandler {
         JsonObject startObject = JsonObject.newBuilder()
                 .set("message", "Task started for " + thingID)
                 .set("setId", task.getSetId()).build();
-        sendEvent(dittoClient, thingID, startObject, TaskEventType.TASK_BEGIN.getEventName());
+        sendEvent(dittoClient, thingID, startObject, TASK_BEGIN);
     }
     public void sendFailEvent(DittoClient dittoClient, Task task){
         String thingID = task.getThingId();
@@ -40,7 +42,7 @@ public class TasksEventsActions implements EventActionHandler {
                 .newBuilder()
                 .set("message", "Task failed for " + thingID)
                 .set("setId", task.getSetId()).build();
-        sendEvent(dittoClient, thingID, startObject, TaskEventType.TASK_BEGIN.getEventName());
+        sendEvent(dittoClient, thingID, startObject, TASK_FAILED);
     }
     public void taskFinished(DittoClient dittoClient, Task task){
         String thingID = task.getThingId();

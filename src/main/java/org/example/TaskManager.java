@@ -52,9 +52,7 @@ public class TaskManager {
     public void startTaskGateway(Task task){
         TaskGateway taskGateway = new TaskGateway(dittoClient, influxDBClient, task);
 
-        scheduler.scheduleAtFixedRate(() -> {
-        taskGateway.startUpdating(task);
-        },0 , Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(taskGateway::startGateway,0 , Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
     public void deleteTask(Task task){
         thingHandler.deleteThing(dittoClient, task.getThingId());

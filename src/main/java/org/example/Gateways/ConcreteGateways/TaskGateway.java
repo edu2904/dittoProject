@@ -2,29 +2,21 @@ package org.example.Gateways.ConcreteGateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.eclipse.ditto.things.model.Thing;
-import org.example.Mapper.TaskMapper;
-import org.example.Mapper.ThingMapper;
 import org.example.Mapper.TruckMapper;
-import org.example.util.Config;
 import org.example.Gateways.AbstractGateway;
+import org.example.Things.TaskThings.*;
 import org.example.util.ThingHandler;
-import org.example.Things.TaskThings.TaskStatus;
-import org.example.Things.TaskThings.TaskType;
-import org.example.Things.TaskThings.Task;
-import org.example.Things.TaskThings.TasksEventsActions;
 import org.example.Things.TruckThing.Truck;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
 public class TaskGateway extends AbstractGateway<Task> {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    TasksEventsActions tasksEventsActions = new TasksEventsActions();
+    TasksEvents tasksEvents = new TasksEvents();
+    TaskActions taskActions = new TaskActions();
 
 
     ThingHandler thingHandler = new ThingHandler();
@@ -79,11 +71,16 @@ public class TaskGateway extends AbstractGateway<Task> {
         if(truck != null){
             task.setTargetTruck(truck.getThingId());
             updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
-            tasksEventsActions.sendStartEvent(dittoClient, task);
+            tasksEvents.sendStartEvent(dittoClient, task);
+            if(task.getTaskType() == TaskType.LOAD){
+                taskActions.sendLoadEvent(dittoClient, task);
+            }else if(task.getTaskType() == TaskType.UNLOAD){
+                taskActions.sendUnloadEvent(dittoClient, task);
+            }
         }else {
             logger.warn("NO BEST THING FOUND");
             task.setStatus(TaskStatus.FAILED);
-            tasksEventsActions.sendFailEvent(dittoClient, task);
+            tasksEvents.sendFailEvent(dittoClient, task);
         }
     }
 

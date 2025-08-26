@@ -31,14 +31,15 @@ public class TruckEventsActions implements EventActionHandler {
                 .newBuilder()
                 .set("message", truck.getThingId() + " failed to fulfill task")
                 .build();
-        sendEvent(dittoClient, truck.getThingId(), failedMessage, TASKFAILED);
+        sendTaskFailed(dittoClient, truck.getThingId(), failedMessage);
     }
     public void sendSuccessEvent(Truck truck){
+        System.out.println("SUCCESS SENT");
         JsonObject successMessage = JsonObject
                 .newBuilder()
                 .set("message", truck.getThingId() + " successfully fulfilled task")
                 .build();
-        sendEvent(dittoClient, truck.getThingId(), successMessage, TASKSUCCESS);
+        sendTaskSuccess(dittoClient, truck.getThingId(), successMessage);
     }
 
     public void arrivalEvent(String thingId, Location destination, Location location, String locationName){

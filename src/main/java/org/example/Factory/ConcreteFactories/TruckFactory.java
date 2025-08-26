@@ -44,12 +44,12 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
     @Override
     public void initializeThings() {
         Truck truck1 = createDefaultTruck(1);
-        Truck truck2 = createDefaultTruck(2);
-        truck2.setFuel(250);
+        //Truck truck2 = createDefaultTruck(2);
+        //truck2.setFuel(250);
 
 
         truckList.add(truck1);
-        truckList.add(truck2);
+        //truckList.add(truck2);
 
         //truck1.featureSimulation1(dittoClient);
         //truck2.featureSimulation2(dittoClient);

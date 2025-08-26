@@ -64,19 +64,17 @@ public class TruckProcess {
     public void receiveMessages(DittoClient dittoClient) {
             dittoClient.live().registerForMessage("test2", "*", message -> {
 
-                switch (message.getSubject()) {
-                    case TasksEvents.TASKFINISHED:
-                        Optional<?> optionalObject = message.getPayload();
-                        if(optionalObject.isPresent()) {
-                            String rawPayload = optionalObject.get().toString();
-                            var parsePayload = Json.parse(rawPayload).asObject();
-                            String finishedSetId = parsePayload.get("setId").asString();
-                            RouteExecutor routeExecutor = routeRegister.getRegister(finishedSetId);
-                            if(routeExecutor != null){
-                                routeExecutor.startNewTask();
-                            }
+                if (message.getSubject().equals(TasksEvents.TASK_FINISHED)) {
+                    Optional<?> optionalObject = message.getPayload();
+                    if (optionalObject.isPresent()) {
+                        String rawPayload = optionalObject.get().toString();
+                        var parsePayload = Json.parse(rawPayload).asObject();
+                        String finishedSetId = parsePayload.get("setId").asString();
+                        RouteExecutor routeExecutor = routeRegister.getRegister(finishedSetId);
+                        if (routeExecutor != null) {
+                            routeExecutor.startNewTask();
                         }
-                        break;
+                    }
                 }
                 message.reply().httpStatus(HttpStatus.OK).payload("response sent for " + message.getPayload()).send();
             });

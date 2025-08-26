@@ -2,6 +2,7 @@ package org.example.Gateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
+import org.eclipse.ditto.client.options.Options;
 import org.example.Things.TruckThing.TruckSimulation;
 import org.example.Things.TruckThing.TruckTargetDecision;
 import org.example.util.Config;
@@ -16,6 +17,7 @@ import org.example.Things.WarehouseThing.Warehouse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -60,6 +62,7 @@ public class GatewayManager {
 
     public void startGateways() throws ExecutionException, InterruptedException {
 
+
         createPermanentThings();
 
         truckList = digitalTwinFactoryMain.getTruckFactory().getThings();
@@ -70,17 +73,18 @@ public class GatewayManager {
         gasStationGateway = new GasStationGateway(dittoClient, listenerClient, influxDBClient, gasStationList);
         warehouseGateway = new WarehouseGateway(dittoClient, listenerClient, influxDBClient, warehouseList);
 
-        for(Truck truck: truckList) {
-            for (GasStation gasStation : gasStationList) {
-                gasStation.featureSimulation();
-                truck.setGasStation(gasStation);
-            }
-            for (Warehouse warehouse : warehouseList){
-                warehouse.featureSimulation();
 
-                truck.setWarehouseList(warehouse);
+        for (GasStation gasStation : gasStationList) {
+            gasStation.featureSimulation();
         }
-            TruckSimulation truckSimulation = new TruckSimulation(truck);
+        for (Warehouse warehouse : warehouseList){
+            warehouse.featureSimulation();
+        }
+
+        for(Truck truck : truckList){
+            truck.setGasStationList(new ArrayList<>(gasStationList));
+            truck.setWarehouseList(new ArrayList<>(warehouseList));
+            TruckSimulation truckSimulation = new TruckSimulation(dittoClient, truck);
             truckSimulation.runSimulation(dittoClient, this);
         }
 

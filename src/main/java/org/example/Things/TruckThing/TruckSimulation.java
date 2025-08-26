@@ -21,11 +21,15 @@ public class TruckSimulation {
     Truck truck;
     private final Logger logger = LoggerFactory.getLogger(TruckSimulation.class);
 
+    DittoClient dittoClient;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+    TruckEventsActions truckEventsActions;
 
-    public TruckSimulation(Truck truck) throws ExecutionException, InterruptedException {
+    public TruckSimulation(DittoClient dittoClient, Truck truck) throws ExecutionException, InterruptedException {
+        this.dittoClient = dittoClient;
         this.truck = truck;
+        truckEventsActions = new TruckEventsActions(dittoClient);
     }
 
     public double calculateUtilization(){
@@ -70,7 +74,7 @@ public class TruckSimulation {
                         logger.warn("Truck {} stopped: no target assigned", truck.getThingId());
                     }
                 }else if(truck.getTarget() != null) {
-                    drive(truck.getTarget(), dittoClient, truck.getCargoToBeDelivered());
+                    drive(truck.getTarget(), dittoClient);
                 }
             } catch (Exception e) {
                 logger.error("Error in truck {}: {}" , truck.getThingId(), e);
@@ -78,7 +82,7 @@ public class TruckSimulation {
         }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
 
-    public void drive(TruckTargetDecision<?> target, DittoClient dittoClient, double quantity){
+    public void drive(TruckTargetDecision<?> target, DittoClient dittoClient){
 
         if(truck.isTaskActive()) return;
         truck.setStatus(TruckStatus.DRIVING);
@@ -126,12 +130,15 @@ public class TruckSimulation {
             if (truck.getStatus() != TruckStatus.LOADING && !truck.isTaskActive()) {
                 truck.setTaskActive(true);
                 truck.setLocation(((Warehouse) target.getDecidedTarget()).getLocation());
-                ((Warehouse) target.getDecidedTarget()).startLoading(truck, then ->{
+                ((Warehouse) target.getDecidedTarget()).startLoading(truck, truck.getTask(), then ->{
                 if(truck.isTaskSuccess()){
                     System.out.println("TASK SUCCESS");
-
+                    truck.setTargetWarehouse(null);
+                    truckEventsActions.sendSuccessEvent(truck);
                 }else {
                     System.out.println("TASK NOT SUCCESS");
+                    truck.setTargetWarehouse(null);
+                    truckEventsActions.sendTaskFailEvent(truck);
                 }
                 });
 

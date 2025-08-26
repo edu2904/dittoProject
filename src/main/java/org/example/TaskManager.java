@@ -22,7 +22,6 @@ public class TaskManager {
     private final DittoClient listenerClient;
     private InfluxDBClient influxDBClient;
     ThingHandler thingHandler = new ThingHandler();
-    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public TaskManager(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient){
         this.dittoClient = dittoClient;
@@ -50,6 +49,7 @@ public class TaskManager {
 
 
     public void startTaskGateway(Task task){
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         TaskGateway taskGateway = new TaskGateway(dittoClient, listenerClient, influxDBClient, task);
 
         scheduler.scheduleAtFixedRate(taskGateway::startGateway,0 , Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);

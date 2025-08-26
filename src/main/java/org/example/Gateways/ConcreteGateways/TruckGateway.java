@@ -8,6 +8,7 @@ import org.eclipse.ditto.protocol.TopicPath;
 import org.eclipse.ditto.wot.model.Action;
 import org.eclipse.ditto.wot.model.Actions;
 import org.example.Things.Location;
+import org.example.Things.TaskThings.Task;
 import org.example.util.Config;
 import org.example.Gateways.AbstractGateway;
 import org.example.TaskManager;
@@ -159,7 +160,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
     }
 
     public void registerForTasks(){
-        listenerClient.live().registerForMessage("truck", TaskActions.TASK_LOAD_START, message -> {
+        listenerClient.live().registerForMessage("truckLoad", TaskActions.TASK_LOAD_START, message -> {
             Optional<?> optionalObject = message.getPayload();
             System.out.println(message.getSubject());
             System.out.println(message.getPayload());
@@ -176,7 +177,29 @@ public class TruckGateway extends AbstractGateway<Truck> {
                     assert truck != null;
                     System.out.println(truck.getThingId() + " received order " + TaskActions.TASK_LOAD_START);
                     System.out.println("********************************");
-                    truck.setAssignedTaskValues(from, to, quantity);
+                    truck.setAssignedTaskValues(from, to, quantity, TaskType.LOAD);
+                }
+            }
+        });
+
+        listenerClient.live().registerForMessage("truckUnload", TaskActions.TASK_UNLOAD_START, message -> {
+            Optional<?> optionalObject = message.getPayload();
+            System.out.println(message.getSubject());
+            System.out.println(message.getPayload());
+            if(optionalObject.isPresent()) {
+                String rawPayload = optionalObject.get().toString();
+                var parsePayload = Json.parse(rawPayload).asObject();
+                String thingId = parsePayload.get("thingId").asString();
+                String to = parsePayload.get("to").asString();
+                String from = parsePayload.get("from").asString();
+                double quantity = parsePayload.get("quantity").asDouble();
+                Truck truck = trucks.stream().filter(t -> t.getThingId().equals(thingId)).findFirst().orElse(null);
+                if (message.getSubject().equals(TaskActions.TASK_UNLOAD_START)) {
+                    System.out.println("*******************************++");
+                    assert truck != null;
+                    System.out.println(truck.getThingId() + " received order " + TaskActions.TASK_LOAD_START);
+                    System.out.println("********************************");
+                    truck.setAssignedTaskValues(from, to, quantity, TaskType.UNLOAD);
                 }
             }
         });

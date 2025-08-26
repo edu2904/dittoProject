@@ -27,4 +27,8 @@ public class RouteExecutor {
             throw new RuntimeException(e);
         }
     }
+
+    public Queue<Task> getTaskQueue() {
+        return taskQueue;
+    }
 }

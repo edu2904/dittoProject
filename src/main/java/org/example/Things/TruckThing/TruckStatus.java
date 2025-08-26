@@ -10,8 +10,8 @@ public enum TruckStatus implements DigitalTwinStatus {
     DRIVING,
 
     ADJUSTINGTIREPRESSURE,
-
     LOADING,
+    UNLOADING,
     REFUELING;
 
     @Override

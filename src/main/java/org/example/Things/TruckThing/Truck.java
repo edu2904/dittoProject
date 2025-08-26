@@ -3,6 +3,7 @@ package org.example.Things.TruckThing;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Things.Location;
 import org.example.Things.TaskThings.Task;
+import org.example.Things.TaskThings.TaskType;
 import org.example.util.Config;
 import org.example.util.GeoConst;
 import org.example.util.GeoUtil;
@@ -39,11 +40,11 @@ public class Truck {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ThingHandler thingHandler = new ThingHandler();
     private final Queue<String> tasksQueue = new LinkedList<>();
-    private final List<Warehouse> warehouseList = new ArrayList<>();
-    private final List<GasStation> gasStationList = new ArrayList<>();
+    private List<Warehouse> warehouseList = new ArrayList<>();
+    private List<GasStation> gasStationList = new ArrayList<>();
     private TruckTargetDecision<?> target;
     private TruckTargetDecision<?> recommendedTarget;
-    private Task task;
+    private TaskType taskType;
 
     double fuelConsumption;
     Warehouse startWarehouse;
@@ -128,8 +129,8 @@ public class Truck {
         return stops;
     }
 
-    public void setGasStation(GasStation gasStation){
-        this.gasStationList.add(gasStation);
+    public void setGasStationList(List<GasStation> gasStation){
+        this.gasStationList = gasStation;
     }
     public List<GasStation> getGasStation(){
         return gasStationList;
@@ -139,8 +140,8 @@ public class Truck {
         return warehouseList;
     }
 
-    public void setWarehouseList(Warehouse warehouse) {
-        this.warehouseList.add(warehouse);
+    public void setWarehouseList(List<Warehouse> warehouse) {
+        this.warehouseList = warehouse;
     }
 
     public boolean isTaskActive(){
@@ -183,12 +184,12 @@ public class Truck {
         return recommendedTarget;
     }
 
-    public Task getTask() {
-        return task;
+    public TaskType getTask() {
+        return taskType;
     }
 
-    public void setTask(Task task) {
-        this.task = task;
+    public void setTask(TaskType taskType) {
+        this.taskType = taskType;
     }
 
     public double getFuelConsumption() {
@@ -231,15 +232,35 @@ public class Truck {
         return taskSuccess;
     }
 
-    public void setAssignedTaskValues(String from, String to, double cargoToBeDelivered){
+    public void setAssignedTaskValues(String from, String to, double cargoToBeDelivered, TaskType taskType){
         Warehouse fromWarehouse = getWarehouseList().stream().filter(t -> t.getThingId().equals(from)).findFirst().orElse(null);
         setStartWarehouse(fromWarehouse);
         Warehouse toWarehouse = getWarehouseList().stream().filter(t -> t.getThingId().equals(to)).findFirst().orElse(null);
         setTargetWarehouse(toWarehouse);
         setCargoToBeDelivered(cargoToBeDelivered);
+        setTask(taskType);
 
     }
+    public Map<String, Double> calculateDistances(Warehouse warehouse){
+        Map<String, Double> distances = new HashMap<>();
 
+        double warehouseDistance = GeoUtil.calculateDistance(getLocation(), warehouse.getLocation());
+        distances.put(warehouse.getThingId(), warehouseDistance);
+
+        for(GasStation gasStation : getGasStation()){
+            double gasStationDistance = GeoUtil.calculateDistance(getLocation(), gasStation.getLocation());
+            distances.put(gasStation.getThingId(), gasStationDistance);
+        }
+        return distances;
+    }
+    public double calculateUtilization(){
+        double weightFuel = 1;
+        double combinedUtilization = weightFuel * getFuel();
+
+        return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
+
+    }
+/*
     public void updateTarget(){
         if(this.target == null && this.recommendedTarget != null){
             this.target = this.recommendedTarget;
@@ -398,18 +419,7 @@ public class Truck {
         runSimulation(3, 1.0, 10, dittoClient);
     }
 
-    public Map<String, Double> calculateDistances(Warehouse warehouse){
-        Map<String, Double> distances = new HashMap<>();
 
-        double warehouseDistance = GeoUtil.calculateDistance(getLocation(), warehouse.getLocation());
-        distances.put(warehouse.getThingId(), warehouseDistance);
-
-        for(GasStation gasStation : getGasStation()){
-            double gasStationDistance = GeoUtil.calculateDistance(getLocation(), gasStation.getLocation());
-            distances.put(gasStation.getThingId(), gasStationDistance);
-        }
-        return distances;
-    }
     public void setStarterLocation(){
         for(Warehouse warehouse : warehouseList){
             if(warehouse.isMainWareHouse()){
@@ -418,4 +428,6 @@ public class Truck {
             }
         }
     }
+
+ */
 }

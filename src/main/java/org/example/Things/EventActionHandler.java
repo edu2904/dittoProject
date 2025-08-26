@@ -12,6 +12,8 @@ import java.time.Duration;
 
 public interface EventActionHandler {
     Logger logger = LoggerFactory.getLogger(EventActionHandler.class.getName());
+    String TASK_SUCCESS = "taskSuccessful";
+    String TASK_FAILED = "taskFailed";
 
 
     default void sendEvent(DittoClient dittoClient, String thingID, JsonObject jsonData, String eventSubject) {
@@ -43,5 +45,12 @@ public interface EventActionHandler {
                                 actionSubject,
                                 response.getPayload().orElse(null),
                                 response.getHeaders()));
+    }
+
+    default void sendTaskSuccess(DittoClient dittoClient, String thingId, JsonObject jsonData){
+        sendEvent(dittoClient, thingId, jsonData, TASK_SUCCESS);
+    }
+    default void sendTaskFailed(DittoClient dittoClient, String thingId, JsonObject jsonData){
+        sendEvent(dittoClient, thingId, jsonData, TASK_FAILED);
     }
 }

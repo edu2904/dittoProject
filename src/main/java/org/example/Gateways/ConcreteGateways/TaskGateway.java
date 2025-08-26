@@ -4,12 +4,15 @@ import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Mapper.TruckMapper;
 import org.example.Gateways.AbstractGateway;
+import org.example.Things.EventActionHandler;
 import org.example.Things.TaskThings.*;
+import org.example.Things.TruckThing.TruckEventsActions;
 import org.example.util.ThingHandler;
 import org.example.Things.TruckThing.Truck;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.function.ToDoubleFunction;
 
@@ -27,6 +30,7 @@ public class TaskGateway extends AbstractGateway<Task> {
         super(dittoClient,listenerClient, influxDBClient);
         this.task = task;
         assignThingToTask();
+        registerForThingMessages();
     }
 
     @Override
@@ -84,6 +88,16 @@ public class TaskGateway extends AbstractGateway<Task> {
             task.setStatus(TaskStatus.FAILED);
             tasksEvents.sendFailEvent(dittoClient, task);
         }
+    }
+
+    public void registerForThingMessages(){
+        listenerClient.live().registerForMessage("thing_" + task.getThingId(), "*", repliableMessage -> {
+            if(Objects.equals(repliableMessage.getSubject(), EventActionHandler.TASK_SUCCESS)){
+                tasksEvents.sendFinishedEvent(dittoClient, task);
+            }else if(Objects.equals(repliableMessage.getSubject(), TruckEventsActions.TASKFAILED)){
+                tasksEvents.sendFailEvent(dittoClient, task);
+            };
+        });
     }
 
 

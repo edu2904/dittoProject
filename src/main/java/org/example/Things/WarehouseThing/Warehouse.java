@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 public class Warehouse {
 
@@ -22,6 +23,7 @@ public class Warehouse {
 
     private final Logger logger = LoggerFactory.getLogger(Warehouse.class);
     private boolean loadingSuccess;
+
 
     private double inventory;
     private double capacity;
@@ -129,7 +131,7 @@ public class Warehouse {
     }
 
 
-    public synchronized void startLoading(Truck truck){
+    public synchronized void startLoading(Truck truck, Consumer<Truck> onComplete){
 
         logger.info("Truck {} requested loading", truck.getThingId());
         trucksInWarehouse.add(truck);
@@ -137,7 +139,7 @@ public class Warehouse {
         if(status == WarehouseStatus.WAITING){
             logger.info("Start loading process for {}", truck.getThingId());
             setStatus(WarehouseStatus.LOADING);
-            startLoadingProcess(truck);
+            startLoadingProcess(truck, onComplete);
         }else {
             logger.info("Warehouse already loading. {} waiting in queue", truck.getThingId());
             truck.setStatus(TruckStatus.WAITING);
@@ -145,30 +147,33 @@ public class Warehouse {
         }
 
     }
-    public void startLoadingProcess(Truck truck){
+    public void startLoadingProcess(Truck truck, Consumer<Truck> onComplete){
+        double cargoToBeDelivered = truck.getCargoToBeDelivered();
         truck.setStatus(TruckStatus.LOADING);
         currentTask = scheduler.scheduleAtFixedRate(() ->
         {
             double currentInventory = truck.getInventory();
             TruckStatus truckStatus = truck.getStatus();
-            if(currentInventory != Config.CAPACITY_STANDARD_TRUCK && truckStatus == TruckStatus.LOADING && truck.getInventory() > 0) {
+            if(truckStatus == TruckStatus.LOADING && currentInventory < cargoToBeDelivered) {
                 logger.info("CurrentInventory {} for {}", currentInventory, truck.getThingId());
                 double newInventory = Math.min(10,100 + currentInventory);
-                truck.setInventory(currentInventory - newInventory);
+                truck.setInventory(currentInventory + newInventory);
                 setInventory(getInventory() + newInventory);
-
             }
             else {
                 currentTask.cancel(false);
                 logger.info("Cancel Task for {}" , truck.getThingId());
+                boolean success = truck.getInventory() >= cargoToBeDelivered;
                 truck.setTarget(null);
                 truck.setTaskActive(false);
+                truck.setTaskSuccess(success);
                 trucksInWarehouse.remove(truck);
+                onComplete.accept(truck);
                 if (!queue.isEmpty()) {
                     logger.info("Entering QUEUE");
                     Truck nextTruck = queue.poll();
                     assert nextTruck != null;
-                    startLoadingProcess(nextTruck);
+                    startLoadingProcess(nextTruck, onComplete);
                 } else {
                     logger.info("WAREHOUSE WAITING AGAIN");
                     setStatus(WarehouseStatus.WAITING);

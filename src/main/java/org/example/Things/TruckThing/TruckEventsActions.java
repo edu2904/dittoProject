@@ -17,24 +17,28 @@ public class TruckEventsActions implements EventActionHandler {
     private final Map<String, Long> waitingSince = new ConcurrentHashMap<>();
 
     public DittoClient dittoClient;
-    public static final String WEIGHTEVENT = "showStatus";
-    public static final String RESETPROGRESS = "resetProgress";
-    public static final String SEARCHNEWTASK = "taskSearch";
-    public static final String TRUCKARRIVED = "truckArrived";
+     public static final String TRUCKARRIVED = "truckArrived";
     public static final String TRUCKWAITNGTOOLONG = "tooLongIdle";
+    public static final String TASKSUCCESS = "taskSuccessful";
+    public static final String TASKFAILED = "taskFailed";
 
-
-  //  DittoEventActionHandler dittoEventActionHandler = new DittoEventActionHandler();
-
-  //  @Override
-  //  public void startLogging(String thingID) {
-  //      dittoEventActionHandler.createEventLoggingForAttribute(thingID, "showStatus");
-  //      dittoEventActionHandler.createEventLoggingForFeature(thingID, "lowfuel", "FuelTank");
-  //      dittoEventActionHandler.createActionLoggingForAttribute(thingID, "resetProgress");
-
-  //  }
     public TruckEventsActions(DittoClient dittoClient){
         this.dittoClient = dittoClient;
+    }
+
+    public void sendTaskFailEvent(Truck truck){
+        JsonObject failedMessage = JsonObject
+                .newBuilder()
+                .set("message", truck.getThingId() + " failed to fulfill task")
+                .build();
+        sendEvent(dittoClient, truck.getThingId(), failedMessage, TASKFAILED);
+    }
+    public void sendSuccessEvent(Truck truck){
+        JsonObject successMessage = JsonObject
+                .newBuilder()
+                .set("message", truck.getThingId() + " successfully fulfilled task")
+                .build();
+        sendEvent(dittoClient, truck.getThingId(), successMessage, TASKSUCCESS);
     }
 
     public void arrivalEvent(String thingId, Location destination, Location location, String locationName){

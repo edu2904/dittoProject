@@ -120,8 +120,8 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
         }
     }
 
-    public void subscribeToAttributeChanges(){
-        listenerClient.twin().registerForAttributesChanges("globalAttributeHandler", change -> {
+    public void subscribeToAttributeChanges(String group){
+        listenerClient.twin().registerForAttributesChanges(group, change -> {
             if(change.isFull()){
                 logger.info("Received full Attribute change for {}" , change);
             }else {
@@ -129,8 +129,8 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
             }
         });
     }
-    public void subscribeToSpecificAttributeChange(String path){
-        listenerClient.twin().registerForAttributeChanges("globalAttributeHandler", path, change -> {
+    public void subscribeToSpecificAttributeChange(String group, String path){
+        listenerClient.twin().registerForAttributeChanges(group, path, change -> {
             if(change.isFull()){
                 logger.info("Received full Attribute change for {}" , change);
             }else {
@@ -138,8 +138,8 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
             }
         });
     }
-    public void subscribeForSpecificFeatureChanges(String feature){
-        listenerClient.twin().registerForFeaturePropertyChanges("globalFeatureHandler", feature, change -> {
+    public void subscribeForSpecificFeatureChanges(String group, String feature){
+        listenerClient.twin().registerForFeaturePropertyChanges(group, feature, change -> {
             if(change.isFull()){
                 logger.info("Received full feature change for {} with change {}", feature, change);
             }else {
@@ -147,8 +147,8 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
             }
         });
     }
-    public void subscribeForSpecificFeaturePropertyChange(String feature, String property){
-        listenerClient.twin().registerForFeaturePropertyChanges("globalFeatureHandler", feature, property, change -> {
+    public void subscribeForSpecificFeaturePropertyChange(String group, String feature, String property){
+        listenerClient.twin().registerForFeaturePropertyChanges(group, feature, property, change -> {
             if(change.isFull() && change.getAction() == ChangeAction.MERGED){
                 logger.info("Received full feature change for {}, {} with change {}", feature, property, change);
             }else {

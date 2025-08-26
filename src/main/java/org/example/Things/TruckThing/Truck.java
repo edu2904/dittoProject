@@ -45,8 +45,11 @@ public class Truck {
     private TruckTargetDecision<?> recommendedTarget;
     private Task task;
 
-
-
+    double fuelConsumption;
+    Warehouse startWarehouse;
+    Warehouse targetWarehouse;
+    double cargoToBeDelivered;
+    boolean taskSuccess;
 
     public String getThingId() {
         return thingId;
@@ -176,6 +179,9 @@ public class Truck {
         this.recommendedTarget = recommendedTarget;
     }
 
+    public TruckTargetDecision<?> getRecommendedTarget() {
+        return recommendedTarget;
+    }
 
     public Task getTask() {
         return task;
@@ -183,6 +189,55 @@ public class Truck {
 
     public void setTask(Task task) {
         this.task = task;
+    }
+
+    public double getFuelConsumption() {
+        return fuelConsumption;
+    }
+
+    public void setFuelConsumption(double fuelConsumption) {
+        this.fuelConsumption = fuelConsumption;
+    }
+
+    public Warehouse getTargetWarehouse() {
+        return targetWarehouse;
+    }
+
+    public void setTargetWarehouse(Warehouse targetWarehouse) {
+        this.targetWarehouse = targetWarehouse;
+    }
+
+    public Warehouse getStartWarehouse() {
+        return startWarehouse;
+    }
+
+    public void setStartWarehouse(Warehouse startWarehouse) {
+        this.startWarehouse = startWarehouse;
+    }
+
+    public double getCargoToBeDelivered() {
+        return cargoToBeDelivered;
+    }
+
+    public void setCargoToBeDelivered(double cargoToBeDelivered) {
+        this.cargoToBeDelivered = cargoToBeDelivered;
+    }
+
+    public void setTaskSuccess(boolean taskSuccess) {
+        this.taskSuccess = taskSuccess;
+    }
+
+    public boolean isTaskSuccess() {
+        return taskSuccess;
+    }
+
+    public void setAssignedTaskValues(String from, String to, double cargoToBeDelivered){
+        Warehouse fromWarehouse = getWarehouseList().stream().filter(t -> t.getThingId().equals(from)).findFirst().orElse(null);
+        setStartWarehouse(fromWarehouse);
+        Warehouse toWarehouse = getWarehouseList().stream().filter(t -> t.getThingId().equals(to)).findFirst().orElse(null);
+        setTargetWarehouse(toWarehouse);
+        setCargoToBeDelivered(cargoToBeDelivered);
+
     }
 
     public void updateTarget(){
@@ -219,10 +274,10 @@ public class Truck {
         setDestinations(destinations);
         setStarterLocation();
 
+
         scheduler.scheduleAtFixedRate(() -> {
             try {
             updateTarget();
-
             if (getFuel() <= 0 || getTarget() == null) {
                 stopTruck();
                 logger.debug("Truck {} ran out of fuel", getThingId());
@@ -246,6 +301,7 @@ public class Truck {
         tirePressureDecreases(getTirePressure());
         setVelocity(75 + Math.random() * 10);
         setFuel(getFuel() - fuelConsumption);
+        setUtilization(calculateUtilization());
 
         double targetDistance = target.getDistance() * 1000;
         double progressPerTick = (progressMade / targetDistance) * 100;
@@ -309,7 +365,7 @@ public class Truck {
                    if (getStatus() != TruckStatus.LOADING && !isTaskActive()) {
                        setTaskActive(true);
                        setLocation(((Warehouse) target.getDecidedTarget()).getLocation());
-                       ((Warehouse) target.getDecidedTarget()).startLoading(this);
+                       //((Warehouse) target.getDecidedTarget()).startLoading(this);
                        if(!((Warehouse) target.getDecidedTarget()).isMainWareHouse()) {
                            stops.set(currentStopIndex.get() - 1, 1);
                            currentStopIndex.getAndIncrement();
@@ -342,12 +398,12 @@ public class Truck {
         runSimulation(3, 1.0, 10, dittoClient);
     }
 
-    public Map<String, Double> calculateDistances(){
+    public Map<String, Double> calculateDistances(Warehouse warehouse){
         Map<String, Double> distances = new HashMap<>();
-        for(Warehouse warehouse : getWarehouseList()){
-            double warehouseDistance = GeoUtil.calculateDistance(getLocation(), warehouse.getLocation());
-            distances.put(warehouse.getThingId(), warehouseDistance);
-        }
+
+        double warehouseDistance = GeoUtil.calculateDistance(getLocation(), warehouse.getLocation());
+        distances.put(warehouse.getThingId(), warehouseDistance);
+
         for(GasStation gasStation : getGasStation()){
             double gasStationDistance = GeoUtil.calculateDistance(getLocation(), gasStation.getLocation());
             distances.put(gasStation.getThingId(), gasStationDistance);

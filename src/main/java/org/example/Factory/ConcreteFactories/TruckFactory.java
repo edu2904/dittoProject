@@ -2,6 +2,7 @@ package org.example.Factory.ConcreteFactories;
 
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Factory.DigitalTwinFactory;
+import org.example.Things.Location;
 import org.example.Things.TruckThing.TruckStatus;
 import org.example.util.Config;
 import org.example.util.ThingHandler;
@@ -71,7 +72,10 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
         truck.setProgress(0);
         truck.setFuel(51);
         truck.setCapacity(Config.CAPACITY_STANDARD_TRUCK);
-        truck.setInventory(Config.CAPACITY_STANDARD_TRUCK);
+        truck.setInventory(0);
+        truck.setUtilization(truck.calculateUtilization());
+        truck.setLocation(new Location(48.0842, 11.5302));
+        truck.setFuelConsumption(1.0);
         return truck;
     }
 

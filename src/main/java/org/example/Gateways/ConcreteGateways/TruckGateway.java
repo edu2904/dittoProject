@@ -31,7 +31,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
     public TruckGateway(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient, List<Truck> trucks){
         super(dittoClient, listenerClient, influxDBClient);
         this.trucks = trucks;
-        subscribeToAttributeChanges();
+        subscribeToAttributeChanges("truck");
         registerForTasks();
 
     }
@@ -98,7 +98,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
         updateFeatureValue("TirePressure", "amount", truck.getTirePressure(), truck.getThingId());
         updateFeatureValue("Velocity", "amount", truck.getVelocity(), truck.getThingId());
         updateFeatureValue("Progress","amount", truck.getProgress(), truck.getThingId());
-        updateFeatureValue("Progress","destinationStatus", truck.getStops(), truck.getThingId());
+        //updateFeatureValue("Progress","destinationStatus", truck.getStops(), truck.getThingId());
         updateFeatureValue("FuelTank","amount", truck.getFuel(), truck.getThingId());
         updateFeatureValue("Inventory","amount", truck.getInventory(), truck.getThingId());
 
@@ -159,12 +159,11 @@ public class TruckGateway extends AbstractGateway<Truck> {
     }
 
     public void registerForTasks(){
-        listenerClient.live().registerForMessage("test9999", TaskActions.TASK_LOAD_START, message -> {
+        listenerClient.live().registerForMessage("truck", TaskActions.TASK_LOAD_START, message -> {
             Optional<?> optionalObject = message.getPayload();
             System.out.println(message.getSubject());
             System.out.println(message.getPayload());
             if(optionalObject.isPresent()) {
-                System.out.println("ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ");
                 String rawPayload = optionalObject.get().toString();
                 var parsePayload = Json.parse(rawPayload).asObject();
                 String thingId = parsePayload.get("thingId").asString();
@@ -172,19 +171,16 @@ public class TruckGateway extends AbstractGateway<Truck> {
                 String from = parsePayload.get("from").asString();
                 double quantity = parsePayload.get("quantity").asDouble();
                 Truck truck = trucks.stream().filter(t -> t.getThingId().equals(thingId)).findFirst().orElse(null);
-                switch (message.getSubject()) {
-                    case TaskActions.TASK_LOAD_START:
-                        System.out.println("*******************************++");
-                        System.out.println(truck.getThingId() + " received order");
-                        System.out.println("********************************");
-                        //truck.drive();
-
-
+                if (message.getSubject().equals(TaskActions.TASK_LOAD_START)) {
+                    System.out.println("*******************************++");
+                    assert truck != null;
+                    System.out.println(truck.getThingId() + " received order " + TaskActions.TASK_LOAD_START);
+                    System.out.println("********************************");
+                    truck.setAssignedTaskValues(from, to, quantity);
                 }
             }
         });
     }
-
 }
 
 

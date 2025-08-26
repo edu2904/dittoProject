@@ -2,6 +2,7 @@ package org.example.Gateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
+import org.example.Things.TruckThing.TruckSimulation;
 import org.example.Things.TruckThing.TruckTargetDecision;
 import org.example.util.Config;
 import org.example.Factory.DigitalTwinFactoryMain;
@@ -65,6 +66,10 @@ public class GatewayManager {
         gasStationList = digitalTwinFactoryMain.getGasStationFactory().getThings();
         warehouseList = digitalTwinFactoryMain.getWarehouseFactory().getThings();
 
+        truckGateway = new TruckGateway(dittoClient, listenerClient, influxDBClient,truckList);
+        gasStationGateway = new GasStationGateway(dittoClient, listenerClient, influxDBClient, gasStationList);
+        warehouseGateway = new WarehouseGateway(dittoClient, listenerClient, influxDBClient, warehouseList);
+
         for(Truck truck: truckList) {
             for (GasStation gasStation : gasStationList) {
                 gasStation.featureSimulation();
@@ -75,12 +80,9 @@ public class GatewayManager {
 
                 truck.setWarehouseList(warehouse);
         }
-            truck.featureSimulation1(dittoClient);
+            TruckSimulation truckSimulation = new TruckSimulation(truck);
+            truckSimulation.runSimulation(dittoClient, this);
         }
-
-        truckGateway = new TruckGateway(dittoClient, listenerClient, influxDBClient,truckList);
-        gasStationGateway = new GasStationGateway(dittoClient, listenerClient, influxDBClient, gasStationList);
-        warehouseGateway = new WarehouseGateway(dittoClient, listenerClient, influxDBClient, warehouseList);
 
         Runnable updateTask = () -> {
             try {
@@ -107,7 +109,7 @@ public class GatewayManager {
 
 
 
-
+/*
 
     public void setDecisionForNextDestination(Truck truck) throws ExecutionException, InterruptedException {
         double fuel = truckGateway.getFuelFromDitto(truck);
@@ -173,6 +175,56 @@ public class GatewayManager {
                 }
             }
             if(bestTarget != null){
+            truck.setRecommendedTarget(bestTarget);
+            logger.info("Next Target for {} is {}" , truck.getThingId(), bestTarget.getDecidedTarget() instanceof GasStation ? ((GasStation) bestTarget.getDecidedTarget()).getThingId() : ((Warehouse) bestTarget.getDecidedTarget()).getThingId());
+        }
+
+    }
+
+ */
+    public void setDecisionForNextDestination(Truck truck, Warehouse warehouse) throws ExecutionException, InterruptedException {
+        double fuel = truckGateway.getFuelFromDitto(truck);
+        Map<String, Double> distances = truck.calculateDistances(warehouse);
+
+        TruckTargetDecision<?> bestTarget = null;
+        double bestScore = Double.MAX_VALUE;
+
+        double weightDistance = 0.6;
+        double weightUtilization = 0.4;
+        //double weightFuel = 0.1;
+
+        for(GasStation gasStation : gasStationList){
+            Double distanceGasStation = distances.get(gasStation.getThingId());
+            if(distanceGasStation == null){
+                continue;
+            }
+            double utilizationGasStation = gasStationGateway.getUtilizationFromDitto(gasStation);
+            double urgencyLowFuel = fuel < 40 ? (1-(fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK)) * 75 : 0;
+            double urgencyHighFuel = fuel > 150 ? (fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK) * 75 : 0;
+
+
+            double cost = weightDistance * distanceGasStation + weightUtilization * utilizationGasStation - urgencyLowFuel + urgencyHighFuel;
+
+            System.out.println(gasStation.getThingId() + " cost: " + cost);
+            if(cost < bestScore){
+                bestScore = cost;
+                bestTarget = new TruckTargetDecision<>(gasStation, distanceGasStation, gasStation.getLocation(), gasStation.getThingId());
+            }
+        }
+            logger.info("Check for potential travel to {}", warehouse.getThingId());
+            Double distanceWarehouse = distances.get(warehouse.getThingId());
+            if (distanceWarehouse != null) {
+
+                double utilizationWarehouse = warehouseGateway.getUtilizationFromDitto(warehouse);
+                double cost = weightDistance * distanceWarehouse + weightUtilization * utilizationWarehouse;
+
+                System.out.println(warehouse.getThingId() + " cost: " + cost);
+                if (cost < bestScore) {
+                    bestScore = cost;
+                    bestTarget = new TruckTargetDecision<>(warehouse, distanceWarehouse, warehouse.getLocation(), warehouse.getThingId());
+                }
+            }
+        if(bestTarget != null){
             truck.setRecommendedTarget(bestTarget);
             logger.info("Next Target for {} is {}" , truck.getThingId(), bestTarget.getDecidedTarget() instanceof GasStation ? ((GasStation) bestTarget.getDecidedTarget()).getThingId() : ((Warehouse) bestTarget.getDecidedTarget()).getThingId());
         }

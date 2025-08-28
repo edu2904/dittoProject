@@ -29,7 +29,7 @@ public class TruckProcess {
     private final TaskFactory taskFactory;
     private final ThingHandler thingHandler = new ThingHandler();
     private final InfluxDBClient influxDBClient;
-    private TaskManager taskManager;
+    private final TaskManager taskManager;
     private final RouteRegister routeRegister = new RouteRegister();
     public TruckProcess(DittoClient listenerClient, DittoClient thingClient, InfluxDBClient influxDBClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
         this.thingClient = thingClient;
@@ -37,9 +37,10 @@ public class TruckProcess {
         this.influxDBClient = influxDBClient;
         this.gatewayManager = gatewayManager;
         this.taskFactory = new TaskFactory(thingClient);
+        taskManager = new TaskManager(thingClient, listenerClient, influxDBClient);
+        deleteAllTasksForNewIteration();
         subscribeForChanges(listenerClient);
         receiveMessages(listenerClient);
-        startProcess();
 
         //receiveActions(processClient);
     }
@@ -62,16 +63,26 @@ public class TruckProcess {
 
     }
     public void receiveMessages(DittoClient dittoClient) {
-            dittoClient.live().registerForMessage("test2", "*", message -> {
-
+            dittoClient.live().registerForMessage("test2", TasksEvents.TASK_FINISHED, message -> {
                 if (message.getSubject().equals(TasksEvents.TASK_FINISHED)) {
                     Optional<?> optionalObject = message.getPayload();
                     if (optionalObject.isPresent()) {
                         String rawPayload = optionalObject.get().toString();
                         var parsePayload = Json.parse(rawPayload).asObject();
                         String finishedSetId = parsePayload.get("setId").asString();
+                        String thingId = parsePayload.get("thingId").asString();
+
+
+                        taskManager.deleteTask(thingId);
+
+
                         RouteExecutor routeExecutor = routeRegister.getRegister(finishedSetId);
                         if (routeExecutor != null) {
+                            try {
+                                Thread.sleep(5000);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
                             routeExecutor.startNewTask();
                         }
                     }
@@ -82,10 +93,9 @@ public class TruckProcess {
     public void startProcess(){
         String routeId = "route-" + UUID.randomUUID().toString().substring(0, 6);
         Queue<Task> taskQueue = new LinkedList<>();
-        taskManager = new TaskManager(thingClient, listenerClient, influxDBClient);
         RoutePlanner routePlanner = new RoutePlanner(taskManager, gatewayManager);
         RoutePlanner.Route route = routePlanner.createRoute();
-        deleteAllTasksForNewIteration();
+
 
         for(RoutePlanner.Segment segment : route.getSegments()) {
                 Map<String, Object> data = new HashMap<>();
@@ -106,7 +116,7 @@ public class TruckProcess {
     public void deleteAllTasksForNewIteration(){
         List<Task> taskList = taskManager.getallTasks();
         for(Task task : taskList){
-            taskManager.deleteTask(task);
+            taskManager.deleteTask(task.getThingId());
             logger.info("Task {} was deleted", task.getThingId());
         }
     }

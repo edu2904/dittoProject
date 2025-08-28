@@ -11,9 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class Warehouse {
@@ -32,8 +34,8 @@ public class Warehouse {
     private WarehouseStatus status;
     private int workers;
     private String thingId;
-    private ScheduledFuture<?> currentTask;
-    Queue<Truck> queue = new ConcurrentLinkedQueue<>();
+    //private ScheduledFuture<?> currentTask;
+    private Queue<Truck> queue = new ConcurrentLinkedQueue<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private double utilization;
@@ -150,14 +152,15 @@ public class Warehouse {
         }
 
     }
-    public void startLoadingProcess(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
+    public synchronized void startLoadingProcess(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
         double cargoToBeDelivered = truck.getCargoToBeDelivered();
         if(taskType == TaskType.LOAD) {
             truck.setStatus(TruckStatus.LOADING);
         }else if(taskType == TaskType.UNLOAD){
             truck.setStatus(TruckStatus.UNLOADING);
         }
-        currentTask = scheduler.scheduleAtFixedRate(() ->
+        AtomicReference<ScheduledFuture<?>> taskRef = new AtomicReference<>();
+        ScheduledFuture<?> currentTask = scheduler.scheduleAtFixedRate(() ->
         {
             double currentInventory = truck.getInventory();
             TruckStatus truckStatus = truck.getStatus();
@@ -178,7 +181,13 @@ public class Warehouse {
 
             }
             else {
-                currentTask.cancel(false);
+
+
+                    ScheduledFuture<?> selfTask = taskRef.get();
+                    if(selfTask != null){
+                        selfTask.cancel(false);
+                    }
+
                 logger.info("Cancel Task for {}" , truck.getThingId());
 
 
@@ -195,23 +204,25 @@ public class Warehouse {
                 truck.setTaskActive(false);
                 truck.setTaskSuccess(success);
                 trucksInWarehouse.remove(truck);
-                onComplete.accept(truck);
+                Truck nextTruck;
+                synchronized (this){
                 if (!queue.isEmpty()) {
                     logger.info("Entering QUEUE");
-                    Truck nextTruck = queue.poll();
+                    nextTruck = queue.poll();
                     assert nextTruck != null;
                     startLoadingProcess(nextTruck, nextTruck.getTask(), onComplete);
                 } else {
                     logger.info("WAREHOUSE WAITING AGAIN");
                     setStatus(WarehouseStatus.WAITING);
-                    currentTask.cancel(false);
                 }
+                }
+                onComplete.accept(truck);
 
             }
 
         }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
 
-
+        taskRef.set(currentTask);
     }
 
     public void setLoadingSuccess(boolean loadingSuccess) {

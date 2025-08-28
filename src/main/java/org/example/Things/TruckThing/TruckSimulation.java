@@ -132,12 +132,13 @@ public class TruckSimulation {
                 truck.setLocation(((Warehouse) target.getDecidedTarget()).getLocation());
                 ((Warehouse) target.getDecidedTarget()).startLoading(truck, truck.getTask(), then ->{
                 if(truck.isTaskSuccess()){
-                    System.out.println("TASK SUCCESS");
+                    System.out.println("TASK SUCCESS for " + truck.getThingId());
                     truck.setTargetWarehouse(null);
                     truckEventsActions.sendSuccessEvent(truck);
                 }else {
-                    System.out.println("TASK NOT SUCCESS");
+                    System.out.println("TASK NOT SUCCESS for " + truck.getThingId());
                     truck.setTargetWarehouse(null);
+                    truck.setStatus(TruckStatus.IDLE);
                     truckEventsActions.sendTaskFailEvent(truck);
                 }
                 });

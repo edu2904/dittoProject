@@ -173,7 +173,7 @@ public class ThingHandler {
         List<T> foundThings = new ArrayList<>();
         dittoClient.twin().search()
                 .stream(queryBuilder -> queryBuilder.filter("like(thingId,\"" + filter + ":*\" )")
-                        .options(o -> o.sort(s -> s.desc("thingId")).size(20)).fields("thingId"))
+                        .options(o -> o.sort(s -> s.desc("thingId")).size(20)).fields("attributes"))
                 .map(mapper).toList()
                 .forEach(foundThing -> {
                     logger.info("Found thing: {}", foundThing);

@@ -60,8 +60,12 @@ public class Main {
 
         GatewayManager gatewayManager = new GatewayManager(thingClient, listenerClient, influxDBClient);
         gatewayManager.startGateways();
+        Thread.sleep(10000);
 
         TruckProcess truckProcess = new TruckProcess(listenerClient, thingClient, influxDBClient, gatewayManager);
+        truckProcess.startProcess();
+        Thread.sleep(10000);
+        truckProcess.startProcess();
 
 
 

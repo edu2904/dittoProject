@@ -19,11 +19,16 @@ public class TruckMapper implements ThingMapper<Truck>{
                 .orElse(null));
 
         thing.getAttributes().ifPresent(attributes -> {
-            String taskStatus = attributes.getValue("status")
+            String thingId = attributes.getValue("thingId")
                     .map(Object::toString)
                     .map(s -> s.replace("\"", ""))
                     .orElse("UNDEFINED");
-            truck.setStatus(TruckStatus.valueOf(taskStatus));
+            truck.setThingId(thingId);
+            String thingStatus = attributes.getValue("status")
+                    .map(Object::toString)
+                    .map(s -> s.replace("\"", ""))
+                    .orElse("UNDEFINED");
+            truck.setStatus(TruckStatus.valueOf(thingStatus));
             double utilization = attributes.getValue("utilization").map(Objects::toString)
                     .map(Double::parseDouble).orElse(0.0);
             truck.setUtilization(utilization);

@@ -80,6 +80,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
     @Override
     public void updateAttributes(Truck truck) {
+        updateAttributeValue("thingId", truck.getThingId(), truck.getThingId());
         updateAttributeValue("weight", truck.getWeight(), truck.getThingId());
         updateAttributeValue("status", truck.getStatus().toString(), truck.getThingId());
         updateAttributeValue("capacity", truck.getCapacity(), truck.getThingId());

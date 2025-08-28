@@ -48,7 +48,8 @@ public class TasksEvents implements EventActionHandler {
         String thingID = task.getThingId();
         JsonObject endObject = JsonObject
                 .newBuilder()
-                .set("message", "Task finished for " + thingID)
+                .set("message", "Task finished")
+                .set("thingId", task.getThingId())
                 .set("setId", task.getSetId())
                 .build();
         sendEvent(dittoClient, thingID, endObject, TASK_FINISHED);

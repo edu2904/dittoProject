@@ -10,19 +10,17 @@ import org.example.util.ThingHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public class TaskManager {
     private final DittoClient dittoClient;
     private final DittoClient listenerClient;
-    private InfluxDBClient influxDBClient;
-    ThingHandler thingHandler = new ThingHandler();
-
+    private final InfluxDBClient influxDBClient;
+    private final ThingHandler thingHandler = new ThingHandler();
+    private final Map<String, ScheduledExecutorService> taskSchedulers = new ConcurrentHashMap<>();
     public TaskManager(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient){
         this.dittoClient = dittoClient;
         this.listenerClient = listenerClient;
@@ -53,9 +51,15 @@ public class TaskManager {
         TaskGateway taskGateway = new TaskGateway(dittoClient, listenerClient, influxDBClient, task);
 
         scheduler.scheduleAtFixedRate(taskGateway::startGateway,0 , Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
+        taskSchedulers.put(task.getThingId(), scheduler);
     }
-    public void deleteTask(Task task){
-        thingHandler.deleteThing(dittoClient, task.getThingId());
+    public void deleteTask(String thingId){
+        thingHandler.deleteThing(dittoClient, thingId);
+
+        ScheduledExecutorService currentScheduler = taskSchedulers.remove(thingId);
+        if(currentScheduler != null){
+            currentScheduler.shutdownNow();
+        }
     }
     public Task getTask(String thingID){
         Optional<Task> task = dittoClient

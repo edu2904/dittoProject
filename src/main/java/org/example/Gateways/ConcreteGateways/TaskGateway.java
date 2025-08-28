@@ -1,5 +1,6 @@
 package org.example.Gateways.ConcreteGateways;
 
+import com.eclipsesource.json.Json;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Mapper.TruckMapper;
@@ -7,12 +8,14 @@ import org.example.Gateways.AbstractGateway;
 import org.example.Things.EventActionHandler;
 import org.example.Things.TaskThings.*;
 import org.example.Things.TruckThing.TruckEventsActions;
+import org.example.Things.TruckThing.TruckStatus;
 import org.example.util.ThingHandler;
 import org.example.Things.TruckThing.Truck;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.ToDoubleFunction;
 
@@ -71,9 +74,16 @@ public class TaskGateway extends AbstractGateway<Task> {
     public void assignThingToTask(){
         List<Truck> trucks = thingHandler.searchThings(dittoClient, new TruckMapper()::fromThing, "truck");
 
-        Truck truck = selectBestThing(trucks, Truck::getUtilization);
-        if(truck != null){
-            task.setTargetTruck(truck.getThingId());
+        trucks.sort(Comparator.comparingDouble(Truck::getUtilization));
+        Truck selectedTruck = null;
+
+        for(Truck truck : trucks){
+            if(truck.getStatus() == TruckStatus.IDLE) {
+                selectedTruck = truck;
+            }
+        }
+        if(selectedTruck != null){
+            task.setTargetTruck(selectedTruck.getThingId());
             updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
             tasksEvents.sendStartEvent(dittoClient, task);
             if(task.getTaskType() == TaskType.LOAD){
@@ -91,10 +101,19 @@ public class TaskGateway extends AbstractGateway<Task> {
     }
 
     public void registerForThingMessages(){
-        listenerClient.live().registerForMessage("thing_" + task.getThingId(), "*", repliableMessage -> {
-            if(Objects.equals(repliableMessage.getSubject(), EventActionHandler.TASK_SUCCESS)){
-                tasksEvents.sendFinishedEvent(dittoClient, task);
-            }else if(Objects.equals(repliableMessage.getSubject(), TruckEventsActions.TASKFAILED)){
+        listenerClient.live().registerForMessage("thing_" + task.getThingId(), "*", message -> {
+            Optional<?> optionalObject = message.getPayload();
+
+            if(message.getSubject().equals(EventActionHandler.TASK_SUCCESS)){
+                if(optionalObject.isPresent()) {
+                    String rawPayload = optionalObject.get().toString();
+                    var parsePayload = Json.parse(rawPayload).asObject();
+                    String thingId = parsePayload.get("thingId").asString();
+                    if (task.getTargetTruck().equals(thingId)) {
+                        tasksEvents.sendFinishedEvent(dittoClient, task);
+                    }
+                }
+            }else if(Objects.equals(message.getSubject(), TruckEventsActions.TASKFAILED)){
                 tasksEvents.sendFailEvent(dittoClient, task);
             };
         });

@@ -30,15 +30,18 @@ public class TruckEventsActions implements EventActionHandler {
         JsonObject failedMessage = JsonObject
                 .newBuilder()
                 .set("message", truck.getThingId() + " failed to fulfill task")
+                .set("thingId", truck.getThingId())
                 .build();
         sendTaskFailed(dittoClient, truck.getThingId(), failedMessage);
     }
     public void sendSuccessEvent(Truck truck){
-        System.out.println("SUCCESS SENT");
+        System.out.println("SUCCESS SENT FOR " + truck.getThingId());
         JsonObject successMessage = JsonObject
                 .newBuilder()
                 .set("message", truck.getThingId() + " successfully fulfilled task")
+                .set("thingId", truck.getThingId())
                 .build();
+
         sendTaskSuccess(dittoClient, truck.getThingId(), successMessage);
     }
 

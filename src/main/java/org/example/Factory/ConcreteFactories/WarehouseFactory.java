@@ -56,7 +56,8 @@ public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
     }
 
     public Warehouse createDefaultWarehouse(int number, double lat, double lon, boolean mainWarehouse){
-        Warehouse warehouse = new Warehouse();
+        int capacity = (int) ((Math.random() * 101) + 400);
+        Warehouse warehouse = new Warehouse(capacity);
 
         if(mainWarehouse){
             warehouse.setThingId("warehousemain:Warehouse-Main");
@@ -64,7 +65,7 @@ public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
             warehouse.setThingId("warehouse:Warehouse-" + number);
         }
 
-        int capacity = (int) ((Math.random() * 101) + 400);
+
         warehouse.setCapacity(capacity);
         warehouse.setInventory((int) (capacity * (0.8 + Math.random() * 0.2)));
         warehouse.setWorkers(1);

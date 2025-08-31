@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -27,6 +28,11 @@ public class Warehouse {
 
     private final Logger logger = LoggerFactory.getLogger(Warehouse.class);
     private boolean loadingSuccess;
+    private final WarehouseInventory warehouseInventory;
+    private final WarehouseTruckManager warehouseTruckManager;
+
+    private final WarehouseSimulation warehouseSimulation;
+
 
 
     private double inventory;
@@ -39,9 +45,6 @@ public class Warehouse {
 
     private double utilization;
 
-    public Warehouse (){
-
-    }
     private final Set<Truck> trucksInWarehouse = ConcurrentHashMap.newKeySet();
 
     public String getThingId() {
@@ -113,6 +116,12 @@ public class Warehouse {
         this.mainWarehouse = mainWarehouse;
     }
 
+    public Warehouse(double capacity){
+        this.warehouseInventory = new WarehouseInventory(capacity);
+        this.warehouseTruckManager = new WarehouseTruckManager();
+        this.warehouseSimulation = new WarehouseSimulation(warehouseInventory, warehouseTruckManager);
+    }
+
 
     public void featureSimulation(){
         scheduler.scheduleAtFixedRate(() -> {
@@ -120,6 +129,8 @@ public class Warehouse {
         setInventory(200);
         }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
+
+
 
 
     public synchronized void startLoading(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
@@ -221,6 +232,8 @@ public class Warehouse {
     }
 
 
+
+
     public double calculateUtilization(){
         double weightTrucks = 0.7;
         double weightInventory = 0.3;
@@ -238,4 +251,18 @@ public class Warehouse {
 
         return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
     }
+    /*
+    public void arriveTruck(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
+        synchronized (warehouseTruckManager){
+            if(!warehouseTruckManager.isTruckInQueue()){
+                warehouseSimulation.startLoading(truck, taskType, onComplete);
+            }else {
+                truck.setStatus(TruckStatus.WAITING);
+                warehouseTruckManager.addTruckToQueue(truck);
+            }
+        }
+    }
+
+     */
+
 }

@@ -3,7 +3,6 @@ package org.example.Things.TruckThing;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.things.model.ThingId;
-import org.example.DittoEventAction.DittoEventActionHandler;
 import org.example.Things.EventActionHandler;
 import org.example.Things.Location;
 

@@ -59,10 +59,7 @@ public class TruckSimulation {
 
 
         scheduler.scheduleAtFixedRate(() -> {
-            System.out.println("######################");
-            System.out.println(truck.getThingId() + " " + truck.getTargetWarehouse());
-            System.out.println("######################");
-            try {
+           try {
                 updateTarget(gatewayManager);
 
                 if (truck.getFuel() <= 0 || truck.getTarget() == null) {
@@ -131,15 +128,15 @@ public class TruckSimulation {
                 truck.setTaskActive(true);
                 truck.setLocation(((Warehouse) target.getDecidedTarget()).getLocation());
                 ((Warehouse) target.getDecidedTarget()).startLoading(truck, truck.getTask(), then ->{
-                if(truck.isTaskSuccess()){
-                    System.out.println("TASK SUCCESS for " + truck.getThingId());
-                    truck.setTargetWarehouse(null);
-                    truckEventsActions.sendSuccessEvent(truck);
+                if(then.isTaskSuccess()){
+                    System.out.println("TASK SUCCESS for " + then.getThingId());
+                    then.setTargetWarehouse(null);
+                    truckEventsActions.sendSuccessEvent(then);
                 }else {
-                    System.out.println("TASK NOT SUCCESS for " + truck.getThingId());
-                    truck.setTargetWarehouse(null);
-                    truck.setStatus(TruckStatus.IDLE);
-                    truckEventsActions.sendTaskFailEvent(truck);
+                    System.out.println("TASK NOT SUCCESS for " + then.getThingId());
+                    then.setTargetWarehouse(null);
+                    then.setStatus(TruckStatus.IDLE);
+                    truckEventsActions.sendTaskFailEvent(then);
                 }
                 });
 

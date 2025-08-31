@@ -2,6 +2,9 @@ package org.example;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.client.messaging.MessagingProviders;
@@ -13,6 +16,9 @@ import org.example.Gateways.GatewayManager;
 import org.example.Things.TruckThing.Truck;
 import org.example.process.TruckProcess;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -62,10 +68,32 @@ public class Main {
         gatewayManager.startGateways();
         Thread.sleep(10000);
 
+
+
+
+        HttpServer server = null;
+        try {
+            server = HttpServer.create(new InetSocketAddress(8000), 0);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        server.createContext("/test", (HttpExchange t) -> {
+            String response = "This is the response";
+            t.sendResponseHeaders(200, response.length());
+            OutputStream os = t.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+        });
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+
         TruckProcess truckProcess = new TruckProcess(listenerClient, thingClient, influxDBClient, gatewayManager);
         truckProcess.startProcess();
         Thread.sleep(10000);
         truckProcess.startProcess();
+
+
 
 
 
@@ -151,5 +179,6 @@ public class Main {
     }
 
  */
+
 }
 

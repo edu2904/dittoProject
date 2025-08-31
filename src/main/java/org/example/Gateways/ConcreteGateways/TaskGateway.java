@@ -72,32 +72,56 @@ public class TaskGateway extends AbstractGateway<Task> {
     }
 
     public void assignThingToTask(){
-        List<Truck> trucks = thingHandler.searchThings(dittoClient, new TruckMapper()::fromThing, "truck");
+        Truck selectedTruck = findBestIdleTruck();
 
-        trucks.sort(Comparator.comparingDouble(Truck::getUtilization));
-        Truck selectedTruck = null;
-
-        for(Truck truck : trucks){
-            if(truck.getStatus() == TruckStatus.IDLE) {
-                selectedTruck = truck;
-            }
+        if(selectedTruck == null){
+            noSuitableThingFound();
+            return;
         }
-        if(selectedTruck != null){
-            task.setTargetTruck(selectedTruck.getThingId());
-            updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
-            tasksEvents.sendStartEvent(dittoClient, task);
-            if(task.getTaskType() == TaskType.LOAD){
+
+        assignTruckToTask(selectedTruck);
+        sendEventForTask(task);
+
+    }
+
+    public void sendEventForTask(Task task){
+        tasksEvents.sendStartEvent(dittoClient, task);
+        switch (task.getTaskType()){
+            case LOAD -> {
                 taskActions.sendLoadEvent(dittoClient, task);
-                System.out.println("LOAD EVENT SENT");
-            }else if(task.getTaskType() == TaskType.UNLOAD){
-                taskActions.sendUnloadEvent(dittoClient, task);
-                System.out.println("UNLOAD EVENT SENT");
+                logger.info("LOAD EVENT SENT FOR {}", task.getThingId());
             }
-        }else {
-            logger.warn("NO BEST THING FOUND");
-            task.setStatus(TaskStatus.FAILED);
-            tasksEvents.sendFailEvent(dittoClient, task);
+            case UNLOAD -> {
+                taskActions.sendUnloadEvent(dittoClient, task);
+                logger.info("UNLOAD EVENT SENT FOR {}", task.getThingId());
+            }
+            default -> logger.warn("Unknown Task Type: {}", task.getTaskType());
         }
+    }
+
+    public void noSuitableThingFound(){
+        logger.warn("NO BEST THING FOUND FOR {}", task.getThingId());
+        task.setStatus(TaskStatus.FAILED);
+        tasksEvents.sendFailEvent(dittoClient, task);
+    }
+    public Truck findBestIdleTruck(){
+        Truck bestTruck = new Truck();
+        try {
+             bestTruck =  thingHandler.searchThings(dittoClient, new TruckMapper()::fromThing, "truck")
+                    .stream().sorted(Comparator.comparingDouble(Truck::getUtilization))
+                    .filter(truck -> truck.getStatus() == TruckStatus.IDLE)
+                    .findFirst()
+                    .orElse(null);
+        }catch (Exception e){
+            logger.error("error while looking for truck: {}", e.getMessage(), e);
+        }
+        return bestTruck;
+    }
+
+    public void assignTruckToTask(Truck truck){
+        task.setTargetTruck(truck.getThingId());
+        updateAttributeValue("targetThing", task.getTargetTruck(), task.getThingId());
+
     }
 
     public void registerForThingMessages(){
@@ -111,10 +135,12 @@ public class TaskGateway extends AbstractGateway<Task> {
                     String thingId = parsePayload.get("thingId").asString();
                     if (task.getTargetTruck().equals(thingId)) {
                         tasksEvents.sendFinishedEvent(dittoClient, task);
+                        logger.info("Task {} for Truck {} finished successful", task.getThingId(), task.getTargetTruck());
                     }
                 }
             }else if(Objects.equals(message.getSubject(), TruckEventsActions.TASKFAILED)){
                 tasksEvents.sendFailEvent(dittoClient, task);
+                logger.warn("Task {} of Truck {} failed", task.getThingId(), task.getTargetTruck());
             };
         });
     }

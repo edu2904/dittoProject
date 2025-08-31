@@ -39,11 +39,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
     @Override
     public void startGateway() {
-        //registerForTasks();
-        //subscribeToAttributeChanges();
-          for(Truck truck : trucks){
-              startUpdating(truck);
-          }
+        trucks.forEach(this::startUpdating);
     }
 
 
@@ -53,21 +49,9 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
                 updateAttributes(truck);
                 updateFeatures(truck);
-
-                //truckEventsActions.progressResetAction(this.dittoClient, truck.getThingId(), truck, getProgressFromDitto(truck));
-                //truckEventsActions.weightEvent(truck.getThingId(), getWeightFromDitto(truck));
-                //truckEventsActions.fuelAmountEvents(truck.getThingId(), getFuelFromDitto(truck));
-               // truckEventsActions.taskSearchAction(truck.getThingId(), getWeightFromDitto(truck), 7000);
-                //truckEventsActions.arrivalEvent(truck.getThingId(), getTargetLocationFromDitto(truck), getLocationFromDitto(truck), getTargetNameFromDitto(truck));
-                //truckEventsActions.checkForTruckWithoutTask(truck.getThingId(), truck.getStatus());
-
-                //checkRefuelTask(getFuelFromDitto(truck), truck);
-                //checkTirePressureTask(getTirePressureFromDitto(truck), truck);
-                //checkLoadingTask(getInventoryFromDitto(truck), truck);
-
                 logToInfluxDB(truck, "Truck");
             } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
+                logger.error("ERROR WHILE UPDATING TRUCK {} WITH ERROR MESSAGE: {}", truck.getThingId(), e);
             }
 
         }
@@ -155,55 +139,44 @@ public class TruckGateway extends AbstractGateway<Truck> {
         }
         return null;
     }
-
-    public void checkForTask(){
-
+    public void registerForTasks(){
+        registerForTaskListener("truckLoad", TaskActions.TASK_LOAD_START, TaskType.LOAD);
+        registerForTaskListener("truckUnload", TaskActions.TASK_UNLOAD_START, TaskType.UNLOAD);
     }
 
-    public void registerForTasks(){
-        listenerClient.live().registerForMessage("truckLoad", TaskActions.TASK_LOAD_START, message -> {
+
+    public void registerForTaskListener(String identifier, String action, TaskType tasktype){
+        listenerClient.live().registerForMessage(identifier, action, message -> {
             Optional<?> optionalObject = message.getPayload();
-            System.out.println(message.getSubject());
-            System.out.println(message.getPayload());
-            if(optionalObject.isPresent()) {
+           if(optionalObject.isPresent()) {
+               try {
+
+
                 String rawPayload = optionalObject.get().toString();
                 var parsePayload = Json.parse(rawPayload).asObject();
                 String thingId = parsePayload.get("thingId").asString();
                 String to = parsePayload.get("to").asString();
                 String from = parsePayload.get("from").asString();
                 double quantity = parsePayload.get("quantity").asDouble();
-                Truck truck = trucks.stream().filter(t -> t.getThingId().equals(thingId)).findFirst().orElse(null);
-                if (message.getSubject().equals(TaskActions.TASK_LOAD_START)) {
-                    System.out.println("*******************************++");
+                Truck truck = trucks
+                        .stream()
+                        .filter(t -> t.getThingId().equals(thingId))
+                        .findFirst()
+                        .orElse(null);
+
+                if (message.getSubject().equals(action)) {
                     assert truck != null;
-                    System.out.println(truck.getThingId() + " received order " + TaskActions.TASK_LOAD_START);
-                    System.out.println("********************************");
-                    truck.setAssignedTaskValues(from, to, quantity, TaskType.LOAD);
+                    logger.info("{} reveived order {}", truck.getThingId(), action);
+                     truck.setAssignedTaskValues(from, to, quantity, tasktype);
+                }else {
+                    logger.warn("Truck {} not found for task {}", thingId, action);
                 }
-            }
+            }catch (Exception e){
+                   logger.error("ERROR WHILE PROCESSING TASK DATA FOR TRUCK WITH ERROR MESSAGE: {}",e.getMessage());
+               }
+           }
         });
 
-        listenerClient.live().registerForMessage("truckUnload", TaskActions.TASK_UNLOAD_START, message -> {
-            Optional<?> optionalObject = message.getPayload();
-            System.out.println(message.getSubject());
-            System.out.println(message.getPayload());
-            if(optionalObject.isPresent()) {
-                String rawPayload = optionalObject.get().toString();
-                var parsePayload = Json.parse(rawPayload).asObject();
-                String thingId = parsePayload.get("thingId").asString();
-                String to = parsePayload.get("to").asString();
-                String from = parsePayload.get("from").asString();
-                double quantity = parsePayload.get("quantity").asDouble();
-                Truck truck = trucks.stream().filter(t -> t.getThingId().equals(thingId)).findFirst().orElse(null);
-                if (message.getSubject().equals(TaskActions.TASK_UNLOAD_START)) {
-                    System.out.println("*******************************++");
-                    assert truck != null;
-                    System.out.println(truck.getThingId() + " received order " + TaskActions.TASK_LOAD_START);
-                    System.out.println("********************************");
-                    truck.setAssignedTaskValues(from, to, quantity, TaskType.UNLOAD);
-                }
-            }
-        });
     }
 }
 

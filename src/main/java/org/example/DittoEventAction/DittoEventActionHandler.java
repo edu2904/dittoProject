@@ -1,6 +1,6 @@
 package org.example.DittoEventAction;
 
-
+/*
 import org.example.util.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,3 +135,5 @@ public class DittoEventActionHandler {
         }
     }
 }
+
+ */

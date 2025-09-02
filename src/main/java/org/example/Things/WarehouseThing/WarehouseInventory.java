@@ -17,7 +17,11 @@ public class WarehouseInventory {
         inventory.updateAndGet(currentInventory -> Math.min(currentInventory + amount, capacity));
     }
     public void remove(double amount){
-        inventory.updateAndGet(currentInventory -> Math.max(currentInventory - amount, capacity));
+        inventory.updateAndGet(currentInventory -> Math.max(currentInventory - amount, 0.0));
+    }
+
+    public void setInventory(double newInventory) {
+        inventory.set(Math.max(0.0, Math.min(newInventory, capacity)));
     }
     public double getCapacity() {
         return capacity;

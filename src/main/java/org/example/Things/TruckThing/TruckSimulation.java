@@ -127,7 +127,7 @@ public class TruckSimulation {
             if (truck.getStatus() != TruckStatus.LOADING && !truck.isTaskActive()) {
                 truck.setTaskActive(true);
                 truck.setLocation(((Warehouse) target.getDecidedTarget()).getLocation());
-                ((Warehouse) target.getDecidedTarget()).startLoading(truck, truck.getTask(), then ->{
+                ((Warehouse) target.getDecidedTarget()).arriveTruck(truck, truck.getTask(), then ->{
                 if(then.isTaskSuccess()){
                     System.out.println("TASK SUCCESS for " + then.getThingId());
                     then.setTargetWarehouse(null);

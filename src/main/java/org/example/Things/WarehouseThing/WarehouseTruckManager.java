@@ -11,7 +11,7 @@ public class WarehouseTruckManager {
     private final Queue<Truck> queue = new ConcurrentLinkedQueue<>();
     private Truck activeTruck = null;
 
-    private synchronized boolean hasActiveTruck(){
+    public synchronized boolean hasActiveTruck(){
         return activeTruck != null;
     }
 

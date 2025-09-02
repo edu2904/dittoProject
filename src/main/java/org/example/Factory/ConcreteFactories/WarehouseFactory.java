@@ -67,7 +67,7 @@ public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
 
 
         warehouse.setCapacity(capacity);
-        warehouse.setInventory((int) (capacity * (0.8 + Math.random() * 0.2)));
+        warehouse.setInventory(200);//(int) (capacity * (0.8 + Math.random() * 0.2)));
         warehouse.setWorkers(1);
         warehouse.setStatus(WarehouseStatus.WAITING);
         warehouse.setLocation(lat, lon);

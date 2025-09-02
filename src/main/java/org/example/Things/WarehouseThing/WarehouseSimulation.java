@@ -4,12 +4,15 @@ import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckSimulation;
 import org.example.Things.TruckThing.TruckStatus;
+import org.example.util.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 
@@ -28,37 +31,38 @@ public class WarehouseSimulation {
     public void startLoading(Truck truck, TaskType taskType,  Consumer<Truck> onComplete){
         setTruckStatus(truck, taskType);
         warehouseTruckManager.setActiveTruck(truck);
-        scheduler.scheduleAtFixedRate(() -> startLoadingProcess(truck, taskType, onComplete), 0 , 1, TimeUnit.SECONDS);
+
+        AtomicReference<ScheduledFuture<?>> schedulerRegister = new AtomicReference<>();
+        ScheduledFuture<?> currentTask = scheduler.scheduleAtFixedRate(() ->{
+            double currentInventory = truck.getInventory();
+            TruckStatus truckStatus = truck.getStatus();
+            if(truckStatus == TruckStatus.LOADING && currentInventory < truck.getCargoToBeDelivered()) {
+
+                logger.info("CurrentInventory {} for {}", currentInventory, truck.getThingId());
+                double newInventory = Math.min(10, truck.getCargoToBeDelivered() - currentInventory);
+                truck.setInventory(currentInventory + newInventory);
+                warehouseInventory.remove(newInventory);
+
+
+            }else if(truckStatus == TruckStatus.UNLOADING && currentInventory > 0){
+
+                logger.info("CurrentInventory {} for {}", currentInventory, truck.getThingId());
+                double newInventory = Math.min(10,currentInventory);
+                truck.setInventory(currentInventory - newInventory);
+                warehouseInventory.add(newInventory);
+
+            }else {
+
+                ScheduledFuture<?> task = schedulerRegister.get();
+                if(task != null) task.cancel(false);
+                finishTruck(truck, onComplete);
+            }
+
+        }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
+        schedulerRegister.set(currentTask);
     }
-    public void setTruckStatus(Truck truck, TaskType taskType){
-        if(taskType == TaskType.LOAD) truck.setStatus(TruckStatus.LOADING);
-        if(taskType == TaskType.UNLOAD) truck.setStatus(TruckStatus.UNLOADING);
-    }
-
-    public void startLoadingProcess(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
-        double currentInventory = truck.getInventory();
-        TruckStatus truckStatus = truck.getStatus();
-        if(truckStatus == TruckStatus.LOADING && currentInventory < truck.getCargoToBeDelivered()) {
-
-            logger.info("CurrentInventory {} for {}", currentInventory, truck.getThingId());
-            double newInventory = Math.min(10, truck.getCargoToBeDelivered() - currentInventory);
-            truck.setInventory(currentInventory + newInventory);
-            warehouseInventory.remove(warehouseInventory.getInventory() - newInventory);
 
 
-        }else if(truckStatus == TruckStatus.UNLOADING && currentInventory > 0){
-
-            logger.info("CurrentInventory {} for {}", currentInventory, truck.getThingId());
-            double newInventory = Math.min(10,currentInventory);
-            truck.setInventory(currentInventory - newInventory);
-            warehouseInventory.add(warehouseInventory.getInventory() + newInventory);
-
-        }
-        if(isTruckFinished(truck, taskType)){
-            finishTruck(truck, onComplete);
-
-        }
-    }
     public boolean isTruckFinished(Truck truck, TaskType taskType){
         if (taskType == TaskType.LOAD) return truck.getInventory() >= truck.getCargoToBeDelivered();
         else return truck.getInventory() <= 0;
@@ -90,4 +94,9 @@ public class WarehouseSimulation {
             startLoading(nextTruck, nextTruck.getTask(), onComplete);
     }
     }
+    public void setTruckStatus(Truck truck, TaskType taskType){
+        if(taskType == TaskType.LOAD) truck.setStatus(TruckStatus.LOADING);
+        if(taskType == TaskType.UNLOAD) truck.setStatus(TruckStatus.UNLOADING);
+    }
+
 }

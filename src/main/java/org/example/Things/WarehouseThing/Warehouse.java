@@ -56,17 +56,11 @@ public class Warehouse {
     }
 
     public double getInventory() {
-        return inventory;
+        return warehouseInventory.getInventory();
     }
 
     public void setInventory(double inventory) {
-        if (inventory > capacity) {
-            this.inventory = capacity;
-        } else if (inventory < 0) {
-            this.inventory = 0;
-        } else {
-            this.inventory = inventory;
-        }
+       warehouseInventory.setInventory(inventory);
     }
 
     public double getCapacity() {
@@ -121,119 +115,22 @@ public class Warehouse {
         this.warehouseTruckManager = new WarehouseTruckManager();
         this.warehouseSimulation = new WarehouseSimulation(warehouseInventory, warehouseTruckManager);
     }
-
+    public void arriveTruck(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
+        synchronized (warehouseTruckManager){
+            if(!warehouseTruckManager.hasActiveTruck()){
+                warehouseSimulation.startLoading(truck, taskType, onComplete);
+            }else {
+                truck.setStatus(TruckStatus.WAITING);
+                warehouseTruckManager.addTruckToQueue(truck);
+            }
+        }
+    }
 
     public void featureSimulation(){
         scheduler.scheduleAtFixedRate(() -> {
         setUtilization(calculateUtilization());
-        setInventory(200);
         }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
-
-
-
-
-    public synchronized void startLoading(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
-
-        logger.info("Truck {} requested loading", truck.getThingId());
-        trucksInWarehouse.add(truck);
-
-        if(status == WarehouseStatus.WAITING){
-            logger.info("Start loading process for {}", truck.getThingId());
-            setStatus(WarehouseStatus.LOADING);
-            startLoadingProcess(truck,taskType, onComplete);
-        }else {
-            logger.info("Warehouse already loading. {} waiting in queue", truck.getThingId());
-            truck.setStatus(TruckStatus.WAITING);
-            queue.add(truck);
-        }
-
-    }
-    public synchronized void startLoadingProcess(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
-
-
-
-        final Truck currentTruck = truck;
-        double cargoToBeDelivered = currentTruck.getCargoToBeDelivered();
-
-        setTruckStatus(currentTruck, taskType);
-
-        AtomicReference<ScheduledFuture<?>> taskRef = new AtomicReference<>();
-
-        ScheduledFuture<?> currentTask = scheduler.scheduleAtFixedRate(() -> {
-            double currentInventory = currentTruck.getInventory();
-            TruckStatus truckStatus = currentTruck.getStatus();
-            if(truckStatus == TruckStatus.LOADING && currentInventory < cargoToBeDelivered) {
-
-                logger.info("CurrentInventory {} for {}", currentInventory, currentTruck.getThingId());
-                double newInventory = Math.min(10,cargoToBeDelivered - currentInventory);
-                currentTruck.setInventory(currentInventory + newInventory);
-                setInventory(getInventory() - newInventory);
-
-
-            }else if(truckStatus == TruckStatus.UNLOADING && currentInventory > 0){
-
-                logger.info("CurrentInventory {} for {}", currentInventory, currentTruck.getThingId());
-                double newInventory = Math.min(10,currentInventory);
-                currentTruck.setInventory(currentInventory - newInventory);
-                setInventory(getInventory() + newInventory);
-
-            }
-            else {
-
-
-                    ScheduledFuture<?> selfTask = taskRef.get();
-                    if(selfTask != null){
-                        selfTask.cancel(true);
-                    }
-
-                logger.info("Cancel Task for {}" , currentTruck.getThingId());
-
-
-
-                boolean success;
-                if (truckStatus == TruckStatus.LOADING) {
-                    success = currentTruck.getInventory() >= cargoToBeDelivered;
-                } else {
-                    success = currentTruck.getInventory() <= 0;
-                }
-
-
-
-                currentTruck.setTarget(null);
-                currentTruck.setTaskActive(false);
-                currentTruck.setTaskSuccess(success);
-                trucksInWarehouse.remove(currentTruck);
-
-                onComplete.accept(currentTruck);
-
-
-                synchronized (this) {
-                    if (!queue.isEmpty()) {
-                        logger.info("Entering QUEUE");
-                        Truck nextTruck = queue.poll();
-                        assert nextTruck != null;
-                        scheduler.schedule(() -> startLoadingProcess(nextTruck, nextTruck.getTask(), onComplete), 0, TimeUnit.MILLISECONDS);
-                    } else {
-                        logger.info("WAREHOUSE WAITING AGAIN");
-                        setStatus(WarehouseStatus.WAITING);
-                    }
-                }
-            }
-
-        }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
-
-        taskRef.set(currentTask);
-    }
-
-    public void setTruckStatus(Truck truck, TaskType taskType){
-        if(taskType == TaskType.LOAD) truck.setStatus(TruckStatus.LOADING);
-        if(taskType == TaskType.UNLOAD) truck.setStatus(TruckStatus.UNLOADING);
-    }
-
-
-
-
     public double calculateUtilization(){
         double weightTrucks = 0.7;
         double weightInventory = 0.3;
@@ -251,18 +148,5 @@ public class Warehouse {
 
         return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
     }
-    /*
-    public void arriveTruck(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
-        synchronized (warehouseTruckManager){
-            if(!warehouseTruckManager.isTruckInQueue()){
-                warehouseSimulation.startLoading(truck, taskType, onComplete);
-            }else {
-                truck.setStatus(TruckStatus.WAITING);
-                warehouseTruckManager.addTruckToQueue(truck);
-            }
-        }
-    }
-
-     */
 
 }

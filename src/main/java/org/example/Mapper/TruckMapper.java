@@ -1,6 +1,7 @@
 package org.example.Mapper;
 
 import org.eclipse.ditto.things.model.Thing;
+import org.example.Things.Location;
 import org.example.Things.TaskThings.Task;
 import org.example.Things.TaskThings.TaskStatus;
 import org.example.Things.TaskThings.TaskType;
@@ -32,6 +33,17 @@ public class TruckMapper implements ThingMapper<Truck>{
             double utilization = attributes.getValue("utilization").map(Objects::toString)
                     .map(Double::parseDouble).orElse(0.0);
             truck.setUtilization(utilization);
+            double lat = attributes
+                    .getValue("location/geo:lat")
+                    .map(Objects::toString)
+                    .map(Double::parseDouble).
+                    orElse(0.0);
+            double lon = attributes.getValue("location/geo:long")
+                    .map(Objects::toString)
+                    .map(Double::parseDouble)
+                    .orElse(0.0);
+            truck.setLocation(new Location(lat, lon));
+
         });
         return truck;
     }

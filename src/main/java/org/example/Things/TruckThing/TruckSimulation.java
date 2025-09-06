@@ -59,6 +59,7 @@ public class TruckSimulation {
 
 
         scheduler.scheduleAtFixedRate(() -> {
+
            try {
                 updateTarget(gatewayManager);
 
@@ -139,25 +140,15 @@ public class TruckSimulation {
                     truckEventsActions.sendTaskFailEvent(then);
                 }
                 });
-
-                //if(!((Warehouse) target.getDecidedTarget()).isMainWareHouse()) {
-                //    truck.getStops().set(truck.getCurrentStopIndex().get() - 1, 1);
-                //    truck.getCurrentStopIndex().getAndIncrement();
-                //}
             }
         }
     }
-
-
-
-
     public void tirePressureDecreases(double tirePressure){
         if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
             double tirePressureReduction = Math.random() * 100;
             truck.setTirePressure(tirePressure - tirePressureReduction);
         }
     }
-
     public Map<String, Double> calculateDistances(){
         Map<String, Double> distances = new HashMap<>();
         for(Warehouse warehouse : truck.getWarehouseList()){

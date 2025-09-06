@@ -100,7 +100,8 @@ public class TruckProcess {
         for(RoutePlanner.Segment segment : route.getSegments()) {
                 Map<String, Object> data = new HashMap<>();
                 data.put("from", segment.getFrom());
-                data.put("to", segment.getTo());
+                data.put("to", segment.getTo().getThingId());
+                data.put("toWarehouse", segment.getTo());
                 data.put("quantity", segment.getQuantity());
                 data.put("setId", segment.getSetId());
 

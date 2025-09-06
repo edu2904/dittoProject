@@ -68,6 +68,8 @@ public class TruckGateway extends AbstractGateway<Truck> {
         updateAttributeValue("weight", truck.getWeight(), truck.getThingId());
         updateAttributeValue("status", truck.getStatus().toString(), truck.getThingId());
         updateAttributeValue("capacity", truck.getCapacity(), truck.getThingId());
+        updateAttributeValue("utilization", truck.getUtilization(), truck.getThingId());
+
 
 
         updateAttributeValue("location/geo:lat", truck.getLocation().getLat(), truck.getThingId());

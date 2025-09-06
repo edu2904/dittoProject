@@ -9,6 +9,7 @@ import org.example.Things.EventActionHandler;
 import org.example.Things.TaskThings.*;
 import org.example.Things.TruckThing.TruckEventsActions;
 import org.example.Things.TruckThing.TruckStatus;
+import org.example.Things.WarehouseThing.Warehouse;
 import org.example.util.ThingHandler;
 import org.example.Things.TruckThing.Truck;
 
@@ -108,7 +109,8 @@ public class TaskGateway extends AbstractGateway<Task> {
         Truck bestTruck = new Truck();
         try {
              bestTruck =  thingHandler.searchThings(dittoClient, new TruckMapper()::fromThing, "truck")
-                    .stream().sorted(Comparator.comparingDouble(Truck::getUtilization))
+                    .stream().sorted(Comparator.comparingDouble(truck ->
+                             truck.getAverageUtilizationForTask(truck.getUtilization(), truck.calculateLocationUtilization((Warehouse) task.getData("toWarehouse")))))
                     .filter(truck -> truck.getStatus() == TruckStatus.IDLE)
                     .findFirst()
                     .orElse(null);

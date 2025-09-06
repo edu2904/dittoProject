@@ -27,12 +27,12 @@ public class RoutePlanner {
     }
 
     public static class Segment{
-        private final String from;
-        private final String to;
+        private final Warehouse from;
+        private final Warehouse to;
         private final TaskType taskType;
         private final double quantity;
         private final String setId;
-        public Segment(String from, String to, TaskType taskType, double quantity, String routeId){
+        public Segment(Warehouse from, Warehouse to, TaskType taskType, double quantity, String routeId){
             this.from = from;
             this.to = to;
             this.taskType = taskType;
@@ -40,10 +40,10 @@ public class RoutePlanner {
             this.setId = routeId;
         }
 
-        public String getFrom() {
+        public Warehouse getFrom() {
             return from;
         }
-        public String getTo() {
+        public Warehouse getTo() {
             return to;
         }
 
@@ -76,14 +76,11 @@ public class RoutePlanner {
     public Route createRoute(){
         String routeId = "route-" + UUID.randomUUID().toString().substring(0, 6);
         List<Segment> segments = new ArrayList<>();
-        List<String> warehousesThingIds = new ArrayList<>();
-           for(Warehouse warehouse : gatewayManager.getWarehouseList()){
-               warehousesThingIds.add(warehouse.getThingId());
-        }
+        List<Warehouse> warehousesThingIds = new ArrayList<>(gatewayManager.getWarehouseList());
         double quantity = 100;
         for(int i = 0; i < warehousesThingIds.size()-1; i++){
-            String from = warehousesThingIds.get(i);
-            String to = warehousesThingIds.get(i+1);
+            Warehouse from = warehousesThingIds.get(i);
+            Warehouse to = warehousesThingIds.get(i+1);
 
             TaskType taskType = (i % 2 == 0) ? TaskType.LOAD : TaskType.UNLOAD;
             segments.add(new Segment(from, to, taskType, quantity, routeId));

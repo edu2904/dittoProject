@@ -48,9 +48,13 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
         truck2.setFuel(250);
 
 
+
         truckList.add(truck1);
         truckList.add(truck2);
 
+        for(Truck truck : truckList) {
+            truck.setUtilization(truck.calculateUtilization());
+        }
         //truck1.featureSimulation1(dittoClient);
         //truck2.featureSimulation2(dittoClient);
 
@@ -73,7 +77,6 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
         truck.setFuel(51);
         truck.setCapacity(Config.CAPACITY_STANDARD_TRUCK);
         truck.setInventory(0);
-        truck.setUtilization(truck.calculateUtilization());
         truck.setLocation(new Location(48.0842, 11.5302));
         truck.setFuelConsumption(1.0);
         return truck;

@@ -254,180 +254,23 @@ public class Truck {
         return distances;
     }
     public double calculateUtilization(){
-        double weightFuel = 1;
-        double combinedUtilization = weightFuel * getFuel();
+        double utilization = 1.0 - Math.min(1.0, Math.max(0.0, getFuel() / Config.FUEL_MAX_VALUE_STANDARD_TRUCK));
 
-        return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
-
-    }
-/*
-    public void updateTarget(){
-        if(this.target == null && this.recommendedTarget != null){
-            this.target = this.recommendedTarget;
-            setTarget(target);
-            setProgress(0);
-            this.recommendedTarget = null;
-        }
-    }
-
-    public AtomicInteger getCurrentStopIndex() {
-        return currentStopIndex;
-    }
-
-    public void setDestinations(int destinations){
-        //setStops(new ArrayList<>(Collections.nCopies(destinations, 0)));
-        ArrayList<Integer> listDestinations = new ArrayList<>();
-        for(int i = 0; i < destinations; i++){
-            listDestinations.add(0);
-        }
-        setStops(listDestinations);
-    }
-
-    public double calculateUtilization(){
-        double weightFuel = 1;
-        double combinedUtilization = weightFuel * getFuel();
-
-        return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
+        return utilization * 100;
 
     }
+    public double calculateLocationUtilization(Warehouse toWarehouse){
 
-    public void runSimulation(int destinations, double fuelConsumption, double progressMade, DittoClient dittoClient){
-        setDestinations(destinations);
-        setStarterLocation();
-
-
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-            updateTarget();
-            if (getFuel() <= 0 || getTarget() == null) {
-                stopTruck();
-                logger.debug("Truck {} ran out of fuel", getThingId());
-
-            }else if(getTarget() != null) {
-
-                checkForNewTasks(dittoClient);
-                drive(fuelConsumption, progressMade, getTarget(), dittoClient);
-            }
-                } catch (Exception e) {
-                    logger.error("Error in truck {}: {}" , thingId, e);
-                }
-            }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
+        double maxDistance =  8000.0;
+        double distance = GeoUtil.calculateDistance(getLocation(), toWarehouse.getLocation());
+        double normalizedDistance = Math.min(1.0, Math.max(0.0, distance / maxDistance));
+        return normalizedDistance * 100.0;
     }
 
-    public void drive(double fuelConsumption, double progressMade, TruckTargetDecision<?> target, DittoClient dittoClient){
-
-        if(isTaskActive()) return;
-        setStatus(TruckStatus.DRIVING);
-
-        tirePressureDecreases(getTirePressure());
-        setVelocity(75 + Math.random() * 10);
-        setFuel(getFuel() - fuelConsumption);
-        setUtilization(calculateUtilization());
-
-        double targetDistance = target.getDistance() * 1000;
-        double progressPerTick = (progressMade / targetDistance) * 100;
-        setProgress(Math.min(100, getProgress() + progressPerTick));
-        double distanceTravelled = (getProgress() / 100) * targetDistance;
-
-
-        logger.info("{} travelled {}/{} Meters", thingId, distanceTravelled, targetDistance);
-
-        if(getProgress() >= 100 && currentStopIndex.get() <= getStops().size()){
-            checkForActiveTask(dittoClient, target);
-        }else if(currentStopIndex.get() > getStops().size()){
-            logger.info("Truck {} finished tour", thingId);
-            currentStopIndex.set(1);
-            Collections.fill(stops, 0);
-        }
+    public double getAverageUtilizationForTask(double utilFuel, double utilLocation){
+        System.out.println("++++++++++++++++++++++++++");
+        System.out.println(getThingId() + " " + (utilFuel + utilLocation)/ 2);
+        System.out.println("++++++++++++++++++++++++++");
+        return (utilFuel + utilLocation)/ 2;
     }
-
-    public void stopTruck(){
-        setStatus(TruckStatus.IDLE);
-        setVelocity(0);
-        logger.warn("Drive stopped for {}", getThingId());
-    }
-
-
-    public void checkForNewTasks(DittoClient dittoClient) throws ExecutionException, InterruptedException {
-        String[] tasks = {
-                "task:refuel_"+ getThingId(),
-                "task:tirePressureLow_" + getThingId(),
-                "task:loadingTruck_" + getThingId()
-        };
-
-        for(String taskID : tasks){
-            if(thingHandler.thingExists(dittoClient, taskID).get() && !tasksQueue.contains(taskID)){
-                tasksQueue.add(taskID);
-            }
-        }
-    }
-
-    public void checkForActiveTask(DittoClient dittoClient, TruckTargetDecision<?> target){
-
-        //try {
-           if(target.getDecidedTarget() instanceof GasStation){
-           // if(thingHandler.thingExists(dittoClient, "task:refuel_"+ getThingId()).get()){
-                if(getStatus() != TruckStatus.REFUELING && !isTaskActive()) {
-                    setTaskActive(true);
-                    setLocation(((GasStation) target.getDecidedTarget()).getLocation());
-                    ((GasStation) target.getDecidedTarget()).startRefuel(this);
-                }
-
-            //} else if(thingHandler.thingExists(dittoClient, "task:tirePressureLow_" + getThingId()).get()) {
-            //    if (getStatus() != TruckStatus.ADJUSTINGTIREPRESSURE && !isTaskActive()) {
-            //        setTaskActive(true);
-            //        setLocation(((GasStation) target.getTarget()).getLocation());
-             //       ((GasStation) target.getTarget()).startTirePressureAdjustment(this);
-            //    }
-            }
-          //  } else if(target.getTarget() instanceof Warehouse) {
-            else if(target.getDecidedTarget() instanceof Warehouse) {
-               //if (thingHandler.thingExists(dittoClient, "task:loadingTruck_" + getThingId()).get()) {
-                   if (getStatus() != TruckStatus.LOADING && !isTaskActive()) {
-                       setTaskActive(true);
-                       setLocation(((Warehouse) target.getDecidedTarget()).getLocation());
-                       //((Warehouse) target.getDecidedTarget()).startLoading(this);
-                       if(!((Warehouse) target.getDecidedTarget()).isMainWareHouse()) {
-                           stops.set(currentStopIndex.get() - 1, 1);
-                           currentStopIndex.getAndIncrement();
-                       }
-                   }
-               }
-          // }
-         //  }
-       // } catch (InterruptedException | ExecutionException e) {
-       //     throw new RuntimeException(e);
-       // }
-    }
-
-
-
-
-    public void tirePressureDecreases(double tirePressure){
-        if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
-            double tirePressureReduction = Math.random() * 100;
-            setTirePressure(tirePressure - tirePressureReduction);
-        }
-    }
-
-
-    public void featureSimulation1(DittoClient dittoClient) {
-        runSimulation( 5, 0.1, 1050, dittoClient);
-    }
-
-    public void featureSimulation2(DittoClient dittoClient) {
-        runSimulation(3, 1.0, 10, dittoClient);
-    }
-
-
-    public void setStarterLocation(){
-        for(Warehouse warehouse : warehouseList){
-            if(warehouse.isMainWareHouse()){
-                setLocation(warehouse.getLocation());
-                break;
-            }
-        }
-    }
-
- */
 }

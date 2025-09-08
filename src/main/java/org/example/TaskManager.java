@@ -2,9 +2,11 @@ package org.example;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.example.Gateways.ConcreteGateways.TaskGateway;
+import org.example.Factory.ConcreteFactories.TaskFactory;
+import org.example.Gateways.ConcreteGateways.TaskGateway.TaskGateway;
 import org.example.Mapper.TaskMapper;
 import org.example.Things.TaskThings.Task;
+import org.example.Things.TaskThings.TaskType;
 import org.example.util.Config;
 import org.example.util.ThingHandler;
 
@@ -13,25 +15,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 public class TaskManager {
     private final DittoClient dittoClient;
     private final DittoClient listenerClient;
     private final InfluxDBClient influxDBClient;
     private final ThingHandler thingHandler = new ThingHandler();
+    private final TaskFactory taskFactory;
     private final Map<String, ScheduledExecutorService> taskSchedulers = new ConcurrentHashMap<>();
     public TaskManager(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient){
         this.dittoClient = dittoClient;
         this.listenerClient = listenerClient;
         this.influxDBClient = influxDBClient;
+        taskFactory = new TaskFactory(dittoClient);
     }
 
     public void startTask(Task task) throws ExecutionException, InterruptedException {
-        //Task task = createNewTask(taskType);
+        taskFactory.startTask(task);
         startTaskGateway(task);
 
     }
+
+    public Task createTask(TaskType taskType, Map<String, Object> useCaseData){
+        return taskFactory.createTask(taskType, useCaseData);
+    }
+
 /*
     public Task createNewTask(TaskType taskType){
         TaskFactory taskFactory = new TaskFactory(dittoClient, taskType);

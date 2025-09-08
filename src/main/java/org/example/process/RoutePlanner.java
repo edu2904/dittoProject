@@ -4,10 +4,10 @@ import org.example.Gateways.GatewayManager;
 import org.example.TaskManager;
 import org.example.Things.TaskThings.TaskType;
 import org.example.Things.WarehouseThing.Warehouse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,6 +16,7 @@ public class RoutePlanner {
     public TaskManager taskManager;
     private GatewayManager gatewayManager;
 
+    private final Logger logger = LoggerFactory.getLogger(RoutePlanner.class);
 
 
     private final ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
@@ -66,11 +67,21 @@ public class RoutePlanner {
     }
     public static class Route{
         private final List<Segment> segments;
-        public Route(List<Segment> segments){
+        public String executor;
+
+        public Route(List<Segment> segments, String executor){
             this.segments = segments;
+            this.executor = executor;
         }
         public List<Segment> getSegments() {
             return segments;
+        }
+        public void setExecutor(String executor) {
+            this.executor = executor;
+        }
+
+        public String getExecutor() {
+            return executor;
         }
     }
     public Route createRoute(){
@@ -78,14 +89,40 @@ public class RoutePlanner {
         List<Segment> segments = new ArrayList<>();
         List<Warehouse> warehousesThingIds = new ArrayList<>(gatewayManager.getWarehouseList());
         double quantity = 100;
-        for(int i = 0; i < warehousesThingIds.size()-1; i++){
-            Warehouse from = warehousesThingIds.get(i);
-            Warehouse to = warehousesThingIds.get(i+1);
 
-            TaskType taskType = (i % 2 == 0) ? TaskType.LOAD : TaskType.UNLOAD;
-            segments.add(new Segment(from, to, taskType, quantity, routeId));
+        if(warehousesThingIds.size() < 2){
+            logger.warn("Not enough Warehouses to create Route");
+            return null;
         }
-        return new Route(segments);
+        Collections.shuffle(warehousesThingIds);
+        int routeSize = generateRouteSize(warehousesThingIds);
+        List<Warehouse> routeWarehouse = warehousesThingIds.subList(0, routeSize);
+
+        for(int i = 0; i < routeWarehouse.size()-1; i++){
+            Warehouse from = routeWarehouse.get(i);
+            Warehouse to = routeWarehouse.get(i+1);
+            TaskType taskType;
+            if(i == 0){
+                taskType = TaskType.LOAD;
+            }else if(i == routeWarehouse.size() - 2){
+                taskType = TaskType.UNLOAD;
+            }else {
+                taskType = (i % 2 != 0) ? TaskType.UNLOAD : TaskType.LOAD;
+            }
+
+
+            segments.add(new Segment(from, to, taskType, quantity, routeId));
+            System.out.println("Segment: " + from.getThingId() + " -> " + to.getThingId() +
+                    ", Task: " + taskType + ", Quantity: " + quantity);
+        }
+        return new Route(segments, null);
+    }
+
+    public int generateRouteSize(List<Warehouse> warehouseList){
+        int max = warehouseList.size();
+        int min = 3;
+        return min + 2 * new Random().nextInt(((max - min) + 1 ) / 2);
+
     }
 
 }

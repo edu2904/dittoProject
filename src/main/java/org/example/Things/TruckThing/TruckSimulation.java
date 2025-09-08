@@ -32,13 +32,6 @@ public class TruckSimulation {
         truckEventsActions = new TruckEventsActions(dittoClient);
     }
 
-    public double calculateUtilization(){
-        double weightFuel = 1;
-        double combinedUtilization = weightFuel * truck.getFuel();
-
-        return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
-
-    }
     public void updateTarget(GatewayManager gatewayManager){
         if(truck.getTargetWarehouse() != null && truck.getTarget() == null){
             try {
@@ -88,7 +81,7 @@ public class TruckSimulation {
         tirePressureDecreases(truck.getTirePressure());
         truck.setVelocity(75 + Math.random() * 10);
         truck.setFuel(truck.getFuel() - truck.getFuelConsumption());
-        truck.setUtilization(calculateUtilization());
+        truck.setUtilization(truck.calculateUtilization());
 
         double targetDistance = target.getDistance() * 1000;
         double progressPerTick = (truck.getVelocity() * Config.STANDARD_TICK_RATE / targetDistance) * 100;

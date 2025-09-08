@@ -255,7 +255,6 @@ public class Truck {
     }
     public double calculateUtilization(){
         double utilization = 1.0 - Math.min(1.0, Math.max(0.0, getFuel() / Config.FUEL_MAX_VALUE_STANDARD_TRUCK));
-
         return utilization * 100;
 
     }
@@ -268,9 +267,6 @@ public class Truck {
     }
 
     public double getAverageUtilizationForTask(double utilFuel, double utilLocation){
-        System.out.println("++++++++++++++++++++++++++");
-        System.out.println(getThingId() + " " + (utilFuel + utilLocation)/ 2);
-        System.out.println("++++++++++++++++++++++++++");
         return (utilFuel + utilLocation)/ 2;
     }
 }

@@ -1,18 +1,10 @@
 package org.example.Factory.ConcreteFactories;
 
-import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.eclipse.ditto.things.model.Thing;
-import org.example.Factory.DigitalTwinTaskFactory;
-import org.example.Gateways.ConcreteGateways.TaskGateway;
-import org.example.Things.TaskThings.TaskStatus;
 import org.example.util.ThingHandler;
 import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TaskThings.Task;
-import org.example.Things.TruckThing.Truck;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 

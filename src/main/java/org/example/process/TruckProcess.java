@@ -24,9 +24,8 @@ public class TruckProcess {
     private final DittoClient listenerClient;
     private final DittoClient thingClient;
     private final DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
-    private final Logger logger = LoggerFactory.getLogger(Truck.class);
+    private final Logger logger = LoggerFactory.getLogger(TruckProcess.class);
     private final GatewayManager gatewayManager;
-    private final TaskFactory taskFactory;
     private final ThingHandler thingHandler = new ThingHandler();
     private final InfluxDBClient influxDBClient;
     private final TaskManager taskManager;
@@ -36,7 +35,6 @@ public class TruckProcess {
         this.listenerClient = listenerClient;
         this.influxDBClient = influxDBClient;
         this.gatewayManager = gatewayManager;
-        this.taskFactory = new TaskFactory(thingClient);
         taskManager = new TaskManager(thingClient, listenerClient, influxDBClient);
         deleteAllTasksForNewIteration();
         subscribeForChanges(listenerClient);
@@ -105,11 +103,11 @@ public class TruckProcess {
                 data.put("quantity", segment.getQuantity());
                 data.put("setId", segment.getSetId());
 
-                Task task = taskFactory.createTask(segment.getTaskType(), data);
+                Task task = taskManager.createTask(segment.getTaskType(), data);
                 task.setSetId(routeId);
                 taskQueue.add(task);
         }
-        RouteExecutor routeExecutor = new RouteExecutor(taskManager, taskQueue, taskFactory);
+        RouteExecutor routeExecutor = new RouteExecutor(taskManager, taskQueue, route);
         routeRegister.registerExecutor(routeId, routeExecutor);
         routeExecutor.startNewTask();
     }

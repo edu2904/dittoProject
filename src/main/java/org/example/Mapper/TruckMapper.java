@@ -11,6 +11,7 @@ import org.example.Things.TruckThing.TruckStatus;
 import java.util.Objects;
 
 public class TruckMapper implements ThingMapper<Truck>{
+
     @Override
     public Truck fromThing(Thing thing) {
         Truck truck = new Truck();

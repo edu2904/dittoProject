@@ -5,6 +5,7 @@ import org.eclipse.ditto.json.JsonFactory;
 import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.policies.model.PolicyId;
 import org.eclipse.ditto.things.model.*;
+import org.example.Things.TruckThing.Truck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,11 +170,13 @@ public class ThingHandler {
         }).toCompletableFuture();
     }
 
-    public <T> List<T> searchThings(DittoClient dittoClient, Function<Thing, T> mapper, String filter){
+    public  <T> List<T> searchThings(DittoClient dittoClient, Function<Thing, T> mapper, String filter){
         List<T> foundThings = new ArrayList<>();
         dittoClient.twin().search()
                 .stream(queryBuilder -> queryBuilder.filter("like(thingId,\"" + filter + ":*\" )")
-                        .options(o -> o.sort(s -> s.desc("thingId")).size(20)).fields("attributes"))
+                        .options(o -> o.sort(s -> s.desc("thingId")).size(200))
+                        .fields("attributes"))
+                .sequential()
                 .map(mapper).toList()
                 .forEach(foundThing -> {
                     logger.info("Found thing: {}", foundThing);
@@ -181,8 +184,6 @@ public class ThingHandler {
                 });
         return foundThings;
     }
-
-
     public CompletableFuture<Void> deleteThingAndPolicy(DittoClient dittoClient, String policyID, String thingId) {
         deleteThing(dittoClient, thingId);
         deletePolicy(dittoClient, policyID);
@@ -196,6 +197,5 @@ public class ThingHandler {
             logger.error("Error retrieving payload {}", ex.getMessage());
             return null;
         }).toCompletableFuture();
-
     }
 }

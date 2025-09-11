@@ -24,10 +24,11 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
     }
     @Override
     public void createTwinsForDitto() throws ExecutionException, InterruptedException {
-        initializeThings();
-
         for (Truck truck : truckList) {
-            thingHandler.createTwinAndPolicy(dittoClient, getWOTURL(), getPolicyURL(), truck.getThingId()).toCompletableFuture();
+            if(!thingHandler.thingExists(dittoClient, truck.getThingId()).get()) {
+                System.out.println("MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM " + truck.getThingId());
+                thingHandler.createTwinAndPolicy(dittoClient, getWOTURL(), getPolicyURL(), truck.getThingId()).toCompletableFuture();
+            }
         }
     }
     @Override
@@ -66,7 +67,7 @@ public class TruckFactory implements DigitalTwinFactory<Truck> {
         return truckList;
     }
 
-    private Truck createDefaultTruck(int number) {
+    public Truck createDefaultTruck(int number) {
         Truck truck = new Truck();
         truck.setThingId("truck:Truck-" + number);
         truck.setStatus(TruckStatus.IDLE);

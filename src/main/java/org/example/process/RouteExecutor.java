@@ -17,12 +17,15 @@ public class RouteExecutor {
     private final Queue<Task> taskQueue;
     private final RoutePlanner.Route route;
     private final Logger logger = LoggerFactory.getLogger(RouteExecutor.class);
+    private final long startTime;
 
 
     public RouteExecutor(TaskManager taskManager, Queue<Task> taskQueue, RoutePlanner.Route route){
         this.taskManager = Objects.requireNonNull(taskManager);
         this.taskQueue = Objects.requireNonNull(taskQueue);
         this.route = route;
+        this.startTime = System.currentTimeMillis();
+
 
     }
     public synchronized void startNewTask(){
@@ -32,8 +35,13 @@ public class RouteExecutor {
         }
 
         Task task = taskQueue.poll();
+
         if(task == null){
             logger.warn("No task found in the queue");
+            long endTime = System.currentTimeMillis();
+            System.out.println("**************************************");
+            System.out.printf("The Route " + route.getRouteId() + " was finished with executor " + route.getExecutor() + " in: %.2f min%n", ((endTime - startTime) / 60000.0));
+            System.out.println("**************************************");
             return;
         }
         try {

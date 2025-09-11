@@ -76,6 +76,7 @@ public class TaskGateway extends AbstractGateway<Task> {
     public void assignThingToTask() {
         String selectedTruck = findBestIdleTruck();
 
+        System.out.println("DAS WURDE GEFUNDEN "+ selectedTruck);
         if (selectedTruck == null) {
             noSuitableThingFound();
             return;

@@ -21,32 +21,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class TruckProcess {
-    private final DittoClient listenerClient;
-    private final DittoClient thingClient;
     private final DittoClientBuilder dittoClientBuilder = new DittoClientBuilder();
     private final Logger logger = LoggerFactory.getLogger(TruckProcess.class);
     private final GatewayManager gatewayManager;
     private final ThingHandler thingHandler = new ThingHandler();
-    private final InfluxDBClient influxDBClient;
     private final TaskManager taskManager;
     private final RouteRegister routeRegister = new RouteRegister();
     public TruckProcess(DittoClient listenerClient, DittoClient thingClient, InfluxDBClient influxDBClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
-        this.thingClient = thingClient;
-        this.listenerClient = listenerClient;
-        this.influxDBClient = influxDBClient;
         this.gatewayManager = gatewayManager;
         taskManager = new TaskManager(thingClient, listenerClient, influxDBClient);
         deleteAllTasksForNewIteration();
         subscribeForChanges(listenerClient);
         receiveMessages(listenerClient);
 
-        //receiveActions(processClient);
     }
-
     public void subscribeForChanges(DittoClient dittoClient) {
-
-
-
         dittoClient.twin().registerForThingChanges(UUID.randomUUID().toString(), thingChange -> {
             CompletableFuture.runAsync(() -> {
                 if (thingChange.getAction() != ChangeAction.MERGED) {
@@ -93,6 +82,7 @@ public class TruckProcess {
         Queue<Task> taskQueue = new LinkedList<>();
         RoutePlanner routePlanner = new RoutePlanner(taskManager, gatewayManager);
         RoutePlanner.Route route = routePlanner.createRoute();
+        route.setRouteId(routeId);
 
 
         for(RoutePlanner.Segment segment : route.getSegments()) {

@@ -2,7 +2,7 @@ package org.example.Gateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.eclipse.ditto.client.options.Options;
+import org.example.Mapper.TruckMapper;
 import org.example.Things.TruckThing.TruckSimulation;
 import org.example.Things.TruckThing.TruckTargetDecision;
 import org.example.util.Config;
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 public class GatewayManager {
 
     private final DigitalTwinFactoryMain digitalTwinFactoryMain;
-    private final DittoClient dittoClient;
+    private final DittoClient thingClient;
     private final DittoClient listenerClient;
     InfluxDBClient influxDBClient;
     ThingHandler thingHandler = new ThingHandler();
@@ -46,32 +46,35 @@ public class GatewayManager {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
-    public GatewayManager(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient) throws ExecutionException, InterruptedException {
-        this.dittoClient = dittoClient;
+    public GatewayManager(DittoClient thingClient, DittoClient listenerClient, InfluxDBClient influxDBClient) throws ExecutionException, InterruptedException {
+        this.thingClient = thingClient;
         this.listenerClient =listenerClient;
         this.influxDBClient = influxDBClient;
-        this.digitalTwinFactoryMain = new DigitalTwinFactoryMain(dittoClient);
+        this.digitalTwinFactoryMain = new DigitalTwinFactoryMain(thingClient);
     }
 
 
     public void createPermanentThings() throws ExecutionException, InterruptedException {
+        digitalTwinFactoryMain.getTruckFactory().initializeThings();
         digitalTwinFactoryMain.getTruckFactory().createTwinsForDitto();
         digitalTwinFactoryMain.getGasStationFactory().createTwinsForDitto();
         digitalTwinFactoryMain.getWarehouseFactory().createTwinsForDitto();
     }
 
+
     public void startGateways() throws ExecutionException, InterruptedException {
 
 
+        deleteAllTrucks();
         createPermanentThings();
 
         truckList = digitalTwinFactoryMain.getTruckFactory().getThings();
         gasStationList = digitalTwinFactoryMain.getGasStationFactory().getThings();
         warehouseList = digitalTwinFactoryMain.getWarehouseFactory().getThings();
 
-        truckGateway = new TruckGateway(dittoClient, listenerClient, influxDBClient,truckList);
-        gasStationGateway = new GasStationGateway(dittoClient, listenerClient, influxDBClient, gasStationList);
-        warehouseGateway = new WarehouseGateway(dittoClient, listenerClient, influxDBClient, warehouseList);
+        truckGateway = new TruckGateway(thingClient, listenerClient, influxDBClient,truckList);
+        gasStationGateway = new GasStationGateway(thingClient, listenerClient, influxDBClient, gasStationList);
+        warehouseGateway = new WarehouseGateway(thingClient, listenerClient, influxDBClient, warehouseList);
 
 
         for (GasStation gasStation : gasStationList) {
@@ -84,8 +87,8 @@ public class GatewayManager {
         for(Truck truck : truckList){
             truck.setGasStationList(new ArrayList<>(gasStationList));
             truck.setWarehouseList(new ArrayList<>(warehouseList));
-            TruckSimulation truckSimulation = new TruckSimulation(dittoClient, truck);
-            truckSimulation.runSimulation(dittoClient, this);
+            TruckSimulation truckSimulation = new TruckSimulation(thingClient, truck);
+            truckSimulation.runSimulation(thingClient, this);
         }
 
         Runnable updateTask = () -> {
@@ -110,82 +113,47 @@ public class GatewayManager {
         return truckList;
     }
 
-
-
-
-/*
-
-    public void setDecisionForNextDestination(Truck truck) throws ExecutionException, InterruptedException {
-        double fuel = truckGateway.getFuelFromDitto(truck);
-        Map<String, Double> distances = truck.calculateDistances();
-
-        TruckTargetDecision<?> bestTarget = null;
-        double bestScore = Double.MAX_VALUE;
-
-        double weightDistance = 0.6;
-        double weightUtilization = 0.4;
-        //double weightFuel = 0.1;
-
-        for(GasStation gasStation : gasStationList){
-            Double distanceGasStation = distances.get(gasStation.getThingId());
-            if(distanceGasStation == null){
-                continue;
-            }
-            double utilizationGasStation = gasStationGateway.getUtilizationFromDitto(gasStation);
-            double urgencyLowFuel = fuel < 40 ? (1-(fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK)) * 75 : 0;
-            double urgencyHighFuel = fuel > 150 ? (fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK) * 75 : 0;
-
-
-            double cost = weightDistance * distanceGasStation + weightUtilization * utilizationGasStation - urgencyLowFuel + urgencyHighFuel;
-
-            if(cost < bestScore){
-                bestScore = cost;
-                bestTarget = new TruckTargetDecision<>(gasStation, distanceGasStation, gasStation.getLocation(), gasStation.getThingId());
-            }
-        }
-        int currentStopIndex = truck.getCurrentStopIndex().get();
-        System.out.println("CURRENT INDEX " + currentStopIndex + " WarehouseSize: " + warehouseList.size());
-        if(currentStopIndex >= 1 && currentStopIndex < warehouseList.size()) {
-                Warehouse nextWarehouse = warehouseList.get(currentStopIndex);
-                logger.info("Check for potential travel to {}", nextWarehouse.getThingId());
-                Double distanceWarehouse = distances.get(nextWarehouse.getThingId());
-                if (distanceWarehouse != null) {
-
-                    double utilizationWarehouse = warehouseGateway.getUtilizationFromDitto(nextWarehouse);
-                    System.out.println("Warehouse utilization " + utilizationWarehouse);
-                    double cost = weightDistance * distanceWarehouse + weightUtilization * utilizationWarehouse;
-
-                    System.out.println(nextWarehouse.getThingId() + ": " + cost);
-                    if (cost < bestScore) {
-                        bestScore = cost;
-                        bestTarget = new TruckTargetDecision<>(nextWarehouse, distanceWarehouse, nextWarehouse.getLocation(), nextWarehouse.getThingId());
-                    }
-                }
-            } else if(currentStopIndex >= warehouseList.size()){
-                Warehouse nextWarehouse = warehouseList.get(0);
-                logger.info("Check for potential travel to {}", nextWarehouse.getThingId());
-                Double distanceWarehouse = distances.get(nextWarehouse.getThingId());
-                if (distanceWarehouse != null) {
-
-                    double utilizationWarehouse = warehouseGateway.getUtilizationFromDitto(nextWarehouse);
-
-                    double cost = weightDistance * distanceWarehouse + weightUtilization * utilizationWarehouse;
-
-                    System.out.println(nextWarehouse.getThingId() + ": " + cost);
-                    if (cost < bestScore) {
-                        bestScore = cost;
-                        bestTarget = new TruckTargetDecision<>(nextWarehouse, distanceWarehouse, nextWarehouse.getLocation(), nextWarehouse.getThingId());
-                    }
-                }
-            }
-            if(bestTarget != null){
-            truck.setRecommendedTarget(bestTarget);
-            logger.info("Next Target for {} is {}" , truck.getThingId(), bestTarget.getDecidedTarget() instanceof GasStation ? ((GasStation) bestTarget.getDecidedTarget()).getThingId() : ((Warehouse) bestTarget.getDecidedTarget()).getThingId());
-        }
-
+    public List<GasStation> getGasStationList() {
+        return gasStationList;
     }
 
- */
+    public TruckGateway getTruckGateway() {
+        return truckGateway;
+    }
+
+    public WarehouseGateway getWarehouseGateway() {
+        return warehouseGateway;
+    }
+
+    public GasStationGateway getGasStationGateway() {
+        return gasStationGateway;
+    }
+
+    public DittoClient getListenerClient() {
+        return listenerClient;
+    }
+
+    public DittoClient getThingClient() {
+        return thingClient;
+    }
+
+    public void deleteAllTrucks(){
+        TruckMapper truckMapper = new TruckMapper();
+        thingClient.twin().search()
+                .stream(queryBuilder -> queryBuilder.filter("like(thingId,'truck:*')")
+                        .options(o -> o.size(20)
+                                .sort(s -> s.asc("thingId"))).fields("thingId"))
+                .toList()
+                .forEach(foundThing -> {
+
+                    Truck truck = truckMapper.fromThing(foundThing);
+                    System.out.println("Found thing: " + foundThing);
+                    thingHandler.deleteThing(thingClient, truck.getThingId());
+                    System.out.println("Deleted thing " + truck.getThingId());
+                });
+    }
+
+
     public void setDecisionForNextDestination(Truck truck, Warehouse warehouse) throws ExecutionException, InterruptedException {
         double fuel = truckGateway.getFuelFromDitto(truck);
         Map<String, Double> distances = truck.calculateDistances(warehouse);

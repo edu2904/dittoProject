@@ -11,16 +11,19 @@ import org.eclipse.ditto.client.messaging.MessagingProviders;
 import org.eclipse.ditto.client.options.Options;
 import org.eclipse.ditto.json.JsonFieldSelector;
 import org.example.Client.DittoClientBuilder;
+import org.example.Factory.ConcreteFactories.TruckFactory;
 import org.example.Factory.DigitalTwinFactoryMain;
 import org.example.Gateways.GatewayManager;
+import org.example.Things.Location;
 import org.example.Things.TruckThing.Truck;
+import org.example.Things.TruckThing.TruckSimulation;
 import org.example.process.TruckProcess;
+import org.example.util.ThingHandler;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 
@@ -31,7 +34,6 @@ public class Main {
 
         DittoClient listenerClient = dittoClientBuilder1.getDittoClient();
         DittoClient thingClient = dittoClientBuilder.getDittoClient();
-
 
 
         listenerClient.live().startConsumption().toCompletableFuture().join();
@@ -52,9 +54,6 @@ public class Main {
         System.out.println("THING TWIN CLIENT ESTABLISHED");
 
 
-
-
-
         char[] token = "qRQO5nOdFeWKC0Zt_3Uz7ZWImtgFcaUZTOhAcUMrO9dzHzODRMRFainLa380V56XtsjHRMHcSI7Fw2f2RZooWA==".toCharArray();
         //char[] token = "kKchCrZe-eJ2MSXnzpyjKUJn4SXOaq_GHNLwS0qIJFRayxN_ngpz5ZaysqZPDfRwfK0V5heUkGS0mw1Ll72H_A==".toCharArray();
         String org = "admin";
@@ -63,122 +62,18 @@ public class Main {
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://localhost:8086/", token, org, bucket);
 
 
-
         GatewayManager gatewayManager = new GatewayManager(thingClient, listenerClient, influxDBClient);
         gatewayManager.startGateways();
         Thread.sleep(10000);
-
-
-
-
-        HttpServer server = null;
-        try {
-            server = HttpServer.create(new InetSocketAddress(8000), 0);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        server.createContext("/test", (HttpExchange t) -> {
-            String response = "This is the response";
-            t.sendResponseHeaders(200, response.length());
-            OutputStream os = t.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
-        });
-        server.setExecutor(null); // creates a default executor
-        server.start();
-
 
         TruckProcess truckProcess = new TruckProcess(listenerClient, thingClient, influxDBClient, gatewayManager);
         truckProcess.startProcess();
         Thread.sleep(10000);
         truckProcess.startProcess();
 
+        TruckController truckController = new TruckController(gatewayManager, truckProcess);
+        truckController.control();
 
-
-
-
-
-
-/*
-        GatewayMain gateway = new GatewayMain();
-
-        gateway.initializeThings();
-
-
-        ThingHandler thing = new ThingHandler();
-        thing.deleteThing(dittoClient, "task:refuel");
-        List<Truck> truckList = gateway.getTruckList();
-
-        //Truck truck1 = new Truck(gateway);
-        //truck1.setStarterValues(1);
-        //Truck truck2 = new Truck(gateway);
-        //truck2.setStarterValues(2);
-        //truckList.add(truck1);
-        //truckList.add(truck2);
-
-        for (Truck truck : truckList) {
-            if (thing.thingExists(dittoClient, "task:refuel_" + truck.getThingId()).get()) {
-                thing.deleteThing(dittoClient, "task:refuel_" + truck.getThingId());
-            }
-        }
-
-        truckList.get(0).featureSimulation1(dittoClient);
-        truckList.get(1).featureSimulation2(dittoClient);
-
-        GasStation gasStation = gateway.getGasStation();
-        gasStation.featureSimulation();
-
-
-
-
-
-        String officialWoTExampleUrl = "https://eclipse-ditto.github.io/ditto-examples/wot/models/floor-lamp-1.0.0.tm.jsonld";
-        String lkwPolicy = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/lkwpolicy";
-        String LKWWOT = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/LKW/lkwMain?cb=" + System.currentTimeMillis();
-        String GasStationWOTLink = "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/GasStation/gasstationmain?cb=" + System.currentTimeMillis();
-        String policyID = thing.getPolicyFromURL(lkwPolicy).get();
-
-
-
-        thing.createTwinAndPolicy(dittoClient, GasStationWOTLink, lkwPolicy, gasStation.getThingId()).thenRun(() -> {
-                    try {
-                        gateway.startGasStationGateway(dittoClient, gasStation);
-                    } catch (ExecutionException | InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-        ).toCompletableFuture();
-
-        for (int i = 0; i < truckList.size(); i++ ){
-            int finalI = i;
-            thing.createTwinAndPolicy(dittoClient, LKWWOT, lkwPolicy, truckList.get(finalI).getThingId()).thenRun(() -> {
-                try {
-                    gateway.startLKWGateway(dittoClient, truckList.get(finalI));
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }).toCompletableFuture();
-        }
-
-
-*/
     }
-
-
-/*
-    public Truck selectTrucks(){
-        List<Truck> truckList = gatewayManager.getTruckList();
-        Truck bestTruck;
-        bestTruck = truckList.get(0);
-        for(Truck truck : truckList){
-            if(truck.getUtilization() < bestTruck.getUtilization()){
-                bestTruck = truck;
-            }
-        }
-        return bestTruck;
-    }
-
- */
-
 }
 

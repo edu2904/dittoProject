@@ -68,6 +68,7 @@ public class RoutePlanner {
     public static class Route{
         private final List<Segment> segments;
         public String executor;
+        public String routeId;
 
         public Route(List<Segment> segments, String executor){
             this.segments = segments;
@@ -82,6 +83,14 @@ public class RoutePlanner {
 
         public String getExecutor() {
             return executor;
+        }
+
+        public String getRouteId() {
+            return routeId;
+        }
+
+        public void setRouteId(String routeId) {
+            this.routeId = routeId;
         }
     }
     public Route createRoute(){

@@ -19,7 +19,9 @@ import org.example.Things.TruckThing.TruckStatus;
 import org.example.Things.TaskThings.TaskActions;
 
 import javax.swing.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -34,92 +36,82 @@ public class TruckGateway extends AbstractGateway<Truck> {
         this.trucks = trucks;
         subscribeToAttributeChanges("truck");
         registerForTasks();
-
     }
 
     @Override
     public void startGateway() {
-        trucks.forEach(this::startUpdating);
-    }
-
-
-    @Override
-    public void startUpdating(Truck truck){
-            try {
-
-                updateAttributes(truck);
-                updateFeatures(truck);
-                logToInfluxDB(truck, "Truck");
-            } catch (ExecutionException | InterruptedException e) {
-                logger.error("ERROR WHILE UPDATING TRUCK {} WITH ERROR MESSAGE: {}", truck.getThingId(), e);
-            }
-
-        }
-
-
-    @Override
-    public String getWOTURL() {
-        return "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/LKW/lkwMain?cb=" + System.currentTimeMillis();
+        trucks.forEach(this::upDateThing);
     }
 
     @Override
     public void updateAttributes(Truck truck) {
-        updateAttributeValue("thingId", truck.getThingId(), truck.getThingId());
-        updateAttributeValue("weight", truck.getWeight(), truck.getThingId());
-        updateAttributeValue("status", truck.getStatus().toString(), truck.getThingId());
-        updateAttributeValue("capacity", truck.getCapacity(), truck.getThingId());
-        updateAttributeValue("utilization", truck.getUtilization(), truck.getThingId());
-
-
-
-        updateAttributeValue("location/geo:lat", truck.getLocation().getLat(), truck.getThingId());
-        updateAttributeValue("location/geo:long", truck.getLocation().getLon(), truck.getThingId());
+        var attributes = new HashMap<>(Map.<String, Object>of(
+                "thingId", truck.getThingId(),
+                "weight", truck.getWeight(),
+                "status", truck.getStatus().toString(),
+                "capacity", truck.getCapacity(),
+                "utilization", truck.getUtilization(),
+                "location/geo:lat", truck.getLocation().getLat(),
+                "location/geo:long", truck.getLocation().getLon()
+        ));
 
         if(truck.getTarget() != null) {
-            updateAttributeValue("targetLocation/name", truck.getTarget().getTargetName(), truck.getThingId());
-            updateAttributeValue("targetLocation/geo:lat", truck.getTarget().getTargetLocation().getLat(), truck.getThingId());
-            updateAttributeValue("targetLocation/geo:long", truck.getTarget().getTargetLocation().getLon(), truck.getThingId());
+            attributes.put("targetLocation/name", truck.getTarget().getTargetName());
+            attributes.put("targetLocation/geo:lat", truck.getTarget().getTargetLocation().getLat());
+            attributes.put("targetLocation/geo:long", truck.getTarget().getTargetLocation().getLon());
+            }
+
+        attributes.forEach((attributeName, attributeValue) -> updateAttributeValue(attributeName, attributeValue, truck.getThingId()));
+    }
+    @Override
+    public void updateFeatures(Truck truck){
+        var features = new HashMap<String, Map<String, Object>>(Map.of(
+                "TirePressure", Map.of("amount", truck.getTirePressure()),
+                "Velocity", Map.of("amount", truck.getVelocity()),
+                "Progress", Map.of("amount", truck.getProgress()),
+                "FuelTank", Map.of("amount", truck.getFuel()),
+                "Inventory", Map.of("amount", truck.getInventory())
+        ));
+
+        features.forEach((featureName, prop) ->
+                prop.forEach((propName, value) ->
+                        updateFeatureValue(featureName, propName, value, truck.getThingId())
+                )
+        );
+    }
+
+    @Override
+    public void logToInfluxDB(Truck truck, String measurementType) {
+        try {
+            var loggingValues = new HashMap<>(Map.of(
+                    "TirePressure", getTirePressureFromDitto(truck),
+                    "Velocity", getVelocityFromDitto(truck),
+                    "Progress", getProgressFromDitto(truck),
+                    "FuelTank", getFuelFromDitto(truck),
+                    "Inventory", getInventoryFromDitto(truck)
+            ));
+            loggingValues.forEach((influxName, value) ->
+                startLoggingToInfluxDB(measurementType, truck.getThingId(), influxName, value)
+            );
+
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
-    @Override
-    public void updateFeatures(Truck truck) throws ExecutionException, InterruptedException {
-        updateFeatureValue("TirePressure", "amount", truck.getTirePressure(), truck.getThingId());
-        updateFeatureValue("Velocity", "amount", truck.getVelocity(), truck.getThingId());
-        updateFeatureValue("Progress","amount", truck.getProgress(), truck.getThingId());
-        //updateFeatureValue("Progress","destinationStatus", truck.getStops(), truck.getThingId());
-        updateFeatureValue("FuelTank","amount", truck.getFuel(), truck.getThingId());
-        updateFeatureValue("Inventory","amount", truck.getInventory(), truck.getThingId());
-
-    }
-
-    @Override
-    public void logToInfluxDB(Truck truck, String measurementType) throws ExecutionException, InterruptedException {
-        String thingID = truck.getThingId();
-        startLoggingToInfluxDB(measurementType, thingID, "FuelAmount", getFuelFromDitto(truck));
-        startLoggingToInfluxDB(measurementType, thingID, "ProgressAmount", getProgressFromDitto(truck));
-        startLoggingToInfluxDB(measurementType, thingID, "TirePressureAmount", getTirePressureFromDitto(truck));
-        startLoggingToInfluxDB(measurementType, thingID, "VelocityAmount", truck.getVelocity());
-        startLoggingToInfluxDB(measurementType, thingID, "InventoryAmount", getInventoryFromDitto(truck));
-
-
-    }
-
-
-    public double getWeightFromDitto(Truck truck) throws ExecutionException, InterruptedException {
-        return (double) getAttributeValueFromDitto("weight", truck.getThingId());
+    public double getVelocityFromDitto(Truck truck) throws ExecutionException, InterruptedException {
+        return (double) getFeatureValueFromDitto("velocity", "amount", truck.getThingId());
     }
     public double getFuelFromDitto(Truck truck) throws ExecutionException, InterruptedException {
-        return (double) getFeatureValueFromDitto("FuelTank", truck.getThingId());
+        return (double) getFeatureValueFromDitto("FuelTank", "amount", truck.getThingId());
     }
     public double getProgressFromDitto(Truck truck) throws ExecutionException, InterruptedException {
-        return (double) getFeatureValueFromDitto("Progress", truck.getThingId());
+        return (double) getFeatureValueFromDitto("Progress", "amount", truck.getThingId());
     }
-
     public double getTirePressureFromDitto(Truck truck) throws ExecutionException, InterruptedException {
-        return (double) getFeatureValueFromDitto("TirePressure", truck.getThingId());
+        return (double) getFeatureValueFromDitto("TirePressure", "amount", truck.getThingId());
     }
     public double getInventoryFromDitto(Truck truck) throws ExecutionException, InterruptedException {
-        return (double) getFeatureValueFromDitto("Inventory", truck.getThingId());
+        return (double) getFeatureValueFromDitto("Inventory", "amount", truck.getThingId());
     }
     public Location getLocationFromDitto(Truck truck) throws ExecutionException, InterruptedException {
          double lat = (Double) getAttributeValueFromDitto("location/geo:lat", truck.getThingId());
@@ -134,7 +126,6 @@ public class TruckGateway extends AbstractGateway<Truck> {
         }
         return null;
     }
-
     public String getTargetNameFromDitto(Truck truck) throws ExecutionException, InterruptedException {
         if (truck.getTarget() != null){
         return (String) getAttributeValueFromDitto("targetLocation/name", truck.getThingId());

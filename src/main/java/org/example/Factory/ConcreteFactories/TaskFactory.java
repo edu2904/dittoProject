@@ -8,13 +8,7 @@ import org.example.Things.TaskThings.Task;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class TaskFactory
-{
-
-    //private final TaskType taskType;
-
-
-
+public class TaskFactory {
     DittoClient dittoClient;
 
     Task task;
@@ -43,93 +37,5 @@ public class TaskFactory
     public List<Task> getTaskList() {
         return taskList;
     }
-    /*
-    @Override
-    public void createTwinsForDitto() throws ExecutionException, InterruptedException {
-        initializeTask();
-        thingHandler.createTwinAndPolicy(dittoClient, taskType.getWot(), taskType.getPolicy(), task.getThingId()).toCompletableFuture();
-        }
 
-    @Override
-    public String getWOTURL() {
-        return taskType.getWot();
-    }
-
-    @Override
-    public String getPolicyURL() {
-        return taskType.getPolicy();
-    }
-
-    @Override
-    public void initializeTask() {
-        task = new Task();
-        switch (taskType){
-            case REFUEL:
-                initializeRefuelTask();
-                break;
-            case TIREPRESSUREADJUSTMENT:
-                initializeTirePressureTask();
-                break;
-            case LOAD:
-                initializeLoadingTask();
-                break;
-            case UNLOAD:
-                initializeUnloadingTask();
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + taskType);
-        }
-
-
-    }
-
-    public void initializeRefuelTask() {
-        task.setThingId("task:refuel_" + UUID.randomUUID().toString().substring(0,6));
-        task.setStatus(TaskStatus.STARTING);
-        task.setTaskType(TaskType.REFUEL);
-        task.setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
-        taskList.add(task);
-    }
-    public void initializeTirePressureTask(){
-        task.setThingId("task:tirePressureLow_" + UUID.randomUUID().toString().substring(0,6));
-        task.setStatus(TaskStatus.STARTING);
-        task.setTaskType(TaskType.TIREPRESSUREADJUSTMENT);
-        task.setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
-        taskList.add(task);
-
-    }
-    public void initializeLoadingTask(){
-        task.setThingId("task:loadingTruck_" + UUID.randomUUID().toString().substring(0,6));
-        task.setStatus(TaskStatus.STARTING);
-        task.setTaskType(TaskType.LOAD);
-        task.setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
-        taskList.add(task);
-    }
-    public void initializeUnloadingTask(){
-        task.setThingId("task:unloadingTruck_" + UUID.randomUUID().toString().substring(0,6));
-        task.setStatus(TaskStatus.STARTING);
-        task.setTaskType(TaskType.UNLOAD);
-        task.setCreationTime("Created at: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
-        taskList.add(task);
-    }
-
-    @Override
-    public Task getTask() {
-        return task;
-    }
-
-    public List<Task> getAllTasks(){
-        return taskList;
-    }
-    public void removeTaskFromList(Task task){
-        taskList.remove(task);
-    }
-
-    public void startTask(InfluxDBClient influxDBClient){
-        TaskGateway taskGateway = new TaskGateway(dittoClient, influxDBClient, getTask());
-        taskGateway.startGateway();
-
-    }
-
- */
 }

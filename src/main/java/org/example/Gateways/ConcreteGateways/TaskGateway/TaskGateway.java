@@ -39,30 +39,15 @@ public class TaskGateway extends AbstractGateway<Task> {
 
     @Override
     public void startGateway() {
-        startUpdating(task);
-    }
-
-    @Override
-    public void startUpdating(Task task) {
         updateAttributes(task);
     }
-
     @Override
     public void logToInfluxDB(Task thing, String measurementType) {
 
     }
 
     @Override
-    public String getWOTURL() {
-        return task.getTaskType().getWot();
-    }
-
-    @Override
     public void updateAttributes(Task task) {
-        updateStandardTask(task);
-    }
-
-    public void updateStandardTask(Task task) {
         updateAttributeValue("status", task.getStatus().toString(), task.getThingId());
         updateAttributeValue("creationDate", task.getCreationTime(), task.getThingId());
         updateAttributeValue("type", task.getTaskType().toString(), task.getThingId());

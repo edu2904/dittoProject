@@ -52,8 +52,6 @@ public class TaskManager {
     }
 
  */
-
-
     public void startTaskGateway(Task task){
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         TaskGateway taskGateway = new TaskGateway(dittoClient, listenerClient, influxDBClient, task);

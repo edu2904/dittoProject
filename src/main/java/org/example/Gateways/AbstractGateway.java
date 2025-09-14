@@ -36,6 +36,16 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
     }
 
+    public void upDateThing(T thing){
+        try{
+            updateAttributes(thing);
+            updateFeatures(thing);
+            logToInfluxDB(thing, thing.getClass().getName());
+        }catch (Exception e){
+            logger.error("ERROR UPDATING THING {}:", thing);
+        }
+    }
+
 
     public void updateAttributeValue(String attributeName, Object attributeAmount, String thingId){
         dittoClient.twin()
@@ -52,7 +62,6 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
     }
 
     public void updateFeatureValue(String featureID, String featurePropertyName, Object featureAmount, String thingId) {
-        dittoClient.twin().startConsumption().toCompletableFuture();
         dittoClient.twin()
                 .forFeature(ThingId.of(thingId), featureID)
                 .mergeProperty(featurePropertyName, JsonValue.of(featureAmount))
@@ -85,16 +94,16 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
                 });
         return attributeAmount.get();
     }
-    public Object getFeatureValueFromDitto(String featureProperty, String thingId) throws InterruptedException, ExecutionException {
+    public Object getFeatureValueFromDitto(String featureName, String featureProperty, String thingId) throws InterruptedException, ExecutionException {
         CompletableFuture<Object> featureAmount = new CompletableFuture<>();
 
         dittoClient.twin().forId(ThingId.of(thingId))
                 .retrieve()
                 .thenCompose(thing -> {
                     JsonValue feature = thing.getFeatures().
-                            flatMap(features -> features.getFeature(featureProperty)).
+                            flatMap(features -> features.getFeature(featureName)).
                             flatMap(Feature::getProperties).
-                            flatMap(featureProperties -> featureProperties.getValue("amount"))
+                            flatMap(featureProperties -> featureProperties.getValue(featureProperty))
                             .orElse(JsonValue.nullLiteral());
                     if(feature.isDouble()) {
                         featureAmount.complete(feature.asDouble());
@@ -157,11 +166,16 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
         });
     }
 
-
     @Override
-    public void updateFeatures(T thing) throws ExecutionException, InterruptedException {
-
+    public void logToInfluxDB(T thing, String measurementType){
+        logger.info("influx logging not Implemented yet for {}", thing);
     }
-
-
+    @Override
+    public void updateAttributes(T thing){
+        logger.info("attribute updating not Implemented yet for {}", thing);
+    }
+    @Override
+    public void updateFeatures(T thing){
+        logger.info("feature updating not Implemented yet for {}", thing);
+    }
 }

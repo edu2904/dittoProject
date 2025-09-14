@@ -6,7 +6,9 @@ import org.example.Gateways.AbstractGateway;
 import org.example.Things.WarehouseThing.Warehouse;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class WarehouseGateway extends AbstractGateway<Warehouse> {
@@ -20,35 +22,34 @@ public class WarehouseGateway extends AbstractGateway<Warehouse> {
     }
     @Override
     public void startGateway() throws ExecutionException, InterruptedException {
-        for(Warehouse warehouse : warehouseList) {
-            startUpdating(warehouse);
-        }
+        warehouseList.forEach(this::upDateThing);
 
     }
-    @Override
-    public String getWOTURL() {
-        return "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/Warehouse/WarehouseMain";
-    }
-
     @Override
     public void updateAttributes(Warehouse warehouse) {
-        updateAttributeValue("capacity", warehouse.getCapacity(), warehouse.getThingId());
-        updateAttributeValue("status", warehouse.getStatus().toString(), warehouse.getThingId());
-        updateAttributeValue("location/geo:lat", warehouse.getLocation().getLat(), warehouse.getThingId());
-        updateAttributeValue("location/geo:long", warehouse.getLocation().getLon(), warehouse.getThingId());
-        updateAttributeValue("utilization", warehouse.getUtilization(), warehouse.getThingId());
-    }
-
-    @Override
-    public void startUpdating(Warehouse warehouse)  {
-        updateAttributes(warehouse);
-        updateFeatures(warehouse);
+        var attributes = new HashMap<>(Map.<String, Object>of(
+                "capacity", warehouse.getCapacity(),
+                "status", warehouse.getStatus().toString(),
+                "location/geo:lat", warehouse.getLocation().getLat(),
+                "location/geo:long", warehouse.getLocation().getLon(),
+                "utilization", warehouse.getUtilization()
+        ));
+        attributes.forEach((attributeName, attributeValue) ->
+                updateAttributeValue(attributeName, attributeValue, warehouse.getThingId())
+        );
     }
 
     @Override
     public void updateFeatures(Warehouse warehouse)  {
-        updateFeatureValue("Inventory", "amount", warehouse.getInventory(), warehouse.getThingId());
-        updateFeatureValue("Workers", "amount", warehouse.getWorkers(), warehouse.getThingId());
+        var features = new HashMap<String, Map<String, Object>>(Map.of(
+                "Inventory", Map.of("amount", warehouse.getInventory()),
+                "Workers", Map.of("amount", warehouse.getWorkers())
+              ));
+        features.forEach((featureName, prop) ->
+                prop.forEach((propName, value) ->
+                        updateFeatureValue(featureName, propName, value, warehouse.getThingId())
+                )
+        );
     }
 
     @Override

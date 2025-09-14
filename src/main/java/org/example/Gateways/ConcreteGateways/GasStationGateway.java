@@ -6,7 +6,9 @@ import org.example.Gateways.AbstractGateway;
 import org.example.Things.GasStationThing.GasStation;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class GasStationGateway extends AbstractGateway<GasStation> {
@@ -21,37 +23,36 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
 
     @Override
     public void startGateway() throws ExecutionException, InterruptedException {
-        for (GasStation gasStation : gasStations) {
-            startUpdating(gasStation);
-        }
+        gasStations.forEach(this::upDateThing);
     }
-
-    @Override
-    public void startUpdating(GasStation gasStation) {
-        updateAttributes(gasStation);
-        updateFeatures(gasStation);
-    }
-
-    @Override
-    public String getWOTURL() {
-        return "https://raw.githubusercontent.com/edu2904/wotfiles/refs/heads/main/GasStation/gasstationmain?cb=" + System.currentTimeMillis();
-    }
-
     @Override
     public void updateAttributes(GasStation gasStation) {
-        updateAttributeValue("status", gasStation.getGasStationStatus().toString(), gasStation.getThingId());
-        updateAttributeValue("location/geo:lat", gasStation.getLocation().getLat(), gasStation.getThingId());
-        updateAttributeValue("location/geo:long", gasStation.getLocation().getLon(), gasStation.getThingId());
-        updateAttributeValue("utilization", gasStation.getUtilization(), gasStation.getThingId());
-
+         var attributes = new HashMap<>(Map.<String, Object>of(
+                "status", gasStation.getGasStationStatus().toString(),
+                "location/geo:lat", gasStation.getLocation().getLat(),
+                "location/geo:long", gasStation.getLocation().getLon(),
+                "utilization", gasStation.getUtilization()
+        ));
+        attributes.forEach((attributeName, attributeValue) ->
+                updateAttributeValue(attributeName, attributeValue, gasStation.getThingId())
+        );
 
     }
     @Override
     public void updateFeatures(GasStation gasStation) {
-        updateFeatureValue("GasStationFuel", "amount", gasStation.getGasStationFuelAmount(), gasStation.getThingId());
+        var features = new HashMap<String, Map<String, Object>>(Map.of(
+                "GasStationFuel", Map.of("amount", gasStation.getGasStationFuelAmount())
+        ));
+
+        features.forEach((featureName, prop) ->
+                prop.forEach((propName, value) ->
+                        updateFeatureValue(featureName, propName, value, gasStation.getThingId())
+                )
+        );
+
+
+
     }
-
-
     @Override
     public void logToInfluxDB(GasStation thing, String measurementType) {
 

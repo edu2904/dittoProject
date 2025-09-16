@@ -16,32 +16,33 @@ public class TruckEventsActions implements EventActionHandler {
     private final Map<String, Long> waitingSince = new ConcurrentHashMap<>();
 
     public DittoClient dittoClient;
-     public static final String TRUCKARRIVED = "truckArrived";
-    public static final String TRUCKWAITNGTOOLONG = "tooLongIdle";
-    public static final String TASKSUCCESS = "taskSuccessful";
-    public static final String TASKFAILED = "taskFailed";
+     public static final String TRUCK_ARRIVED = "truckArrived";
+    public static final String TRUCK_WAITING_TOO_LONG = "tooLongIdle";
 
-    public TruckEventsActions(DittoClient dittoClient){
-        this.dittoClient = dittoClient;
+    public static final String TRUCK_SUCCESSFUL = "truckSuccessful";
+    public static final String TRUCK_FAILED = "truckFailed";
+
+    public TruckEventsActions(){
+
     }
 
-    public void sendTaskFailEvent(Truck truck){
+    public void sendTaskFailEvent(DittoClient dittoClient, Truck truck){
         JsonObject failedMessage = JsonObject
                 .newBuilder()
                 .set("message", truck.getThingId() + " failed to fulfill task")
                 .set("thingId", truck.getThingId())
                 .build();
-        sendTaskFailed(dittoClient, truck.getThingId(), failedMessage);
+        sendEvent(dittoClient, truck.getThingId(), failedMessage, TRUCK_FAILED);
     }
-    public void sendSuccessEvent(Truck truck){
+    public void sendSuccessEvent(DittoClient dittoClient, Truck truck){
         System.out.println("SUCCESS SENT FOR " + truck.getThingId());
         JsonObject successMessage = JsonObject
                 .newBuilder()
                 .set("message", truck.getThingId() + " successfully fulfilled task")
                 .set("thingId", truck.getThingId())
                 .build();
-
-        sendTaskSuccess(dittoClient, truck.getThingId(), successMessage);
+        System.out.println("TASK SENT FOR " + truck.getThingId());
+        sendEvent(dittoClient, truck.getThingId(), successMessage, TRUCK_SUCCESSFUL);
     }
 
     public void arrivalEvent(String thingId, Location destination, Location location, String locationName){
@@ -51,7 +52,7 @@ public class TruckEventsActions implements EventActionHandler {
 
             if (!wasActive && isActive) {
                 JsonObject arrivalMessage = JsonObject.newBuilder().set("message", thingId + " arrived at next destination: " + locationName).build();
-                sendEvent(dittoClient, thingId, arrivalMessage, TRUCKARRIVED);
+                sendEvent(dittoClient, thingId, arrivalMessage, TRUCK_ARRIVED);
                 eventState.put("arrival_" + thingId, true);
             } else if (wasActive && !isActive) {
                 eventState.put("arrival_" + thingId, false);
@@ -67,7 +68,7 @@ public class TruckEventsActions implements EventActionHandler {
             long waited = System.currentTimeMillis() - waitingSince.get(thingId);
             if(waited >= TimeUnit.SECONDS.toMillis(10)){
                 JsonObject withoutTaskMessage = JsonObject.newBuilder().set("message", thingId + " waiting for too long. Requesting task search").build();
-                sendEvent(dittoClient, thingId, withoutTaskMessage, TRUCKWAITNGTOOLONG);
+                sendEvent(dittoClient, thingId, withoutTaskMessage, TRUCK_WAITING_TOO_LONG);
                 eventState.put("withoutTask_" + thingId, true);
             }
         }else if (wasActive && !isActive) {

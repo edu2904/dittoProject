@@ -12,7 +12,7 @@ public class TaskActions implements EventActionHandler {
     public static final String TASK_LOAD_START = "taskLoadStart";
     public static final String TASK_UNLOAD_START = "taskUnloadStart";
 
-    public void sendLoadEvent(DittoClient dittoClient, Task task){
+    public void sendLoadAction(DittoClient dittoClient, Task task){
         double quantity = (double) task.getData("quantity");
         JsonObject startObject = JsonObject.newBuilder()
                 .set("message", "Load task started for " + task.getTargetTruck())
@@ -24,7 +24,7 @@ public class TaskActions implements EventActionHandler {
         sendAction(dittoClient, task.getThingId(), startObject, TASK_LOAD_START);
     }
 
-    public void sendUnloadEvent(DittoClient dittoClient, Task task){
+    public void sendUnloadAction(DittoClient dittoClient, Task task){
         double quantity = (double) task.getData("quantity");
         JsonObject startObject = JsonObject.newBuilder()
                 .set("message", "Unload task started for " + task.getTargetTruck())

@@ -17,7 +17,7 @@ public interface EventActionHandler {
 
 
     default void sendEvent(DittoClient dittoClient, String thingID, JsonObject jsonData, String eventSubject) {
-        dittoClient.live().startConsumption().toCompletableFuture();
+        //dittoClient.live().startConsumption().toCompletableFuture();
         dittoClient.live()
                 .forId(ThingId.of(thingID))
                 .message()
@@ -30,7 +30,7 @@ public interface EventActionHandler {
     }
     default void sendAction(DittoClient dittoClient, String thingID, JsonObject jsonData, String actionSubject){
         System.out.println(actionSubject);
-        dittoClient.live().startConsumption().toCompletableFuture();
+        //dittoClient.live().startConsumption().toCompletableFuture();
         dittoClient
                 .live()
                 .forId(ThingId.of(thingID))
@@ -47,10 +47,4 @@ public interface EventActionHandler {
                                 response.getHeaders()));
     }
 
-    default void sendTaskSuccess(DittoClient dittoClient, String thingId, JsonObject jsonData){
-        sendEvent(dittoClient, thingId, jsonData, TASK_SUCCESS);
-    }
-    default void sendTaskFailed(DittoClient dittoClient, String thingId, JsonObject jsonData){
-        sendEvent(dittoClient, thingId, jsonData, TASK_FAILED);
-    }
 }

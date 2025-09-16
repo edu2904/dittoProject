@@ -1,4 +1,4 @@
-package org.example.Gateways.ConcreteGateways.TaskGateway;
+package org.example.Gateways.Temporary.TaskGateway;
 
 import com.eclipsesource.json.Json;
 import com.influxdb.client.InfluxDBClient;
@@ -24,8 +24,6 @@ public class TaskGateway extends AbstractGateway<Task> {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     TasksEvents tasksEvents = new TasksEvents();
     TaskActions taskActions = new TaskActions();
-
-
     ThingHandler thingHandler = new ThingHandler();
 
     Task task;
@@ -34,7 +32,7 @@ public class TaskGateway extends AbstractGateway<Task> {
         super(dittoClient, listenerClient, influxDBClient);
         this.task = task;
         assignThingToTask();
-        registerForThingMessages();
+        registerForThingMessagesFromThing();
     }
 
     @Override
@@ -63,6 +61,7 @@ public class TaskGateway extends AbstractGateway<Task> {
 
         System.out.println("DAS WURDE GEFUNDEN "+ selectedTruck);
         if (selectedTruck == null) {
+
             noSuitableThingFound();
             return;
         }
@@ -76,11 +75,11 @@ public class TaskGateway extends AbstractGateway<Task> {
         tasksEvents.sendStartEvent(dittoClient, task);
         switch (task.getTaskType()) {
             case LOAD -> {
-                taskActions.sendLoadEvent(dittoClient, task);
+                taskActions.sendLoadAction(dittoClient, task);
                 logger.info("LOAD EVENT SENT FOR {}", task.getThingId());
             }
             case UNLOAD -> {
-                taskActions.sendUnloadEvent(dittoClient, task);
+                taskActions.sendUnloadAction(dittoClient, task);
                 logger.info("UNLOAD EVENT SENT FOR {}", task.getThingId());
             }
             default -> logger.warn("Unknown Task Type: {}", task.getTaskType());
@@ -94,8 +93,9 @@ public class TaskGateway extends AbstractGateway<Task> {
     }
 
     public String findBestIdleTruck() {
+
         if(task.getTargetTruck() == null) {
-            Truck bestTruck = new Truck();
+            Truck bestTruck = null;
             try {
                 bestTruck = thingHandler.searchThings(dittoClient, new TruckMapper()::fromThing, "truck")
                         .stream().sorted(Comparator.comparingDouble(truck ->
@@ -106,7 +106,8 @@ public class TaskGateway extends AbstractGateway<Task> {
             } catch (Exception e) {
                 logger.error("error while looking for truck: {}", e.getMessage(), e);
             }
-            return Objects.requireNonNull(bestTruck).getThingId();
+
+            return bestTruck != null ? bestTruck.getThingId() : null;
         }
         return task.getTargetTruck();
     }
@@ -117,28 +118,30 @@ public class TaskGateway extends AbstractGateway<Task> {
 
     }
 
-    public void registerForThingMessages() {
+
+//listener for messages from the truck. Sending to the process.
+    public void registerForThingMessagesFromThing() {
         listenerClient.live().registerForMessage("thing_" + task.getThingId(), "*", message -> {
             Optional<?> optionalObject = message.getPayload();
-
-            if (message.getSubject().equals(EventActionHandler.TASK_SUCCESS)) {
-                if (optionalObject.isPresent()) {
-                    String rawPayload = optionalObject.get().toString();
-                    var parsePayload = Json.parse(rawPayload).asObject();
-                    String thingId = parsePayload.get("thingId").asString();
-                    if (task.getTargetTruck().equals(thingId)) {
-                        tasksEvents.sendFinishedEvent(dittoClient, task);
-                        logger.info("Task {} for Truck {} finished successful", task.getThingId(), task.getTargetTruck());
+            switch (message.getSubject()) {
+                case TruckEventsActions.TRUCK_SUCCESSFUL:
+                    if (optionalObject.isPresent()) {
+                        String rawPayload = optionalObject.get().toString();
+                        var parsePayload = Json.parse(rawPayload).asObject();
+                        String thingId = parsePayload.get("thingId").asString();
+                        if (task.getTargetTruck().equals(thingId)) {
+                            tasksEvents.sendFinishedEvent(dittoClient, task);
+                            logger.info("Task {} for Truck {} finished successful", task.getThingId(), task.getTargetTruck());
+                        }
                     }
-                }
-            } else if (Objects.equals(message.getSubject(), TruckEventsActions.TASKFAILED)) {
-                tasksEvents.sendFailEvent(dittoClient, task);
-                logger.warn("Task {} of Truck {} failed", task.getThingId(), task.getTargetTruck());
+                    break;
+                case TruckEventsActions.TRUCK_FAILED:
+                    tasksEvents.sendFailEvent(dittoClient, task);
+                    logger.warn("Task {} of Truck {} failed", task.getThingId(), task.getTargetTruck());
+                    break;
             }
-            ;
         });
     }
-
 
 }
 

@@ -1,24 +1,15 @@
-package org.example.Gateways.ConcreteGateways;
+package org.example.Gateways.Permanent.ConcreteGateways;
 
 import com.eclipsesource.json.Json;
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
-import org.eclipse.ditto.client.changes.ChangeAction;
-import org.eclipse.ditto.protocol.TopicPath;
-import org.eclipse.ditto.wot.model.Action;
-import org.eclipse.ditto.wot.model.Actions;
 import org.example.Things.Location;
-import org.example.Things.TaskThings.Task;
-import org.example.util.Config;
 import org.example.Gateways.AbstractGateway;
-import org.example.TaskManager;
 import org.example.Things.TaskThings.TaskType;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckEventsActions;
-import org.example.Things.TruckThing.TruckStatus;
 import org.example.Things.TaskThings.TaskActions;
 
-import javax.swing.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +20,6 @@ public class TruckGateway extends AbstractGateway<Truck> {
 
 
     List<Truck> trucks;
-    private final TruckEventsActions truckEventsActions = new TruckEventsActions(dittoClient);
 
     public TruckGateway(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient, List<Truck> trucks){
         super(dittoClient, listenerClient, influxDBClient);
@@ -99,7 +89,7 @@ public class TruckGateway extends AbstractGateway<Truck> {
         }
     }
     public double getVelocityFromDitto(Truck truck) throws ExecutionException, InterruptedException {
-        return (double) getFeatureValueFromDitto("velocity", "amount", truck.getThingId());
+        return (double) getFeatureValueFromDitto("Velocity", "amount", truck.getThingId());
     }
     public double getFuelFromDitto(Truck truck) throws ExecutionException, InterruptedException {
         return (double) getFeatureValueFromDitto("FuelTank", "amount", truck.getThingId());
@@ -144,23 +134,22 @@ public class TruckGateway extends AbstractGateway<Truck> {
            if(optionalObject.isPresent()) {
                try {
 
-
-                String rawPayload = optionalObject.get().toString();
-                var parsePayload = Json.parse(rawPayload).asObject();
-                String thingId = parsePayload.get("thingId").asString();
-                String to = parsePayload.get("to").asString();
-                String from = parsePayload.get("from").asString();
-                double quantity = parsePayload.get("quantity").asDouble();
-                Truck truck = trucks
-                        .stream()
-                        .filter(t -> t.getThingId().equals(thingId))
-                        .findFirst()
-                        .orElse(null);
+                   String rawPayload = optionalObject.get().toString();
+                   var parsePayload = Json.parse(rawPayload).asObject();
+                   String thingId = parsePayload.get("thingId").asString();
+                   String to = parsePayload.get("to").asString();
+                   String from = parsePayload.get("from").asString();
+                   double quantity = parsePayload.get("quantity").asDouble();
+                   Truck truck = trucks
+                           .stream()
+                           .filter(t -> t.getThingId().equals(thingId))
+                           .findFirst()
+                           .orElse(null);
 
                 if (message.getSubject().equals(action)) {
                     assert truck != null;
-                    logger.info("{} reveived order {}", truck.getThingId(), action);
-                     truck.setAssignedTaskValues(from, to, quantity, tasktype);
+                    logger.info("{} received order {}", truck.getThingId(), action);
+                    truck.setAssignedTaskValues(from, to, quantity, tasktype);
                 }else {
                     logger.warn("Truck {} not found for task {}", thingId, action);
                 }

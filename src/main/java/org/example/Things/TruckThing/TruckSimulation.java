@@ -1,7 +1,7 @@
 package org.example.Things.TruckThing;
 
 import org.eclipse.ditto.client.DittoClient;
-import org.example.Gateways.GatewayManager;
+import org.example.Gateways.Permanent.GatewayManager;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.WarehouseThing.Warehouse;
 import org.example.util.Config;
@@ -9,7 +9,6 @@ import org.example.util.GeoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -24,12 +23,11 @@ public class TruckSimulation {
     DittoClient dittoClient;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    TruckEventsActions truckEventsActions;
+    TruckEventsActions truckEventsActions = new TruckEventsActions();
 
     public TruckSimulation(DittoClient dittoClient, Truck truck) throws ExecutionException, InterruptedException {
         this.dittoClient = dittoClient;
         this.truck = truck;
-        truckEventsActions = new TruckEventsActions(dittoClient);
     }
 
     public void updateTarget(GatewayManager gatewayManager){
@@ -48,12 +46,9 @@ public class TruckSimulation {
     }
 
 
-    public void runSimulation(DittoClient dittoClient, GatewayManager gatewayManager){
-
-
+    public void runSimulation(GatewayManager gatewayManager){
         scheduler.scheduleAtFixedRate(() -> {
-
-           try {
+            try {
                 updateTarget(gatewayManager);
 
                 if (truck.getFuel() <= 0 || truck.getTarget() == null) {
@@ -89,7 +84,7 @@ public class TruckSimulation {
         double distanceTravelled = (truck.getProgress() / 100) * targetDistance;
 
 
-        logger.info("{} travelled {}/{} Meters", truck.getThingId(), distanceTravelled, targetDistance);
+        logger.info("{} travelled {}/{} Meters", truck.getThingId(), String.format("%.0f", distanceTravelled), String.format("%.0f", targetDistance));
 
         if(truck.getProgress() >= 100){ //&& truck.getCurrentStopIndex().get() <= truck.getStops().size()){
             startTask(dittoClient, target);
@@ -125,12 +120,12 @@ public class TruckSimulation {
                 if(then.isTaskSuccess()){
                     System.out.println("TASK SUCCESS for " + then.getThingId());
                     then.setTargetWarehouse(null);
-                    truckEventsActions.sendSuccessEvent(then);
+                    truckEventsActions.sendSuccessEvent(dittoClient, then);
                 }else {
                     System.out.println("TASK NOT SUCCESS for " + then.getThingId());
                     then.setTargetWarehouse(null);
                     then.setStatus(TruckStatus.IDLE);
-                    truckEventsActions.sendTaskFailEvent(then);
+                    truckEventsActions.sendTaskFailEvent(dittoClient, then);
                 }
                 });
             }

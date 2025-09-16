@@ -6,11 +6,9 @@ import org.eclipse.ditto.base.model.common.HttpStatus;
 import org.eclipse.ditto.client.DittoClient;
 import org.eclipse.ditto.client.changes.ChangeAction;
 import org.example.Client.DittoClientBuilder;
-import org.example.Factory.ConcreteFactories.TaskFactory;
-import org.example.Gateways.GatewayManager;
-import org.example.TaskManager;
+import org.example.Gateways.Permanent.GatewayManager;
+import org.example.Gateways.Temporary.TaskManager;
 import org.example.Things.TaskThings.Task;
-import org.example.Things.TruckThing.Truck;
 import org.example.Things.TaskThings.TasksEvents;
 import org.example.util.ThingHandler;
 import org.slf4j.Logger;
@@ -27,7 +25,7 @@ public class TruckProcess {
     private final ThingHandler thingHandler = new ThingHandler();
     private final TaskManager taskManager;
     private final RouteRegister routeRegister = new RouteRegister();
-    public TruckProcess(DittoClient listenerClient, DittoClient thingClient, InfluxDBClient influxDBClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
+    public TruckProcess(DittoClient thingClient, DittoClient listenerClient, InfluxDBClient influxDBClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
         this.gatewayManager = gatewayManager;
         taskManager = new TaskManager(thingClient, listenerClient, influxDBClient);
         deleteAllTasksForNewIteration();
@@ -49,30 +47,40 @@ public class TruckProcess {
 
 
     }
+
+    //Receives messages from tasks. Determines next Action when message is received.
     public void receiveMessages(DittoClient dittoClient) {
-            dittoClient.live().registerForMessage("test2", TasksEvents.TASK_FINISHED, message -> {
-                if (message.getSubject().equals(TasksEvents.TASK_FINISHED)) {
-                    Optional<?> optionalObject = message.getPayload();
-                    if (optionalObject.isPresent()) {
+            dittoClient.live().registerForMessage("test2", "*", message -> {
+                Optional<?> optionalObject = message.getPayload();
+                RouteExecutor routeExecutor;
+                if (optionalObject.isPresent()) {
+                switch (message.getSubject()) {
+                    case TasksEvents.TASK_FINISHED:
                         String rawPayload = optionalObject.get().toString();
+                        System.out.println("*****************************************");
+                        System.out.println("DRIOMIRMIMRIMR");
+                        System.out.println("*****************************************");
                         var parsePayload = Json.parse(rawPayload).asObject();
                         String finishedSetId = parsePayload.get("setId").asString();
                         String thingId = parsePayload.get("thingId").asString();
-
-
                         taskManager.deleteTask(thingId);
-
-
-                        RouteExecutor routeExecutor = routeRegister.getRegister(finishedSetId);
-                        if (routeExecutor != null) {
-                            try {
-                                Thread.sleep(5000);
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                            routeExecutor.startNewTask();
+                        routeExecutor = routeRegister.getRegister(finishedSetId);
+                        try {
+                            Thread.sleep(5000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
                         }
-                    }
+                        routeExecutor.startNewTask();
+                        break;
+
+
+                    case TasksEvents.TASK_FAILED:
+                        String rawFailedPayload = optionalObject.get().toString();
+                        var parseFinishedPayload = Json.parse(rawFailedPayload).asObject();
+                        String failedSetId = parseFinishedPayload.get("setId").asString();
+                        routeExecutor = routeRegister.getRegister(failedSetId);
+                        routeExecutor.delayTask();
+                }
                 }
                 message.reply().httpStatus(HttpStatus.OK).payload("response sent for " + message.getPayload()).send();
             });
@@ -109,15 +117,10 @@ public class TruckProcess {
             logger.info("Task {} was deleted", task.getThingId());
         }
     }
-
     public void receiveActions(DittoClient dittoClient){
         dittoClient.live().registerForClaimMessage("test3", String.class, claimMessage -> {
             logger.info("Received claim Message from client1: {}", claimMessage.getSubject());
             claimMessage.reply().httpStatus(HttpStatus.ACCEPTED).payload("claim").send();
         });
-
     }
-
-
-
 }

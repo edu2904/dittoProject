@@ -1,7 +1,6 @@
 package org.example.process;
 
-import org.example.Factory.ConcreteFactories.TaskFactory;
-import org.example.TaskManager;
+import org.example.Gateways.Temporary.TaskManager;
 import org.example.Things.TaskThings.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class RouteExecutor {
 
@@ -34,25 +32,32 @@ public class RouteExecutor {
             return;
         }
 
-        Task task = taskQueue.poll();
+        Task task = taskQueue.peek();
 
         if(task == null){
             logger.warn("No task found in the queue");
             long endTime = System.currentTimeMillis();
-            System.out.println("**************************************");
-            System.out.printf("The Route " + route.getRouteId() + " was finished with executor " + route.getExecutor() + " in: %.2f min%n", ((endTime - startTime) / 60000.0));
-            System.out.println("**************************************");
+            logger.info("The route {} was finished with executor {} in {} min", route.getRouteId(), route.getExecutor(), (endTime-startTime) / 60000.0);
             return;
         }
+
+
+
         try {
             if(route.getExecutor() != null){
                task.setTargetTruck(route.getExecutor());
+               taskQueue.remove();
             }
 
             taskManager.startTask(task);
 
+            if(task.getTargetTruck() == null){
+                return;
+            }
+
             if(route.getExecutor() == null){
                 route.setExecutor(task.getTargetTruck());
+                taskQueue.remove();
             }
 
         } catch (ExecutionException e) {
@@ -63,6 +68,16 @@ public class RouteExecutor {
             logger.error("Task {} Interrupted", task, e);
             throw new RuntimeException("Task interrupted: " + task, e);
         }
+    }
+
+    public void delayTask(){
+        logger.info("TASK FAILED, try again in 2 minutes");
+        try {
+            Thread.sleep(120000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        startNewTask();
     }
 
     public Queue<Task> getTaskQueue() {

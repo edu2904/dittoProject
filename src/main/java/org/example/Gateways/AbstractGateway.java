@@ -40,7 +40,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
         try{
             updateAttributes(thing);
             updateFeatures(thing);
-            logToInfluxDB(thing, thing.getClass().getName());
+            logToInfluxDB(thing, "Truck");
         }catch (Exception e){
             logger.error("ERROR UPDATING THING {}:", thing);
         }
@@ -117,7 +117,8 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
 
 
-    public void startLoggingToInfluxDB(String measurement, String thingID, String subject, double amount){try {
+    public void startLoggingToInfluxDB(String measurement, String thingID, String subject, double amount){
+        try {
             Point point = Point.measurement(measurement)
                     .addTag("thingID", thingID)
                     .addField(subject, amount)

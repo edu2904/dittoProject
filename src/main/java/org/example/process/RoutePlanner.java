@@ -1,7 +1,7 @@
 package org.example.process;
 
-import org.example.Gateways.GatewayManager;
-import org.example.TaskManager;
+import org.example.Gateways.Permanent.GatewayManager;
+import org.example.Gateways.Temporary.TaskManager;
 import org.example.Things.TaskThings.TaskType;
 import org.example.Things.WarehouseThing.Warehouse;
 import org.slf4j.Logger;
@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 public class RoutePlanner {
 
     public TaskManager taskManager;
-    private GatewayManager gatewayManager;
+    private final GatewayManager gatewayManager;
 
     private final Logger logger = LoggerFactory.getLogger(RoutePlanner.class);
 

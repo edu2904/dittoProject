@@ -1,15 +1,16 @@
-package org.example.Gateways;
+package org.example.Gateways.Permanent;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
+import org.example.Gateways.AbstractGateway;
 import org.example.Mapper.TruckMapper;
 import org.example.Things.TruckThing.TruckSimulation;
 import org.example.Things.TruckThing.TruckTargetDecision;
 import org.example.util.Config;
 import org.example.Factory.DigitalTwinFactoryMain;
-import org.example.Gateways.ConcreteGateways.GasStationGateway;
-import org.example.Gateways.ConcreteGateways.TruckGateway;
-import org.example.Gateways.ConcreteGateways.WarehouseGateway;
+import org.example.Gateways.Permanent.ConcreteGateways.GasStationGateway;
+import org.example.Gateways.Permanent.ConcreteGateways.TruckGateway;
+import org.example.Gateways.Permanent.ConcreteGateways.WarehouseGateway;
 import org.example.util.ThingHandler;
 import org.example.Things.GasStationThing.GasStation;
 import org.example.Things.TruckThing.Truck;
@@ -88,7 +89,7 @@ public class GatewayManager {
             truck.setGasStationList(new ArrayList<>(gasStationList));
             truck.setWarehouseList(new ArrayList<>(warehouseList));
             TruckSimulation truckSimulation = new TruckSimulation(thingClient, truck);
-            truckSimulation.runSimulation(thingClient, this);
+            truckSimulation.runSimulation(this);
         }
 
         Runnable updateTask = () -> {

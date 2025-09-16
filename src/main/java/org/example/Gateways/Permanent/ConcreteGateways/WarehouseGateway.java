@@ -1,4 +1,4 @@
-package org.example.Gateways.ConcreteGateways;
+package org.example.Gateways.Permanent.ConcreteGateways;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;

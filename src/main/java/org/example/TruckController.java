@@ -3,7 +3,7 @@ package org.example;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.example.Factory.ConcreteFactories.TruckFactory;
-import org.example.Gateways.GatewayManager;
+import org.example.Gateways.Permanent.GatewayManager;
 import org.example.Things.Location;
 import org.example.Things.TruckThing.Truck;
 import org.example.Things.TruckThing.TruckSimulation;
@@ -39,7 +39,7 @@ public class TruckController {
     }
 
         createNewRoute(server);
-        addNewTruck(server);
+        //addNewTruck(server);
 
         server.setExecutor(null); // creates a default executor
         server.start();
@@ -95,7 +95,7 @@ public void addNewTruck(HttpServer server){
             truck.setGasStationList(new ArrayList<>(gatewayManager.getGasStationList()));
             truck.setWarehouseList(new ArrayList<>(gatewayManager.getWarehouseList()));
             TruckSimulation truckSimulation = new TruckSimulation(gatewayManager.getThingClient(), truck);
-            truckSimulation.runSimulation(gatewayManager.getThingClient(), gatewayManager);
+            truckSimulation.runSimulation(gatewayManager);
             System.out.println("TRUCK CREATED");
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);

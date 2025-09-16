@@ -1,9 +1,9 @@
-package org.example;
+package org.example.Gateways.Temporary;
 
 import com.influxdb.client.InfluxDBClient;
 import org.eclipse.ditto.client.DittoClient;
 import org.example.Factory.ConcreteFactories.TaskFactory;
-import org.example.Gateways.ConcreteGateways.TaskGateway.TaskGateway;
+import org.example.Gateways.Temporary.TaskGateway.TaskGateway;
 import org.example.Mapper.TaskMapper;
 import org.example.Things.TaskThings.Task;
 import org.example.Things.TaskThings.TaskType;
@@ -59,6 +59,7 @@ public class TaskManager {
         scheduler.scheduleAtFixedRate(taskGateway::startGateway,0 , Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
         taskSchedulers.put(task.getThingId(), scheduler);
     }
+
     public void deleteTask(String thingId){
         thingHandler.deleteThing(dittoClient, thingId);
 

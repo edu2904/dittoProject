@@ -55,9 +55,12 @@ public class Main {
         Thread.sleep(10000);
         truckProcess.startProcess();
 
-        TruckController truckController = new TruckController(gatewayManager, truckProcess);
-        truckController.control();
+        TruckControllerHTTPServer truckControllerHTTPServer = new TruckControllerHTTPServer(gatewayManager, truckProcess);
+        truckControllerHTTPServer.control();
 
+
+        TruckControllerGUI truckControllerGUI = new TruckControllerGUI(gatewayManager, truckProcess);
+        truckControllerGUI.create();
     }
 }
 

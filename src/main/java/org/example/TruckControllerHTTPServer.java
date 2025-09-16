@@ -10,6 +10,7 @@ import org.example.Things.TruckThing.TruckSimulation;
 import org.example.process.TruckProcess;
 import org.example.util.ThingHandler;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -18,17 +19,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-public class TruckController {
+public class TruckControllerHTTPServer {
     GatewayManager gatewayManager;
     TruckProcess truckProcess;
-    ThingHandler thingHandler = new ThingHandler();
 
-    public TruckController(GatewayManager gatewayManager, TruckProcess truckProcess){
+
+    public TruckControllerHTTPServer(GatewayManager gatewayManager, TruckProcess truckProcess){
         this.gatewayManager = gatewayManager;
         this.truckProcess = truckProcess;
     }
-
-
     public void control(){
 
     HttpServer server = null;
@@ -108,5 +107,4 @@ public void addNewTruck(HttpServer server){
 
     });
 }
-
 }

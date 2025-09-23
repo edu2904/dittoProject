@@ -5,7 +5,6 @@ import org.eclipse.ditto.json.JsonFactory;
 import org.eclipse.ditto.json.JsonObject;
 import org.eclipse.ditto.policies.model.PolicyId;
 import org.eclipse.ditto.things.model.*;
-import org.example.Things.TruckThing.Truck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,8 +93,8 @@ public class ThingHandler {
                 .thenApply(pol -> true)
                 .exceptionally(ex -> false).toCompletableFuture();
     }
-    public CompletableFuture<Void> deletePolicy(DittoClient dittoClient, String policyID) {
-        return dittoClient.policies().delete(PolicyId.of(policyID)).thenAccept(thing -> {
+    public void deletePolicy(DittoClient dittoClient, String policyID) {
+        dittoClient.policies().delete(PolicyId.of(policyID)).thenAccept(thing -> {
             logger.info("Deleted policy: {}", policyID);
         }).exceptionally(ex -> {
             logger.error("Error deleting policy {}", ex.getMessage());
@@ -104,9 +103,7 @@ public class ThingHandler {
     }
 
 
-    public CompletableFuture<Boolean> createTwinWithWOT(DittoClient client, String wotTDDefinitionURL, String policyURL, String thingId) throws ExecutionException, InterruptedException {
-
-
+    public CompletableFuture<Boolean> createTwinWithWOTAndPolicy(DittoClient client, String wotTDDefinitionURL, String policyURL, String thingId) throws ExecutionException, InterruptedException {
         String policy = getPolicyFromURL(policyURL).get();
         var future = new CompletableFuture<Boolean>();
 
@@ -131,17 +128,46 @@ public class ThingHandler {
         return future;
 
     }
+    public CompletableFuture<Boolean> createTwinWithWOT(DittoClient client, String wotTDDefinitionURL, String thingId) throws ExecutionException, InterruptedException {
+        var future = new CompletableFuture<Boolean>();
+
+        ThingDefinition thingDefinition = ThingsModelFactory.newDefinition(wotTDDefinitionURL);
+        Thing thing = ThingsModelFactory.newThingBuilder()
+                .setId(ThingId.of(thingId)).setDefinition(thingDefinition).build();
+
+        client.twin().create(thing).handle((createdThing, throwable) -> {
+                    if (createdThing != null) {
+                        logger.info("Created new thing: {}", createdThing);
+                    } else {
+                        logger.error("Thing could not be created due to: {}" , throwable.getMessage());
+                    }
+                    return null;
+                }).toCompletableFuture()
+                .thenRun(() -> future.complete(true))
+                .exceptionally((t) -> {
+                    future.completeExceptionally(t);
+                    return null;
+                });
+
+        return future;
+    }
+
+    public CompletableFuture<Boolean> createTwin(DittoClient dittoClient, String thingURL, String thingId) throws ExecutionException, InterruptedException {
+        if(thingExists(dittoClient, thingId).get()){
+            deleteThing(dittoClient, thingId);
+        }
+        return createTwinWithWOT(dittoClient, thingURL, thingId);
+    }
 
     public CompletableFuture<Boolean> createTwinAndPolicy(DittoClient dittoClient, String thingURL, String policyURL, String thingId) throws ExecutionException, InterruptedException {
         if (!policyExists(dittoClient, getPolicyFromURL(policyURL).get()).get()) {
-           CompletableFuture<Boolean> future = createPolicyFromURL(dittoClient, policyURL);
-           future.get();
+            CompletableFuture<Boolean> future = createPolicyFromURL(dittoClient, policyURL);
+            future.get();
         }
         if(thingExists(dittoClient, thingId).get()){
             deleteThing(dittoClient, thingId);
         }
-
-        return createTwinWithWOT(dittoClient, thingURL, policyURL, thingId);
+        return createTwinWithWOTAndPolicy(dittoClient, thingURL, policyURL, thingId);
     }
 
 
@@ -149,20 +175,12 @@ public class ThingHandler {
         return dittoClient
                 .twin()
                 .retrieve(ThingId.of(thingID))
-                .thenApply(pol -> {
-                    if(pol.isEmpty()) {
-                        return false;
-                    }
-                    else {
-                        return true;
-                    }
-                })
+                .thenApply(pol -> !pol.isEmpty())
                 .exceptionally(ex -> false).toCompletableFuture();
     }
 
-
-    public CompletableFuture<Void> deleteThing(DittoClient dittoClient, String thingID) {
-        return dittoClient.twin().delete(ThingId.of(thingID)).thenAccept(thing -> {
+    public void deleteThing(DittoClient dittoClient, String thingID) {
+        dittoClient.twin().delete(ThingId.of(thingID)).thenAccept(thing -> {
             logger.info("Deleted thing: {}", thingID);
         }).exceptionally(ex -> {
             logger.error("Error deleting thing: {}", ex.getMessage());
@@ -184,10 +202,9 @@ public class ThingHandler {
                 });
         return foundThings;
     }
-    public CompletableFuture<Void> deleteThingAndPolicy(DittoClient dittoClient, String policyID, String thingId) {
+    public void deleteThingAndPolicy(DittoClient dittoClient, String policyID, String thingId) {
         deleteThing(dittoClient, thingId);
         deletePolicy(dittoClient, policyID);
-        return null;
     }
 
     public CompletableFuture<Void> getThingPayload(DittoClient dittoClient, String thingId) {

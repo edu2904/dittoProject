@@ -71,7 +71,8 @@ public class TruckGateway extends AbstractGateway<Truck> {
     }
 
     @Override
-    public void logToInfluxDB(Truck truck, String measurementType) {
+    public void logToInfluxDB(Truck truck) {
+        String measurementType = "Truck";
         try {
             var loggingValues = new HashMap<>(Map.of(
                     "TirePressure", getTirePressureFromDitto(truck),

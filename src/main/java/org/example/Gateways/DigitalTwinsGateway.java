@@ -9,5 +9,5 @@ public interface DigitalTwinsGateway<T> {
     void updateAttributes(T thing);
     void updateFeatures(T thing) throws ExecutionException, InterruptedException;
 
-    void logToInfluxDB(T thing, String measurementType) throws ExecutionException, InterruptedException;
+    void logToInfluxDB(T thing) throws ExecutionException, InterruptedException;
 }

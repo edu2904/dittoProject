@@ -53,12 +53,27 @@ public class WarehouseGateway extends AbstractGateway<Warehouse> {
     }
 
     @Override
-    public void logToInfluxDB(Warehouse thing, String measurementType) {
+    public void logToInfluxDB(Warehouse warehouse) {
+        String measurementType = "Warehouse";
+        try {
+            var loggingValues = new HashMap<>(Map.of(
+                    "Utilization", getUtilizationFromDitto(warehouse),
+                    "Inventory", getInventoryFromDitto(warehouse)
+            ));
+            loggingValues.forEach((influxName, value) ->
+                    startLoggingToInfluxDB(measurementType, warehouse.getThingId(), influxName, value)
+            );
 
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
     public double getUtilizationFromDitto(Warehouse warehouse) throws ExecutionException, InterruptedException {
         return (double) getAttributeValueFromDitto("utilization", warehouse.getThingId());
+    }
+    public double getInventoryFromDitto(Warehouse warehouse) throws ExecutionException, InterruptedException {
+        return (double) getFeatureValueFromDitto("Inventory", "amount", warehouse.getThingId());
     }
 }

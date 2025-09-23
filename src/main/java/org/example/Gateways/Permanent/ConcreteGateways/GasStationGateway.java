@@ -25,9 +25,10 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
     public void startGateway() throws ExecutionException, InterruptedException {
         gasStations.forEach(this::upDateThing);
     }
+
     @Override
     public void updateAttributes(GasStation gasStation) {
-         var attributes = new HashMap<>(Map.<String, Object>of(
+        var attributes = new HashMap<>(Map.<String, Object>of(
                 "status", gasStation.getGasStationStatus().toString(),
                 "location/geo:lat", gasStation.getLocation().getLat(),
                 "location/geo:long", gasStation.getLocation().getLon(),
@@ -38,6 +39,7 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
         );
 
     }
+
     @Override
     public void updateFeatures(GasStation gasStation) {
         var features = new HashMap<String, Map<String, Object>>(Map.of(
@@ -51,14 +53,32 @@ public class GasStationGateway extends AbstractGateway<GasStation> {
         );
 
 
-
     }
+
     @Override
-    public void logToInfluxDB(GasStation thing, String measurementType) {
+    public void logToInfluxDB(GasStation gasStation) {
+        String measurementType = "GasStation";
+        try {
+            var loggingValues = new HashMap<>(Map.of(
+                    "Utilization", getUtilizationFromDitto(gasStation),
+                    "Inventory", getGasStationFuelFromDitto(gasStation)
+            ));
+            loggingValues.forEach((influxName, value) ->
+                    startLoggingToInfluxDB(measurementType, gasStation.getThingId(), influxName, value)
+            );
 
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
+
 
     public double getUtilizationFromDitto(GasStation gasStation) throws ExecutionException, InterruptedException {
         return (double) getAttributeValueFromDitto("utilization", gasStation.getThingId());
     }
+
+    public double getGasStationFuelFromDitto(GasStation gasStation) throws ExecutionException, InterruptedException {
+        return (double) getFeatureValueFromDitto("GasStationFuel", "amount", gasStation.getThingId());
+    }
+
 }

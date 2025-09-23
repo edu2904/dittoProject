@@ -40,7 +40,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
         try{
             updateAttributes(thing);
             updateFeatures(thing);
-            logToInfluxDB(thing, "Truck");
+            logToInfluxDB(thing);
         }catch (Exception e){
             logger.error("ERROR UPDATING THING {}:", thing);
         }
@@ -168,7 +168,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
     }
 
     @Override
-    public void logToInfluxDB(T thing, String measurementType){
+    public void logToInfluxDB(T thing){
         logger.info("influx logging not Implemented yet for {}", thing);
     }
     @Override

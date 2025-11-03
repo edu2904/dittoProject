@@ -22,15 +22,18 @@ import java.util.function.ToDoubleFunction;
 
 public class TaskGateway extends AbstractGateway<Task> {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private long startTime;
     TasksEvents tasksEvents = new TasksEvents();
     TaskActions taskActions = new TaskActions();
     ThingHandler thingHandler = new ThingHandler();
+    private boolean registered = false;
 
     Task task;
 
     public TaskGateway(DittoClient dittoClient, DittoClient listenerClient, InfluxDBClient influxDBClient, Task task) {
         super(dittoClient, listenerClient, influxDBClient);
         this.task = task;
+        this.startTime = System.currentTimeMillis();
         assignThingToTask();
         registerForThingMessagesFromThing();
     }
@@ -68,6 +71,7 @@ public class TaskGateway extends AbstractGateway<Task> {
 
         assignTruckToTask(selectedTruck);
         sendEventForTask(task);
+
 
     }
 
@@ -133,8 +137,14 @@ public class TaskGateway extends AbstractGateway<Task> {
 
 
                         if (task.getTargetTruck().equals(thingId)) {
+                            long endTime = System.currentTimeMillis();
+                            double minutes = (endTime - startTime) / 60000.0;
+                            task.setTime(minutes);
+                            tasksEvents.sendTimeEvent(dittoClient, task);
+
                             tasksEvents.sendFinishedEvent(dittoClient, task);
                             logger.info("Task {} for Truck {} finished successful", task.getThingId(), task.getTargetTruck());
+                            listenerClient.live().deregister("thing_" + task.getThingId());
                         }
                     }
                     break;

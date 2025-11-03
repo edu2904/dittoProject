@@ -18,6 +18,7 @@ public class RouteExecutor {
     private final RoutePlanner.Route route;
     private final Logger logger = LoggerFactory.getLogger(RouteExecutor.class);
     private final long startTime;
+    private final List<Double> taskTimes = new ArrayList<>();
 
 
     public RouteExecutor(TaskManager taskManager, Queue<Task> taskQueue, RoutePlanner.Route route){
@@ -28,10 +29,10 @@ public class RouteExecutor {
 
 
     }
-    public synchronized Double startNewTask(){
+    public synchronized void startNewTask(){
         if(route == null){
             logger.warn("No route found");
-            return null;
+            return;
         }
 
         Task task = taskQueue.peek();
@@ -40,7 +41,7 @@ public class RouteExecutor {
             long endTime = System.currentTimeMillis();
             double minutes = (endTime-startTime) / 60000.0;
             logger.info("The route {} was finished with executor {} in {} min", route.getRouteId(), route.getExecutor(), minutes);
-            return minutes;
+            return;
         }
 
 
@@ -52,13 +53,13 @@ public class RouteExecutor {
                task.setTargetTruck(route.getExecutor());
                taskQueue.remove();
                taskManager.startTask(task);
-               return null;
+               return;
             }
 
             //Task doesn't have truck
             if(task.getTargetTruck() == null){
                 taskManager.startTask(task);
-                return null;
+                return;
             }
 
             route.setExecutor(task.getTargetTruck());
@@ -73,7 +74,6 @@ public class RouteExecutor {
             logger.error("Task {} Interrupted", task, e);
             throw new RuntimeException("Task interrupted: " + task, e);
         }
-        return null;
     }
 
     public void delayTask(){
@@ -100,4 +100,10 @@ public class RouteExecutor {
     public Queue<Task> getTaskQueue() {
         return taskQueue;
     }
+
+    public List<Double> getTaskTimes() {
+        return taskTimes;
+    }
+
+
 }

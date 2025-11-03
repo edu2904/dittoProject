@@ -20,6 +20,7 @@ public class TasksEvents implements EventActionHandler {
     public static final String TASK_ESCALATED = "taskEscalated";
     public static final String TASK_PAUSED = "taskPaused";
     public static final String TASK_CONTINUED = "taskContinued";
+    public static final String TASK_TIMER = "taskTimer";
 
 
     public void sendStartEvent(DittoClient dittoClient, Task task){
@@ -63,6 +64,16 @@ public class TasksEvents implements EventActionHandler {
                 .set("setId", task.getSetId())
                 .build();
         sendEvent(dittoClient, task.getThingId(), pauseObject, TASK_PAUSED);
+    }
+    public void sendTimeEvent(DittoClient dittoClient, Task task){
+        JsonObject timeObject = JsonObject
+                .newBuilder()
+                .set("message", "Task time " + task.getThingId())
+                .set("thingId", task.getThingId())
+                .set("setId", task.getSetId())
+                .set("time", task.getTime())
+                .build();
+        sendEvent(dittoClient, task.getThingId(), timeObject, TASK_TIMER);
     }
 }
 

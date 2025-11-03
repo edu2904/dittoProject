@@ -13,6 +13,7 @@ public class Task {
     private String creationTime;
     private  TaskType taskType;
     private String setId;
+    private double time;
 
     private final Map<String, Object> data = new HashMap<>();
 
@@ -86,5 +87,10 @@ public class Task {
         return setId;
     }
 
-
+    public void setTime(double time) {
+        this.time = time;
+    }
+    public double getTime() {
+        return time;
+    }
 }

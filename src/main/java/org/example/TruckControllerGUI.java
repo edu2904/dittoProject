@@ -18,11 +18,14 @@ import java.util.concurrent.ExecutionException;
 public class TruckControllerGUI implements ActionListener {
     private JButton createNewRouteButton;
     private JButton addTruckButton;
+    private JButton receiveStats;
     private JTextField fuelTextField;
     private JTextField capacityTextField;
     private JTextField weightTextField;
     private JTextField latField;
     private JTextField lonField;
+    private JLabel overallTimeLabel;
+    private JPanel panel;
 
     private String actionText;
 
@@ -36,9 +39,10 @@ public class TruckControllerGUI implements ActionListener {
 
     public void create(){
         JFrame frame = new JFrame();
-        JPanel panel = new JPanel();
+        panel = new JPanel();
         panel.setBorder(BorderFactory.createEmptyBorder(190,230,190,230));
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
 
         createNewRouteButton = new JButton("Create New Route");
         createNewRouteButton.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -81,6 +85,15 @@ public class TruckControllerGUI implements ActionListener {
 
         panel.add(new JLabel(actionText));
 
+        receiveStats = new JButton("Receive Process Stats");
+        receiveStats.setAlignmentX(Component.LEFT_ALIGNMENT);
+        receiveStats.addActionListener(this);
+        panel.add(receiveStats);
+        panel.add(Box.createRigidArea(new Dimension(0,20)));
+
+        overallTimeLabel = new JLabel();
+
+
         frame.add(panel, BorderLayout.CENTER);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setTitle("Control Panel");
@@ -91,6 +104,7 @@ public class TruckControllerGUI implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+
         if(e.getSource() == createNewRouteButton){
             truckProcess.startProcess();
             actionText = "New Route created";
@@ -127,6 +141,16 @@ public class TruckControllerGUI implements ActionListener {
                 throw new RuntimeException(e1);
             }
 
+        }else if(e.getSource() == receiveStats){
+            double overallTime = truckProcess.getAverageTime();
+            overallTimeLabel.setText("Overall Time: " + overallTime);
+
+            if(overallTimeLabel.getParent() == null){
+                panel.add(overallTimeLabel);
+
+            }
+            overallTimeLabel.revalidate();
+            overallTimeLabel.repaint();
         }
 
     }

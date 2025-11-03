@@ -55,36 +55,46 @@ public class TruckProcess {
                 Optional<?> optionalObject = message.getPayload();
                 RouteExecutor routeExecutor;
                 if (optionalObject.isPresent()) {
-                switch (message.getSubject()) {
-                    case TasksEvents.TASK_FINISHED:
-                        String rawPayload = optionalObject.get().toString();
-                        var parsePayload = Json.parse(rawPayload).asObject();
-                        String finishedSetId = parsePayload.get("setId").asString();
-                        String thingId = parsePayload.get("thingId").asString();
-                        taskManager.deleteTask(thingId);
-                        routeExecutor = routeRegister.getRegister(finishedSetId);
+                    switch (message.getSubject()) {
+                        case TasksEvents.TASK_FINISHED:
+                            String rawPayload = optionalObject.get().toString();
+                            var parsePayload = Json.parse(rawPayload).asObject();
+                            String finishedSetId = parsePayload.get("setId").asString();
+                            String thingId = parsePayload.get("thingId").asString();
+                            taskManager.deleteTask(thingId);
+                            routeExecutor = routeRegister.getRegister(finishedSetId);
 
-                        if(routeExecutor == null){
-                            logger.warn("No RouteExecutor found for setId {}", finishedSetId);
-                            return;
-                        }
-
-                        CompletableFuture.runAsync(() -> {
-                            try {
-                                Thread.sleep(5000);
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
+                            if(routeExecutor == null){
+                                logger.warn("No RouteExecutor found for setId {}", finishedSetId);
+                                return;
                             }
-                            Double time = routeExecutor.startNewTask();
-                            if(time != null){
-                                synchronized (overallTime){
-                                    overallTime.add(time);
-                                    logger.info("Current average route time: {}", getAverageTime());
+                            CompletableFuture.runAsync(() -> {
+                                try {
+                                    Thread.sleep(5000);
+                                } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
                                 }
-                            }
-                        });
-                        break;
-                    case TasksEvents.TASK_PAUSED:
+
+                                if(routeExecutor.getTaskQueue().isEmpty()){
+                                    synchronized (overallTime){
+                                        overallTime.add(routeExecutor.getTaskTimes().stream().mapToDouble(Double::doubleValue).sum());
+                                        logger.info("Current average route time: {}", getAverageTime());
+                                    }
+                                }
+                                routeExecutor.startNewTask();
+
+                            });
+                            break;
+                        case TasksEvents.TASK_TIMER:
+                            String rawTimedPayload = optionalObject.get().toString();
+                            var parseTimedPayload = Json.parse(rawTimedPayload).asObject();
+                            String timedSetId = parseTimedPayload.get("setId").asString();
+                            double time = parseTimedPayload.get("time").asDouble();
+                            routeExecutor = routeRegister.getRegister(timedSetId);
+                            routeExecutor.getTaskTimes().add(time);
+                            break;
+
+                        case TasksEvents.TASK_PAUSED:
                             String rawPausedPayload = optionalObject.get().toString();
                             var parsePausedPayload = Json.parse(rawPausedPayload).asObject();
                             String pausedSetId = parsePausedPayload.get("setId").asString();
@@ -157,6 +167,9 @@ public class TruckProcess {
     }
     public double getAverageTime() {
         if(overallTime.isEmpty()) return 0.0;
+        System.out.println("****************************************");
+        System.out.println(overallTime.size());
+        System.out.println("****************************************");
         return overallTime.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     }
 

@@ -17,33 +17,52 @@ public class TasksEvents implements EventActionHandler {
     public static final String TASK_FINISHED = "taskFinished";
     public static final String TASK_BEGIN = "taskBegins";
     public static final String TASK_FAILED = "taskFailed";
+    public static final String TASK_ESCALATED = "taskEscalated";
+    public static final String TASK_PAUSED = "taskPaused";
+    public static final String TASK_CONTINUED = "taskContinued";
 
 
     public void sendStartEvent(DittoClient dittoClient, Task task){
-        String thingID = task.getThingId();
         JsonObject startObject = JsonObject.newBuilder()
-                .set("message", "Task started for " + thingID)
+                .set("message", "Task started for " + task.getThingId())
                 .set("setId", task.getSetId()).build();
-        sendEvent(dittoClient, thingID, startObject, TASK_BEGIN);
+        sendEvent(dittoClient, task.getThingId(), startObject, TASK_BEGIN);
     }
     public void sendFailEvent(DittoClient dittoClient, Task task){
         String thingID = task.getThingId();
-        JsonObject startObject = JsonObject
+        JsonObject failObject = JsonObject
                 .newBuilder()
-                .set("message", "Task failed for " + thingID)
+                .set("message", "Task failed for " + task.getThingId())
                 .set("thingId", task.getThingId())
                 .set("setId", task.getSetId()).build();
-        sendEvent(dittoClient, thingID, startObject, TASK_FAILED);
+        sendEvent(dittoClient, task.getThingId(), failObject, TASK_FAILED);
     }
     public void sendFinishedEvent(DittoClient dittoClient, Task task){
-        String thingID = task.getThingId();
-        JsonObject endObject = JsonObject
+        JsonObject finishedObject = JsonObject
                 .newBuilder()
                 .set("message", "Task finished")
                 .set("thingId", task.getThingId())
                 .set("setId", task.getSetId())
                 .build();
-        sendEvent(dittoClient, thingID, endObject, TASK_FINISHED);
+        sendEvent(dittoClient, task.getThingId(), finishedObject, TASK_FINISHED);
+    }
+    public void sendEscalationEvent(DittoClient dittoClient, Task task){
+        JsonObject escalationObject = JsonObject
+                .newBuilder()
+                .set("message", "Task escalated for " + task.getThingId())
+                .set("thingId", task.getThingId())
+                .set("setId", task.getSetId())
+                .build();
+        sendEvent(dittoClient, task.getThingId(), escalationObject, TASK_FINISHED);
+    }
+    public void sendPausedEvent(DittoClient dittoClient, Task task){
+        JsonObject pauseObject = JsonObject
+                .newBuilder()
+                .set("message", "Task paused for " + task.getThingId())
+                .set("thingId", task.getThingId())
+                .set("setId", task.getSetId())
+                .build();
+        sendEvent(dittoClient, task.getThingId(), pauseObject, TASK_PAUSED);
     }
 }
 

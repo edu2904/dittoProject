@@ -5,6 +5,8 @@ import org.example.Things.TaskThings.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
@@ -26,39 +28,42 @@ public class RouteExecutor {
 
 
     }
-    public synchronized void startNewTask(){
+    public synchronized Double startNewTask(){
         if(route == null){
             logger.warn("No route found");
-            return;
+            return null;
         }
 
         Task task = taskQueue.peek();
 
         if(task == null){
-            logger.warn("No task found in the queue");
             long endTime = System.currentTimeMillis();
-            logger.info("The route {} was finished with executor {} in {} min", route.getRouteId(), route.getExecutor(), (endTime-startTime) / 60000.0);
-            return;
+            double minutes = (endTime-startTime) / 60000.0;
+            logger.info("The route {} was finished with executor {} in {} min", route.getRouteId(), route.getExecutor(), minutes);
+            return minutes;
         }
 
 
 
         try {
+
+            //There exist an assigned Truck for the route.
             if(route.getExecutor() != null){
                task.setTargetTruck(route.getExecutor());
                taskQueue.remove();
+               taskManager.startTask(task);
+               return null;
             }
 
-            taskManager.startTask(task);
-
+            //Task doesn't have truck
             if(task.getTargetTruck() == null){
-                return;
+                taskManager.startTask(task);
+                return null;
             }
 
-            if(route.getExecutor() == null){
-                route.setExecutor(task.getTargetTruck());
-                taskQueue.remove();
-            }
+            route.setExecutor(task.getTargetTruck());
+            taskQueue.remove();
+            startNewTask();
 
         } catch (ExecutionException e) {
             logger.error("Error while executing task {}" , task, e);
@@ -68,16 +73,28 @@ public class RouteExecutor {
             logger.error("Task {} Interrupted", task, e);
             throw new RuntimeException("Task interrupted: " + task, e);
         }
+        return null;
     }
 
     public void delayTask(){
         logger.info("TASK FAILED, try again in 2 minutes");
         try {
-            Thread.sleep(120000);
+            Thread.sleep(1200);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         startNewTask();
+    }
+
+    public void removeExecutor(){
+        if(route.getExecutor() != null){
+            route.setExecutor(null);
+        }
+    }
+    public void deleteRoute(){
+        for(Task task : getTaskQueue()){
+            taskManager.deleteTask(task.getThingId());
+        }
     }
 
     public Queue<Task> getTaskQueue() {

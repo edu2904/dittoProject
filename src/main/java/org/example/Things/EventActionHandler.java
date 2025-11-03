@@ -17,7 +17,6 @@ public interface EventActionHandler {
 
 
     default void sendEvent(DittoClient dittoClient, String thingID, JsonObject jsonData, String eventSubject) {
-        //dittoClient.live().startConsumption().toCompletableFuture();
         dittoClient.live()
                 .forId(ThingId.of(thingID))
                 .message()
@@ -29,8 +28,6 @@ public interface EventActionHandler {
                 .send(String.class, (response, throwable) -> logger.info("RESPONSE for send message from subject {}: {}", response.getSubject(), response.getPayload().orElse(null)));
     }
     default void sendAction(DittoClient dittoClient, String thingID, JsonObject jsonData, String actionSubject){
-        System.out.println(actionSubject);
-        //dittoClient.live().startConsumption().toCompletableFuture();
         dittoClient
                 .live()
                 .forId(ThingId.of(thingID))

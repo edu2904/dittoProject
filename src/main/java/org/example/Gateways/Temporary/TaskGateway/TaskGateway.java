@@ -88,8 +88,8 @@ public class TaskGateway extends AbstractGateway<Task> {
 
     public void noSuitableThingFound() {
         logger.warn("NO BEST THING FOUND FOR {}", task.getThingId());
-        task.setStatus(TaskStatus.FAILED);
-        tasksEvents.sendFailEvent(dittoClient, task);
+        task.setStatus(TaskStatus.PAUSED);
+        tasksEvents.sendPausedEvent(dittoClient, task);
     }
 
     public String findBestIdleTruck() {
@@ -128,7 +128,10 @@ public class TaskGateway extends AbstractGateway<Task> {
                     if (optionalObject.isPresent()) {
                         String rawPayload = optionalObject.get().toString();
                         var parsePayload = Json.parse(rawPayload).asObject();
+
                         String thingId = parsePayload.get("thingId").asString();
+
+
                         if (task.getTargetTruck().equals(thingId)) {
                             tasksEvents.sendFinishedEvent(dittoClient, task);
                             logger.info("Task {} for Truck {} finished successful", task.getThingId(), task.getTargetTruck());
@@ -139,6 +142,11 @@ public class TaskGateway extends AbstractGateway<Task> {
                     tasksEvents.sendFailEvent(dittoClient, task);
                     logger.warn("Task {} of Truck {} failed", task.getThingId(), task.getTargetTruck());
                     break;
+                case TruckEventsActions.TRUCK_TIRE_PRESSURE_LOW:
+                    tasksEvents.sendEscalationEvent(dittoClient, task);
+                    logger.warn("Task {} of Truck {} escalated", task.getThingId(), task.getTargetTruck());
+                    break;
+
             }
         });
     }

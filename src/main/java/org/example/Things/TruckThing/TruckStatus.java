@@ -4,15 +4,13 @@ import org.example.Things.DigitalTwinStatus;
 
 public enum TruckStatus implements DigitalTwinStatus {
     IDLE,
-
     WAITING,
-
     DRIVING,
-
     ADJUSTINGTIREPRESSURE,
     LOADING,
     UNLOADING,
-    REFUELING;
+    REFUELING,
+    DISABLED;
 
     @Override
     public String status() {

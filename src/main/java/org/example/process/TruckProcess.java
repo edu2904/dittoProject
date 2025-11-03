@@ -25,6 +25,7 @@ public class TruckProcess {
     private final ThingHandler thingHandler = new ThingHandler();
     private final TaskManager taskManager;
     private final RouteRegister routeRegister = new RouteRegister();
+    private final List<Double> overallTime = new ArrayList<>();
     public TruckProcess(DittoClient thingClient, DittoClient listenerClient, InfluxDBClient influxDBClient, GatewayManager gatewayManager) throws ExecutionException, InterruptedException {
         this.gatewayManager = gatewayManager;
         taskManager = new TaskManager(thingClient, listenerClient, influxDBClient);
@@ -57,29 +58,56 @@ public class TruckProcess {
                 switch (message.getSubject()) {
                     case TasksEvents.TASK_FINISHED:
                         String rawPayload = optionalObject.get().toString();
-                        System.out.println("*****************************************");
-                        System.out.println("DRIOMIRMIMRIMR");
-                        System.out.println("*****************************************");
                         var parsePayload = Json.parse(rawPayload).asObject();
                         String finishedSetId = parsePayload.get("setId").asString();
                         String thingId = parsePayload.get("thingId").asString();
                         taskManager.deleteTask(thingId);
                         routeExecutor = routeRegister.getRegister(finishedSetId);
-                        try {
-                            Thread.sleep(5000);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+
+                        if(routeExecutor == null){
+                            logger.warn("No RouteExecutor found for setId {}", finishedSetId);
+                            return;
                         }
+
+                        CompletableFuture.runAsync(() -> {
+                            try {
+                                Thread.sleep(5000);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                            Double time = routeExecutor.startNewTask();
+                            if(time != null){
+                                synchronized (overallTime){
+                                    overallTime.add(time);
+                                    logger.info("Current average route time: {}", getAverageTime());
+                                }
+                            }
+                        });
+                        break;
+                    case TasksEvents.TASK_PAUSED:
+                            String rawPausedPayload = optionalObject.get().toString();
+                            var parsePausedPayload = Json.parse(rawPausedPayload).asObject();
+                            String pausedSetId = parsePausedPayload.get("setId").asString();
+                            routeExecutor = routeRegister.getRegister(pausedSetId);
+                            routeExecutor.delayTask();
+                            break;
+
+                    case TasksEvents.TASK_ESCALATED:
+                        String rawEscalatedPayload = optionalObject.get().toString();
+                        var parseEscalatedPayload = Json.parse(rawEscalatedPayload).asObject();
+                        String escalatedSetId = parseEscalatedPayload.get("setId").asString();
+                        routeExecutor = routeRegister.getRegister(escalatedSetId);
+                        routeExecutor.removeExecutor();
                         routeExecutor.startNewTask();
                         break;
-
 
                     case TasksEvents.TASK_FAILED:
                         String rawFailedPayload = optionalObject.get().toString();
                         var parseFinishedPayload = Json.parse(rawFailedPayload).asObject();
                         String failedSetId = parseFinishedPayload.get("setId").asString();
                         routeExecutor = routeRegister.getRegister(failedSetId);
-                        routeExecutor.delayTask();
+                        routeExecutor.deleteRoute();
+                        break;
                 }
                 }
                 message.reply().httpStatus(HttpStatus.OK).payload("response sent for " + message.getPayload()).send();
@@ -123,4 +151,13 @@ public class TruckProcess {
             claimMessage.reply().httpStatus(HttpStatus.ACCEPTED).payload("claim").send();
         });
     }
+
+    public List<Double> getOveralLTime() {
+        return Collections.unmodifiableList(overallTime);
+    }
+    public double getAverageTime() {
+        if(overallTime.isEmpty()) return 0.0;
+        return overallTime.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    }
+
 }

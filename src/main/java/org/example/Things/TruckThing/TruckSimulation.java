@@ -73,6 +73,8 @@ public class TruckSimulation {
         if(truck.isTaskActive()) return;
         truck.setStatus(TruckStatus.DRIVING);
 
+        checkTirePressure();
+
         tirePressureDecreases(truck.getTirePressure());
         truck.setVelocity(75 + Math.random() * 10);
         truck.setFuel(truck.getFuel() - truck.getFuelConsumption());
@@ -80,7 +82,7 @@ public class TruckSimulation {
 
         double targetDistance = target.getDistance() * 1000;
         double progressPerTick = (truck.getVelocity() * Config.STANDARD_TICK_RATE / targetDistance) * 100;
-        truck.setProgress(Math.min(100, truck.getProgress() + progressPerTick));
+        truck.setProgress(Math.min(100, truck.getProgress() + progressPerTick + 1000));
         double distanceTravelled = (truck.getProgress() / 100) * targetDistance;
 
 
@@ -101,6 +103,7 @@ public class TruckSimulation {
     public void stopTruck(){
         truck.setStatus(TruckStatus.IDLE);
         truck.setVelocity(0);
+        recoverTirePressure();
         logger.warn("Drive stopped for {}", truck.getThingId());
     }
 
@@ -135,6 +138,38 @@ public class TruckSimulation {
         if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
             double tirePressureReduction = Math.random() * 100;
             truck.setTirePressure(tirePressure - tirePressureReduction);
+        }
+    }
+
+    public void recoverTirePressure(){
+        if(truck.getTirePressure() >= Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK){
+            return;
+        }
+        double recoveryRate = Config.TIRE_PRESSURE_RECOVERY_RATE;
+        double difference = Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK - truck.getTirePressure();
+        double increase = difference * recoveryRate;
+
+        double newPressure = truck.getTirePressure() + increase;
+
+        if(newPressure > Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK){
+            newPressure = Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK;
+        }
+
+        truck.setTirePressure(newPressure);
+        logger.debug("TIRE PRESSURE INCREASED FOR {}", truck.getThingId());
+
+    }
+
+    public void checkTirePressure(){
+        if(truck.getTirePressure() <= Config.TIRE_PRESSURE_MIN_VALUE_STANDARD_TRUCK){
+            logger.info("TIRE PRESSURE LOW FOR TRUCK {}" , truck.getThingId());
+            stopTruck();
+            truck.setStatus(TruckStatus.DISABLED);
+            truck.setVelocity(0);
+            truck.setTaskActive(false);
+            truck.setTarget(null);
+
+            truckEventsActions.sendTirePressureTooLowEvent(dittoClient, truck);
         }
     }
     public Map<String, Double> calculateDistances(){

@@ -6,7 +6,8 @@ public enum TaskStatus implements DigitalTwinStatus {
     STARTING,
     UNDERGOING,
     FINISHED,
-    FAILED;
+    FAILED,
+    PAUSED;
 
     @Override
     public String status() {

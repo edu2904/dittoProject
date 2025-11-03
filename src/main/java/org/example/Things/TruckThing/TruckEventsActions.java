@@ -21,6 +21,7 @@ public class TruckEventsActions implements EventActionHandler {
 
     public static final String TRUCK_SUCCESSFUL = "truckSuccessful";
     public static final String TRUCK_FAILED = "truckFailed";
+    public static final String TRUCK_TIRE_PRESSURE_LOW = "tirePressureTooLow";
 
     public TruckEventsActions(){
 
@@ -41,8 +42,17 @@ public class TruckEventsActions implements EventActionHandler {
                 .set("message", truck.getThingId() + " successfully fulfilled task")
                 .set("thingId", truck.getThingId())
                 .build();
-        System.out.println("TASK SENT FOR " + truck.getThingId());
+        System.out.println("MESSAGE SENT FROM " + truck.getThingId());
         sendEvent(dittoClient, truck.getThingId(), successMessage, TRUCK_SUCCESSFUL);
+    }
+    public void sendTirePressureTooLowEvent(DittoClient dittoClient, Truck truck){
+        JsonObject tirePressureMessage = JsonObject
+                .newBuilder()
+                .set("message", truck.getThingId() + " reached critical tire pressure value")
+                .set("thingId", truck.getThingId())
+                .build();
+        System.out.println("TASK SENT FROM " + truck.getThingId());
+        sendEvent(dittoClient, truck.getThingId(), tirePressureMessage, TRUCK_TIRE_PRESSURE_LOW);
     }
 
     public void arrivalEvent(String thingId, Location destination, Location location, String locationName){

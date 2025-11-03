@@ -46,7 +46,6 @@ public class TruckControllerGUI implements ActionListener {
         panel.add(createNewRouteButton);
         panel.add(Box.createRigidArea(new Dimension(0,20)));
 
-
         addTruckButton = new JButton("Add new truck");
         addTruckButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         addTruckButton.addActionListener(this);
@@ -81,9 +80,6 @@ public class TruckControllerGUI implements ActionListener {
         panel.add(Box.createRigidArea(new Dimension(0,20)));
 
         panel.add(new JLabel(actionText));
-
-
-
 
         frame.add(panel, BorderLayout.CENTER);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

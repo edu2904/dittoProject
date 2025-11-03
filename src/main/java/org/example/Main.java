@@ -48,12 +48,12 @@ public class Main {
 
         GatewayManager gatewayManager = new GatewayManager(thingClient, listenerClient, influxDBClient);
         gatewayManager.startGateways();
-        Thread.sleep(10000);
+        Thread.sleep(1000);
 
         TruckProcess truckProcess = new TruckProcess(thingClient, listenerClient, influxDBClient, gatewayManager);
-        truckProcess.startProcess();
-        Thread.sleep(10000);
-        truckProcess.startProcess();
+        //truckProcess.startProcess();
+        //Thread.sleep(10000);
+        //truckProcess.startProcess();
 
         TruckControllerHTTPServer truckControllerHTTPServer = new TruckControllerHTTPServer(gatewayManager, truckProcess);
         truckControllerHTTPServer.control();

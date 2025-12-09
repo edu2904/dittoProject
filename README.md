@@ -2,6 +2,16 @@
 
 The following code provides the implementation for the master's thesis: **Coordinating Digital Twin Interactions with Apache Ditto**
 
+The initial Code starts with zero tasks and zero trucks. An UI will be provided to add first trucks and tasks. The UI is very limited because it was only used for testing purposes. 
+It contains the buttons: 
+   - **Create New Route** -> creates a random route
+   - **Add new Truck** -> adds a new truck. The text field provided can be used to alter the trucks properties. If left empty, default values are applied.
+   - **Receive Process Stats** -> shows the statistics of the routes/tasks. It creates an Excel file with more detailed information.
+
+To start the programm with predefined routes, change the NUMBER_OF_ROUTES value in the Config file to any number and restart the program.
+The number of trucks, warehouses and gas stations can be altered in the Truckfactory, Warehousefactory, GasStationFactory.
+In the TruckFactory the setups for the use-cases are marked.
+
 ## Docker Setup
    To start the project a Docker environment has to be build. All commands must be executed in a terminal. 
 1. First clone the repository

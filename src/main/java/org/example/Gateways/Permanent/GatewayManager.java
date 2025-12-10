@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,6 +43,7 @@ public class GatewayManager {
     TruckGateway truckGateway;
     WarehouseGateway warehouseGateway;
     GasStationGateway gasStationGateway;
+    private final Random random = new Random();
 
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -163,33 +165,77 @@ public class GatewayManager {
         double bestScore = Double.MAX_VALUE;
 
         double weightDistance = 0.6;
-        double weightUtilization = 0.4;
-        //double weightFuel = 0.1;
+        double weightUtilization = 0.2;
+        double weightFuel = 0.2;
 
-        for(GasStation gasStation : gasStationList){
-            Double distanceGasStation = distances.get(gasStation.getThingId());
-            if(distanceGasStation == null){
-                continue;
+
+        if(Config.RANDOM_DECISION_MAKING){
+            GasStation chosenGasstation = null;
+            double bestDistanceGasStation = Double.MAX_VALUE;
+            for(GasStation gasStation : gasStationList){
+                Double distanceGasStation = distances.get(gasStation.getThingId());
+
+                if(bestDistanceGasStation > distanceGasStation){
+                    bestDistanceGasStation = distanceGasStation;
+                    chosenGasstation = gasStation;
+                }
             }
-            double utilizationGasStation = gasStationGateway.getUtilizationFromDitto(gasStation);
-            double urgencyLowFuel = fuel < 40 ? (1-(fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK)) * 75 : 0;
-            double urgencyHighFuel = fuel > 150 ? (fuel/Config.FUEL_MAX_VALUE_STANDARD_TRUCK) * 75 : 0;
+            Double distanceWarehouse = distances.get(warehouse.getThingId());
+            boolean goToWarehouse = random.nextBoolean();
 
+            if(goToWarehouse){
+                bestTarget = new TruckTargetDecision<>(warehouse, distanceWarehouse, warehouse.getLocation(), warehouse.getThingId());
+            }else {
+                bestTarget = new TruckTargetDecision<>(chosenGasstation, bestDistanceGasStation, chosenGasstation.getLocation(), chosenGasstation.getThingId());
 
-            double cost = weightDistance * distanceGasStation + weightUtilization * utilizationGasStation - urgencyLowFuel + urgencyHighFuel;
-
-            System.out.println(gasStation.getThingId() + " cost: " + cost);
-            if(cost < bestScore){
-                bestScore = cost;
-                bestTarget = new TruckTargetDecision<>(gasStation, distanceGasStation, gasStation.getLocation(), gasStation.getThingId());
             }
-        }
+
+            truck.setRecommendedTarget(bestTarget);
+            logger.info("Next Target for {} is {}", truck.getThingId(), bestTarget.getDecidedTarget() instanceof GasStation ? ((GasStation) bestTarget.getDecidedTarget()).getThingId() : ((Warehouse) bestTarget.getDecidedTarget()).getThingId());
+
+
+        }else {
+
+            for (GasStation gasStation : gasStationList) {
+                Double distanceGasStation = distances.get(gasStation.getThingId());
+                if (distanceGasStation == null) {
+                    continue;
+                }
+                double utilizationGasStation = gasStationGateway.getUtilizationFromDitto(gasStation);
+                //double urgencyLowFuel = fuel < 40 ? (1 - (fuel / Config.FUEL_MAX_VALUE_STANDARD_TRUCK)) * 75 : 0;
+                //double urgencyHighFuel = fuel > 150 ? (fuel / Config.FUEL_MAX_VALUE_STANDARD_TRUCK) * 75 : 0;
+
+                double utilizationTruckFuel = truck.calculateUtilization();
+
+                //double cost = weightDistance * distanceGasStation + weightUtilization * utilizationGasStation - urgencyLowFuel + urgencyHighFuel;
+                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+                System.out.println("distance: " + distanceGasStation + "utilgasstation: " + utilizationGasStation + "utilTruck: " + utilizationTruckFuel);
+                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+
+                double cost = weightFuel * (100.0 - utilizationTruckFuel) + weightDistance * distanceGasStation + weightUtilization * utilizationGasStation;
+
+                System.out.println(gasStation.getThingId() + " cost: " + cost);
+                if (cost < bestScore) {
+                    bestScore = cost;
+                    bestTarget = new TruckTargetDecision<>(gasStation, distanceGasStation, gasStation.getLocation(), gasStation.getThingId());
+                }
+            }
             logger.info("Check for potential travel to {}", warehouse.getThingId());
             Double distanceWarehouse = distances.get(warehouse.getThingId());
             if (distanceWarehouse != null) {
 
                 double utilizationWarehouse = warehouseGateway.getUtilizationFromDitto(warehouse);
-                double cost = weightDistance * distanceWarehouse + weightUtilization * utilizationWarehouse;
+                double utilizationTruckFuel = truck.calculateUtilization();
+
+                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+                System.out.println("distance: " + distanceWarehouse + "utilwarehouse: " + utilizationWarehouse + "utilTruck: " + utilizationTruckFuel);
+                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+
+                double cost = weightFuel * utilizationTruckFuel + weightDistance * distanceWarehouse + weightUtilization * utilizationWarehouse;
 
                 System.out.println(warehouse.getThingId() + " cost: " + cost);
                 if (cost < bestScore) {
@@ -197,9 +243,10 @@ public class GatewayManager {
                     bestTarget = new TruckTargetDecision<>(warehouse, distanceWarehouse, warehouse.getLocation(), warehouse.getThingId());
                 }
             }
-        if(bestTarget != null){
-            truck.setRecommendedTarget(bestTarget);
-            logger.info("Next Target for {} is {}" , truck.getThingId(), bestTarget.getDecidedTarget() instanceof GasStation ? ((GasStation) bestTarget.getDecidedTarget()).getThingId() : ((Warehouse) bestTarget.getDecidedTarget()).getThingId());
+            if (bestTarget != null) {
+                truck.setRecommendedTarget(bestTarget);
+                logger.info("Next Target for {} is {}", truck.getThingId(), bestTarget.getDecidedTarget() instanceof GasStation ? ((GasStation) bestTarget.getDecidedTarget()).getThingId() : ((Warehouse) bestTarget.getDecidedTarget()).getThingId());
+            }
         }
 
     }

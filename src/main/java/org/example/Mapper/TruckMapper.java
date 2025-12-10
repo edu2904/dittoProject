@@ -34,6 +34,9 @@ public class TruckMapper implements ThingMapper<Truck>{
             double utilization = attributes.getValue("utilization").map(Objects::toString)
                     .map(Double::parseDouble).orElse(0.0);
             truck.setUtilization(utilization);
+            double capacity = attributes.getValue("capacity").map(Objects::toString)
+                    .map(Double::parseDouble).orElse(0.0);
+            truck.setCapacity(capacity);
             double lat = attributes
                     .getValue("location/geo:lat")
                     .map(Objects::toString)

@@ -18,6 +18,8 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+
+// defines the building blocks of a thing ateway
 public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
     protected final DittoClient dittoClient;
@@ -47,6 +49,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
     }
 
 
+    // method to update the attribute values.
     public void updateAttributeValue(String attributeName, Object attributeAmount, String thingId){
         dittoClient.twin()
                 .forId(ThingId.of(thingId))
@@ -60,7 +63,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
                 }));
 
     }
-
+    // method to update the feature values.
     public void updateFeatureValue(String featureID, String featurePropertyName, Object featureAmount, String thingId) {
         dittoClient.twin()
                 .forFeature(ThingId.of(thingId), featureID)
@@ -75,6 +78,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
     }
 
+    // method to retrieve the attribute values
     public Object getAttributeValueFromDitto(String attributeProperty, String thingId) throws InterruptedException, ExecutionException {
         CompletableFuture<Object> attributeAmount = new CompletableFuture<>();
 
@@ -94,6 +98,7 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
                 });
         return attributeAmount.get();
     }
+    // method to retrieve the feature values
     public Object getFeatureValueFromDitto(String featureName, String featureProperty, String thingId) throws InterruptedException, ExecutionException {
         CompletableFuture<Object> featureAmount = new CompletableFuture<>();
 
@@ -117,13 +122,13 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
 
 
 
+    // logs the desired values to InfluxDB
     public void startLoggingToInfluxDB(String measurement, String thingID, String subject, double amount){
         try {
             Point point = Point.measurement(measurement)
                     .addTag("thingID", thingID)
                     .addField(subject, amount)
                     .time(Instant.now().toEpochMilli(), WritePrecision.MS);
-
             writeApi.writePoint(point);
         }catch (InfluxException e){
             logger.error(e.getMessage());
@@ -165,6 +170,13 @@ public abstract class AbstractGateway<T> implements DigitalTwinsGateway<T> {
                 logger.info("Received feature change for {}, {} with change {}", feature, property, change);
             }
         });
+    }
+    public void updateAttributeIfPresent(String attributeName, Object attributeValue, String thingId){
+        if(attributeValue == null){
+            logger.info("Attribute {} value is null", attributeName);
+            return;
+        }
+        updateAttributeValue(attributeName, attributeValue, thingId);
     }
 
     @Override

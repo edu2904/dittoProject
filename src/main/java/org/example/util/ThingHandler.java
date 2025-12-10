@@ -27,6 +27,8 @@ public class ThingHandler {
 
     }
 
+    //create a policy file.
+    //This function creates a policy file from a defined policy JSON
     public CompletableFuture<Boolean> createPolicyFromURL(DittoClient dittoClient, String policyURL) {
         var future = new CompletableFuture<Boolean>();
 
@@ -54,6 +56,8 @@ public class ThingHandler {
 
     }
 
+    // retrieve the policy to check whether it is created. This prevents multiple policy creation, as is would cause an error.
+    // Eclipse Ditto does not allow two of the same policies to be present
     public CompletableFuture<String> getPolicyFromURL(String policyURL) {
         return CompletableFuture.supplyAsync(() -> {
             URL url = null;
@@ -86,6 +90,7 @@ public class ThingHandler {
         });
     }
 
+    //check if the policy was already created in Eclipse Ditto
     public CompletableFuture<Boolean> policyExists(DittoClient dittoClient, String policy) {
         return dittoClient
                 .policies()
@@ -93,6 +98,8 @@ public class ThingHandler {
                 .thenApply(pol -> true)
                 .exceptionally(ex -> false).toCompletableFuture();
     }
+
+    // This code deletes a created policy
     public void deletePolicy(DittoClient dittoClient, String policyID) {
         dittoClient.policies().delete(PolicyId.of(policyID)).thenAccept(thing -> {
             logger.info("Deleted policy: {}", policyID);
@@ -103,6 +110,7 @@ public class ThingHandler {
     }
 
 
+    // This code created a Thing with its specified policy by providing of its WoT description
     public CompletableFuture<Boolean> createTwinWithWOTAndPolicy(DittoClient client, String wotTDDefinitionURL, String policyURL, String thingId) throws ExecutionException, InterruptedException {
         String policy = getPolicyFromURL(policyURL).get();
         var future = new CompletableFuture<Boolean>();
@@ -128,6 +136,8 @@ public class ThingHandler {
         return future;
 
     }
+    // This code created a thing without a predefined policy file.
+    // In this case Eclipse Ditto will automatically generate a policy for the twin.
     public CompletableFuture<Boolean> createTwinWithWOT(DittoClient client, String wotTDDefinitionURL, String thingId) throws ExecutionException, InterruptedException {
         var future = new CompletableFuture<Boolean>();
 
@@ -160,10 +170,13 @@ public class ThingHandler {
     }
 
     public CompletableFuture<Boolean> createTwinAndPolicy(DittoClient dittoClient, String thingURL, String policyURL, String thingId) throws ExecutionException, InterruptedException {
+
+        // check if policy already exists
         if (!policyExists(dittoClient, getPolicyFromURL(policyURL).get()).get()) {
             CompletableFuture<Boolean> future = createPolicyFromURL(dittoClient, policyURL);
             future.get();
         }
+        //don't create two of the same things
         if(thingExists(dittoClient, thingId).get()){
             deleteThing(dittoClient, thingId);
         }
@@ -171,6 +184,7 @@ public class ThingHandler {
     }
 
 
+    //check if a thing was already created and exists in ditto
     public CompletableFuture<Boolean> thingExists(DittoClient dittoClient, String thingID) {
         return dittoClient
                 .twin()
@@ -179,6 +193,7 @@ public class ThingHandler {
                 .exceptionally(ex -> false).toCompletableFuture();
     }
 
+    // deletes a thing from ditto
     public void deleteThing(DittoClient dittoClient, String thingID) {
         dittoClient.twin().delete(ThingId.of(thingID)).thenAccept(thing -> {
             logger.info("Deleted thing: {}", thingID);
@@ -188,6 +203,10 @@ public class ThingHandler {
         }).toCompletableFuture();
     }
 
+
+    // searches for all the things that are detected from the filter string and returns them as a List.
+    // However, it does not contain the specific information of the thing. It only returns the twins JSON file.
+    // A specified mapper has to be implemented to assign all the needed value inside the JSON. These mappers are defined in the "Mapper" file.
     public  <T> List<T> searchThings(DittoClient dittoClient, Function<Thing, T> mapper, String filter){
         List<T> foundThings = new ArrayList<>();
         dittoClient.twin().search()
@@ -202,11 +221,14 @@ public class ThingHandler {
                 });
         return foundThings;
     }
+
+    // deletes the thing with its corresponding policy
     public void deleteThingAndPolicy(DittoClient dittoClient, String policyID, String thingId) {
         deleteThing(dittoClient, thingId);
         deletePolicy(dittoClient, policyID);
     }
 
+    //returns the Json of a specific thing-
     public CompletableFuture<Void> getThingPayload(DittoClient dittoClient, String thingId) {
         return dittoClient.twin().retrieve(ThingId.of(thingId)).thenAccept(thing -> {
             logger.info("Payload: {}", thing.toString());

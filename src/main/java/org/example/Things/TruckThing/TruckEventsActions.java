@@ -22,6 +22,7 @@ public class TruckEventsActions implements EventActionHandler {
     public static final String TRUCK_SUCCESSFUL = "truckSuccessful";
     public static final String TRUCK_FAILED = "truckFailed";
     public static final String TRUCK_TIRE_PRESSURE_LOW = "tirePressureTooLow";
+    public static final String FUEL_TOO_LOW = "fuelTooLow";
 
     public TruckEventsActions(){
 
@@ -53,6 +54,15 @@ public class TruckEventsActions implements EventActionHandler {
                 .build();
         System.out.println("TASK SENT FROM " + truck.getThingId());
         sendEvent(dittoClient, truck.getThingId(), tirePressureMessage, TRUCK_TIRE_PRESSURE_LOW);
+    }
+    public void sendFuelTooLow(DittoClient dittoClient, Truck truck)  {
+        JsonObject fuelMessage = JsonObject
+                .newBuilder()
+                .set("message", truck.getThingId() + " reached critical fuel value")
+                .set("thingId", truck.getThingId())
+                .build();
+        System.out.println("TASK SENT FROM " + truck.getThingId());
+        sendEvent(dittoClient, truck.getThingId(), fuelMessage, FUEL_TOO_LOW);
     }
 
     public void arrivalEvent(String thingId, Location destination, Location location, String locationName){
@@ -104,19 +114,6 @@ public class TruckEventsActions implements EventActionHandler {
 
         }
     }
-    public void fuelAmountEvents(String thingID, double fuelAmount)  {
-            JsonObject lowfuelmessage = JsonObject.newBuilder()
-                    .set("amount", fuelAmount)
-                    .build();
-            JsonObject jsonData = JsonObject.newBuilder()
-                    .set("title", "Caution LOW FUEL!")
-                    .set("type", "object")
-                    .set("properties", lowfuelmessage).build();
-
-            if (fuelAmount < 45) {
-                sendEvent(dittoClient, thingID, jsonData, "lowfuel");
-            }
-        }
 
     public void taskSearchAction(String thingID, double currentWeight){
         if(currentWeight > 9000){

@@ -19,7 +19,11 @@ public class DittoClientBuilder {
 
     public DittoClient dittoClient;
 
+
+    // Ditto setup. In order to connect to ditto and be able to manage twins this code has to be executed to create a DittoClient
     public DittoClientBuilder() throws ExecutionException, InterruptedException {
+
+
         var authentication = AuthenticationProviders.basic(BasicAuthenticationConfiguration
                 .newBuilder()
                 .username(Config.DITTO_USERNAME)

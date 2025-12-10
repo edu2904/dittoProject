@@ -10,7 +10,8 @@ public enum TruckStatus implements DigitalTwinStatus {
     LOADING,
     UNLOADING,
     REFUELING,
-    DISABLED;
+    DISABLED,
+    ASSIGNED;
 
     @Override
     public String status() {

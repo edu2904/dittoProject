@@ -12,6 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
@@ -25,6 +26,14 @@ public class TruckControllerGUI implements ActionListener {
     private JTextField latField;
     private JTextField lonField;
     private JLabel overallTimeLabel;
+    private JLabel finishedTasksLabel;
+    private JLabel failedTasksLabel;
+    private JLabel finishedRoutesLabel;
+    private JLabel failedRoutesLabel;
+    private JLabel escalatedTasksLabel;
+
+
+
     private JPanel panel;
 
     private String actionText;
@@ -92,6 +101,11 @@ public class TruckControllerGUI implements ActionListener {
         panel.add(Box.createRigidArea(new Dimension(0,20)));
 
         overallTimeLabel = new JLabel();
+        finishedTasksLabel = new JLabel();
+        failedTasksLabel = new JLabel();
+        finishedRoutesLabel = new JLabel();
+        failedRoutesLabel = new JLabel();
+        escalatedTasksLabel = new JLabel();
 
 
         frame.add(panel, BorderLayout.CENTER);
@@ -106,7 +120,7 @@ public class TruckControllerGUI implements ActionListener {
     public void actionPerformed(ActionEvent e) {
 
         if(e.getSource() == createNewRouteButton){
-            truckProcess.startProcess();
+            truckProcess.startRandomProcess();
             actionText = "New Route created";
         }
         else if(e.getSource() == addTruckButton){
@@ -142,15 +156,70 @@ public class TruckControllerGUI implements ActionListener {
             }
 
         }else if(e.getSource() == receiveStats){
-            double overallTime = truckProcess.getAverageTime();
-            overallTimeLabel.setText("Overall Time: " + overallTime);
 
+            Path out = Path.of(
+                    System.getProperty("user.home"),
+                    "Downloads",
+                    "routes2.xlsx"
+            );
+
+            new ExcelWriter().exportRoutesToExcel(truckProcess.getAllRoutes(), out);
+            System.out.println("EXCEL EXPORT");
+
+
+
+            double averageTime = truckProcess.getAverageTime();
+            double allTask = truckProcess.getOveralLTasks();
+            double successfulTask = truckProcess.getSuccessfullTasks();
+            double failedTasks = truckProcess.getFailedTasks();
+            double allRoutes = truckProcess.getOverallRoutes();
+            double successfulRoutes = truckProcess.getSuccessfullRoutes();
+            double failedRoutes = truckProcess.getFailedRoutes();
+            double escalatedTasks = truckProcess.getEscalatedTasks();
+            overallTimeLabel.setText("Average Route Time: " + averageTime);
             if(overallTimeLabel.getParent() == null){
                 panel.add(overallTimeLabel);
 
             }
             overallTimeLabel.revalidate();
             overallTimeLabel.repaint();
+
+            finishedRoutesLabel.setText("Routes finished: " + successfulRoutes + "/" + allRoutes);
+            if(finishedRoutesLabel.getParent() == null){
+                panel.add(finishedRoutesLabel);
+            }
+            finishedRoutesLabel.revalidate();
+            finishedRoutesLabel.repaint();
+
+            failedRoutesLabel.setText("Routes failed: " + failedRoutes + "/" + allRoutes);
+            if(failedRoutesLabel.getParent() == null){
+                panel.add(failedRoutesLabel);
+            }
+            failedRoutesLabel.revalidate();
+            failedRoutesLabel.repaint();
+
+            finishedTasksLabel.setText("Tasks finished: " + successfulTask + "/" + allTask);
+            if(finishedTasksLabel.getParent() == null){
+                panel.add(finishedTasksLabel);
+            }
+            finishedTasksLabel.revalidate();
+            finishedTasksLabel.repaint();
+
+            failedTasksLabel.setText("Tasks failed: " + failedTasks + "/" + allTask);
+            if(failedTasksLabel.getParent() == null){
+                panel.add(failedTasksLabel);
+            }
+            failedTasksLabel.revalidate();
+            failedTasksLabel.repaint();
+
+            escalatedTasksLabel.setText("Tasks escalated: " + escalatedTasks + "/" + allTask);
+            if(escalatedTasksLabel.getParent() == null){
+                panel.add(escalatedTasksLabel);
+            }
+            escalatedTasksLabel.revalidate();
+            escalatedTasksLabel.repaint();
+
+
         }
 
     }

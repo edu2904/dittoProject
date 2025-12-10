@@ -38,19 +38,37 @@ public class WarehouseSimulation {
             TruckStatus truckStatus = truck.getStatus();
             if(truckStatus == TruckStatus.LOADING && currentInventory < truck.getCargoToBeDelivered()) {
 
-                logger.info("CurrentInventory {} for {}", currentInventory, truck.getThingId());
-                double newInventory = Math.min(10, truck.getCargoToBeDelivered() - currentInventory);
-                truck.setInventory(currentInventory + newInventory);
-                warehouseInventory.remove(newInventory);
+                logger.info("CurrentInventory {} for {} with Warehouse inventory left {}", currentInventory, truck.getThingId(), warehouseInventory.getInventory());
+                double warehouseStock = warehouseInventory.getInventory();
+                double remainingTruckCapacity = truck.getCargoToBeDelivered() - currentInventory;
+
+                double newInventory = Math.min(10, Math.min(remainingTruckCapacity, warehouseStock));
+                if(newInventory > 0) {
+                    truck.setInventory(currentInventory + newInventory);
+                    warehouseInventory.remove(newInventory);
+                }else {
+                    ScheduledFuture<?> task = schedulerRegister.get();
+                    if(task != null) task.cancel(false);
+                    finishTruck(truck, onComplete);
+                }
 
 
             }else if(truckStatus == TruckStatus.UNLOADING && currentInventory > 0){
 
                 logger.info("CurrentInventory {} for {}", currentInventory, truck.getThingId());
-                double newInventory = Math.min(10,currentInventory);
-                truck.setInventory(currentInventory - newInventory);
-                warehouseInventory.add(newInventory);
+                double warehouseStock = warehouseInventory.getInventory();
+                double freeSpace = warehouseInventory.getCapacity() - warehouseStock;
 
+                double newInventory = Math.min(10,Math.min(currentInventory, freeSpace));
+
+                if(newInventory > 0) {
+                    truck.setInventory(currentInventory - newInventory);
+                    warehouseInventory.add(newInventory);
+                }else {
+                    ScheduledFuture<?> task = schedulerRegister.get();
+                    if(task != null) task.cancel(false);
+                    finishTruck(truck, onComplete);
+                }
             }else {
 
                 ScheduledFuture<?> task = schedulerRegister.get();
@@ -80,6 +98,11 @@ public class WarehouseSimulation {
         } else {
             success = truck.getInventory() <= 0;
         }
+
+        if(!success){
+            resetWarehouseAndTruck(truck);
+        }
+
         truck.setTarget(null);
         truck.setTaskActive(false);
         truck.setTaskSuccess(success);
@@ -97,6 +120,11 @@ public class WarehouseSimulation {
     public void setTruckStatus(Truck truck, TaskType taskType){
         if(taskType == TaskType.LOAD) truck.setStatus(TruckStatus.LOADING);
         if(taskType == TaskType.UNLOAD) truck.setStatus(TruckStatus.UNLOADING);
+    }
+
+    public void resetWarehouseAndTruck(Truck truck){
+        warehouseInventory.setInventory(1000);
+        truck.setInventory(0.0);
     }
 
 }

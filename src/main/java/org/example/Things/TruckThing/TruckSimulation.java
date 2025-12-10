@@ -52,13 +52,14 @@ public class TruckSimulation {
                 updateTarget(gatewayManager);
 
                 if (truck.getFuel() <= 0 || truck.getTarget() == null) {
-                    stopTruck();
                     if (truck.getFuel() <= 0) {
                         logger.warn("Truck {} stopped: fuel empty", truck.getThingId());
+                        resetTruck();
                     }
                     if (truck.getTarget() == null) {
                         logger.warn("Truck {} stopped: no target assigned", truck.getThingId());
                     }
+                    stopTruck();
                 }else if(truck.getTarget() != null) {
                     drive(truck.getTarget(), dittoClient);
                 }
@@ -70,10 +71,10 @@ public class TruckSimulation {
 
     public void drive(TruckTargetDecision<?> target, DittoClient dittoClient){
 
-        if(truck.isTaskActive()) return;
+        if(truck.isTaskActive() || truck.getStatus() == TruckStatus.DISABLED) return;
         truck.setStatus(TruckStatus.DRIVING);
-
         checkTirePressure();
+
 
         tirePressureDecreases(truck.getTirePressure());
         truck.setVelocity(75 + Math.random() * 10);
@@ -82,7 +83,7 @@ public class TruckSimulation {
 
         double targetDistance = target.getDistance() * 1000;
         double progressPerTick = (truck.getVelocity() * Config.STANDARD_TICK_RATE / targetDistance) * 100;
-        truck.setProgress(Math.min(100, truck.getProgress() + progressPerTick + 1000));
+        truck.setProgress(Math.min(100, truck.getProgress() + progressPerTick));
         double distanceTravelled = (truck.getProgress() / 100) * targetDistance;
 
 
@@ -101,10 +102,12 @@ public class TruckSimulation {
     }
 
     public void stopTruck(){
-        truck.setStatus(TruckStatus.IDLE);
-        truck.setVelocity(0);
-        recoverTirePressure();
-        logger.warn("Drive stopped for {}", truck.getThingId());
+        if(!truck.getStatus().equals(TruckStatus.DISABLED) || truck.getStatus().equals(TruckStatus.WAITING)) {
+            truck.setStatus(TruckStatus.IDLE);
+            truck.setVelocity(0);
+            recoverTirePressure();
+            logger.warn("Drive stopped for {}", truck.getThingId());
+        }
     }
 
     public void startTask(DittoClient dittoClient, TruckTargetDecision<?> target){
@@ -135,10 +138,10 @@ public class TruckSimulation {
         }
     }
     public void tirePressureDecreases(double tirePressure){
-        if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
-            double tirePressureReduction = Math.random() * 100;
+        //if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
+            double tirePressureReduction = 3;//Math.random() * 100;
             truck.setTirePressure(tirePressure - tirePressureReduction);
-        }
+        //}
     }
 
     public void recoverTirePressure(){
@@ -149,7 +152,7 @@ public class TruckSimulation {
         double difference = Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK - truck.getTirePressure();
         double increase = difference * recoveryRate;
 
-        double newPressure = truck.getTirePressure() + increase;
+        double newPressure = truck.getTirePressure() + 5;
 
         if(newPressure > Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK){
             newPressure = Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK;
@@ -163,13 +166,19 @@ public class TruckSimulation {
     public void checkTirePressure(){
         if(truck.getTirePressure() <= Config.TIRE_PRESSURE_MIN_VALUE_STANDARD_TRUCK){
             logger.info("TIRE PRESSURE LOW FOR TRUCK {}" , truck.getThingId());
-            stopTruck();
             truck.setStatus(TruckStatus.DISABLED);
             truck.setVelocity(0);
             truck.setTaskActive(false);
+            truck.setRecommendedTarget(null);
+            truck.setTargetWarehouse(null);
             truck.setTarget(null);
-
             truckEventsActions.sendTirePressureTooLowEvent(dittoClient, truck);
+            scheduler.schedule(() -> {
+                truck.setTirePressure(9000);
+                truck.setStatus(TruckStatus.IDLE);
+                logger.info("TRUCK {} ENABLED AGAIN AFTER LOW TIRE PRESSURE", truck.getThingId());
+
+            }, 3, TimeUnit.MINUTES);
         }
     }
     public Map<String, Double> calculateDistances(){
@@ -191,5 +200,23 @@ public class TruckSimulation {
                 break;
             }
         }
+    }
+    public void resetTruck(){
+        if(truck.getStatus() == TruckStatus.DISABLED){
+            return;
+        }
+        truck.setStatus(TruckStatus.DISABLED);
+        truckEventsActions.sendFuelTooLow(dittoClient, truck);
+        truck.setLocation(truck.getWarehouseList().get(0).getLocation());
+        truck.setVelocity(0);
+        truck.setTaskActive(false);
+        truck.setTarget(null);
+        truck.setRecommendedTarget(null);
+        truck.setTargetWarehouse(null);
+        scheduler.schedule(() -> {
+            truck.setFuel(300);
+            truck.setStatus(TruckStatus.IDLE);
+            logger.info("TRUCK {} ENABLED AGAIN AFTER LOW FUEL", truck.getThingId());
+        }, 3 , TimeUnit.MINUTES);
     }
 }

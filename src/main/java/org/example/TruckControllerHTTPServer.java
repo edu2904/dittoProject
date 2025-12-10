@@ -47,7 +47,7 @@ public class TruckControllerHTTPServer {
 
 public void createNewRoute(HttpServer server){
     server.createContext("/createNewRoute", (HttpExchange t) -> {
-        truckProcess.startProcess();
+        truckProcess.startRandomProcess();
         String response = "New Route Created";
         t.sendResponseHeaders(200, response.length());
         OutputStream os = t.getResponseBody();

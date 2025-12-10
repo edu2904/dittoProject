@@ -42,11 +42,17 @@ public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
     @Override
     public void initializeThings() {
         Warehouse warehouseMain = createDefaultWarehouse(0,48.0842, 11.5302, true);
+        warehouseMain.setInventory(2300);
         Warehouse warehouse1 = createDefaultWarehouse(1, 48.1145, 11.4859, false);
+        warehouse1.setInventory(2150);
         Warehouse warehouse2 = createDefaultWarehouse(2, 48.1361, 11.5010, false);
+        warehouse2.setInventory(2300);
         Warehouse warehouse3 = createDefaultWarehouse(3, 48.1812, 11.5096, false);
+        warehouse3.setInventory(2450);
         Warehouse warehouse4 = createDefaultWarehouse(4, 48.2234, 11.4706, false);
+        warehouse4.setInventory(2150);
         Warehouse warehouse5 = createDefaultWarehouse(5, 48.2806, 11.5694, false);
+        warehouse5.setInventory(2450);
         warehouseList.add(warehouseMain);
         warehouseList.add(warehouse1);
         warehouseList.add(warehouse2);
@@ -56,7 +62,8 @@ public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
     }
 
     public Warehouse createDefaultWarehouse(int number, double lat, double lon, boolean mainWarehouse){
-        int capacity = (int) ((Math.random() * 101) + 400);
+        //int capacity = (int) ((Math.random() * 101) + 400);
+        int capacity = 4000;
         Warehouse warehouse = new Warehouse(capacity);
 
         if(mainWarehouse){
@@ -67,7 +74,7 @@ public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
 
 
         warehouse.setCapacity(capacity);
-        warehouse.setInventory(200);//(int) (capacity * (0.8 + Math.random() * 0.2)));
+        warehouse.setInventory(0);//(int) (capacity * (0.8 + Math.random() * 0.2)));
         warehouse.setWorkers(1);
         warehouse.setStatus(WarehouseStatus.WAITING);
         warehouse.setLocation(lat, lon);

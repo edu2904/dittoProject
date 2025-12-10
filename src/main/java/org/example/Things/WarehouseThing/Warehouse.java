@@ -1,5 +1,6 @@
 package org.example.Things.WarehouseThing;
 
+import org.example.Main;
 import org.example.Things.Location;
 import org.example.Things.TaskThings.Task;
 import org.example.Things.TaskThings.TaskType;
@@ -129,6 +130,7 @@ public class Warehouse {
     public void featureSimulation(){
         scheduler.scheduleAtFixedRate(() -> {
         setUtilization(calculateUtilization());
+        fixInventory();
         }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
     public double calculateUtilization(){
@@ -136,17 +138,32 @@ public class Warehouse {
         double weightInventory = 0.3;
 
 
-        int currentTrucks = trucksInWarehouse.size();
-        double truckUtilization = Math.log(currentTrucks + 1) / Math.log(10);
+        double currentTrucks = trucksInWarehouse.size();
+        double truckUtilization = currentTrucks / (currentTrucks + 5);
 
 
         double currentInventory = getInventory();
-        double maxCapacity = getCapacity();
-        double inventoryUtilization = currentInventory / maxCapacity;
+        double midCapacity = getCapacity() / 2;
+
+        double distanceToMid = Math.abs(currentInventory - midCapacity);
+        double inventoryUtilization = distanceToMid / midCapacity;
+
 
         double combinedUtilization = weightTrucks * truckUtilization + weightInventory * inventoryUtilization;
 
         return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
+    }
+
+
+    public void fixInventory(){
+        if(trucksInWarehouse.isEmpty()){
+            if(warehouseInventory.getInventory() < 2000){
+                warehouseInventory.add(3 * workers);
+
+            } else if(warehouseInventory.getInventory() > 2000){
+                warehouseInventory.remove(3 * workers);
+            }
+        }
     }
 
 }

@@ -1,9 +1,12 @@
 package org.example.Things.TaskThings;
 
 import org.eclipse.ditto.client.DittoClient;
+import org.eclipse.ditto.json.JsonArray;
 import org.eclipse.ditto.json.JsonObject;
+import org.eclipse.ditto.json.JsonValue;
 import org.example.Things.EventActionHandler;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,11 +24,23 @@ public class TasksEvents implements EventActionHandler {
     public static final String TASK_PAUSED = "taskPaused";
     public static final String TASK_CONTINUED = "taskContinued";
     public static final String TASK_TIMER = "taskTimer";
+    public static final String TASK_ABORTED = "taskAborted";
 
 
     public void sendStartEvent(DittoClient dittoClient, Task task){
+        JsonArray assignedThings = JsonArray.newBuilder()
+                .addAll(task
+                        .getTargetTrucks()
+                        .stream()
+                        .map(JsonValue::of)
+                        .toList())
+                .build();
+
+
         JsonObject startObject = JsonObject.newBuilder()
                 .set("message", "Task started for " + task.getThingId())
+                .set("thingId", task.getThingId())
+                .set("targetThings", assignedThings)
                 .set("setId", task.getSetId()).build();
         sendEvent(dittoClient, task.getThingId(), startObject, TASK_BEGIN);
     }
@@ -35,26 +50,39 @@ public class TasksEvents implements EventActionHandler {
                 .newBuilder()
                 .set("message", "Task failed for " + task.getThingId())
                 .set("thingId", task.getThingId())
+                .set("eventMessage", task.getEventInformation())
+                .set("time", task.getTime())
                 .set("setId", task.getSetId()).build();
         sendEvent(dittoClient, task.getThingId(), failObject, TASK_FAILED);
     }
     public void sendFinishedEvent(DittoClient dittoClient, Task task){
+        JsonArray assignedThings = JsonArray.newBuilder()
+                .addAll(task
+                        .getTargetTrucks()
+                        .stream()
+                        .map(JsonValue::of)
+                        .toList())
+                .build();
+
         JsonObject finishedObject = JsonObject
                 .newBuilder()
                 .set("message", "Task finished")
                 .set("thingId", task.getThingId())
+                .set("targetThings", assignedThings)
                 .set("setId", task.getSetId())
                 .build();
         sendEvent(dittoClient, task.getThingId(), finishedObject, TASK_FINISHED);
     }
-    public void sendEscalationEvent(DittoClient dittoClient, Task task){
+    public void sendEscalationEvent(DittoClient dittoClient, Task task, String failedThing){
         JsonObject escalationObject = JsonObject
                 .newBuilder()
                 .set("message", "Task escalated for " + task.getThingId())
                 .set("thingId", task.getThingId())
+                .set("failedThing", failedThing)
+                .set("eventMessage", task.getEventInformation())
                 .set("setId", task.getSetId())
                 .build();
-        sendEvent(dittoClient, task.getThingId(), escalationObject, TASK_FINISHED);
+        sendEvent(dittoClient, task.getThingId(), escalationObject, TASK_ESCALATED);
     }
     public void sendPausedEvent(DittoClient dittoClient, Task task){
         JsonObject pauseObject = JsonObject
@@ -74,6 +102,18 @@ public class TasksEvents implements EventActionHandler {
                 .set("time", task.getTime())
                 .build();
         sendEvent(dittoClient, task.getThingId(), timeObject, TASK_TIMER);
+    }
+
+    public void taskAbortedEvent(DittoClient dittoClient, Task task){
+        for(String truckThingId : task.getTargetTrucks()) {
+            JsonObject timeObject = JsonObject
+                    .newBuilder()
+                    .set("message", "Task aborted " + task.getThingId())
+                    .set("thingId", truckThingId)
+                    .set("setId", task.getSetId())
+                    .build();
+            sendEvent(dittoClient, task.getThingId(), timeObject, TASK_ABORTED);
+        }
     }
 }
 

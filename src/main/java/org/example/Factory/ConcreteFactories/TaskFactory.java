@@ -8,6 +8,8 @@ import org.example.Things.TaskThings.Task;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+
+// Task factory delivers the methods for task creation. The methods are used in the TaskManager class
 public class TaskFactory {
     DittoClient dittoClient;
 
@@ -20,6 +22,8 @@ public class TaskFactory {
         this.dittoClient = dittoClient;
     }
 
+
+    // starts the task. The WoT for each task type is individual and is therefore stored within the task object.
     public void startTask(Task task){
         try {
             thingHandler.createTwinAndPolicy(dittoClient, task.getTaskType().getWot(), task.getTaskType().getPolicy(), task.getThingId()).toCompletableFuture();

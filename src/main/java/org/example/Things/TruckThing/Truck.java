@@ -22,6 +22,8 @@ public class Truck {
 
     Location location;
 
+    TruckSimulation truckSimulation;
+
     private final Logger logger = LoggerFactory.getLogger(Truck.class);
     private final AtomicBoolean taskActive = new AtomicBoolean(false);
     private final AtomicBoolean truckArrived = new AtomicBoolean(false);
@@ -232,6 +234,8 @@ public class Truck {
         return taskSuccess;
     }
 
+
+
     public void setAssignedTaskValues(String from, String to, double cargoToBeDelivered, TaskType taskType){
         Warehouse fromWarehouse = getWarehouseList().stream().filter(t -> t.getThingId().equals(from)).findFirst().orElse(null);
         setStartWarehouse(fromWarehouse);
@@ -253,17 +257,32 @@ public class Truck {
         }
         return distances;
     }
+
     public double calculateUtilization(){
-        double utilization = 1.0 - Math.min(1.0, Math.max(0.0, getFuel() / Config.FUEL_MAX_VALUE_STANDARD_TRUCK));
-        return utilization * 100;
+        double fuelNorm = 1.0 - Math.min(1.0, Math.max(0.0, getFuel() / Config.FUEL_MAX_VALUE_STANDARD_TRUCK));
+        double tirePressureNorm = 1.0 - Math.min(1.0, Math.max(0.0, getTirePressure() / Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK));
+
+        double util = (0.9 * fuelNorm) + (0.1 * tirePressureNorm);
+        return util * 100;
 
     }
     public double calculateLocationUtilization(Warehouse toWarehouse){
 
-        double maxDistance =  8000.0;
+        double maxDistance =  25.0;
         double distance = GeoUtil.calculateDistance(getLocation(), toWarehouse.getLocation());
         double normalizedDistance = Math.min(1.0, Math.max(0.0, distance / maxDistance));
         return normalizedDistance * 100.0;
+    }
+    public double calculateCapacityUtilization(double requiredCargo){
+        double capacityUtilization;
+        if(capacity >= requiredCargo){
+            double calc = requiredCargo / capacity;
+            capacityUtilization = Math.abs(1.0 - calc) * 100;
+        }else {
+            double missingCargo = (requiredCargo - capacity) / requiredCargo;
+            capacityUtilization = 100.0 + missingCargo * 100.0;
+        }
+        return capacityUtilization;
     }
 
     public double getAverageUtilizationForTask(double utilFuel, double utilLocation){

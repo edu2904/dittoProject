@@ -49,22 +49,13 @@ public class RouteExecutor {
         try {
 
             //There exist an assigned Truck for the route.
-            if(route.getExecutor() != null){
-               task.setTargetTruck(route.getExecutor());
-               taskQueue.remove();
-               taskManager.startTask(task);
-               return;
+            if(route.getExecutor() != null && !route.getExecutor().isEmpty()){
+               task.setTargetTrucks(new ArrayList<>(route.getExecutor()));
+
             }
 
-            //Task doesn't have truck
-            if(task.getTargetTruck() == null){
-                taskManager.startTask(task);
-                return;
-            }
+            taskManager.startTask(task);
 
-            route.setExecutor(task.getTargetTruck());
-            taskQueue.remove();
-            startNewTask();
 
         } catch (ExecutionException e) {
             logger.error("Error while executing task {}" , task, e);
@@ -79,16 +70,16 @@ public class RouteExecutor {
     public void delayTask(){
         logger.info("TASK FAILED, try again in 2 minutes");
         try {
-            Thread.sleep(1200);
+            Thread.sleep(60000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         startNewTask();
     }
 
-    public void removeExecutor(){
+    public void removeExecutor(String executor){
         if(route.getExecutor() != null){
-            route.setExecutor(null);
+            route.removeExecutor(executor);
         }
     }
     public void deleteRoute(){
@@ -105,5 +96,7 @@ public class RouteExecutor {
         return taskTimes;
     }
 
-
+    public RoutePlanner.Route getRoute() {
+        return this.route;
+    }
 }

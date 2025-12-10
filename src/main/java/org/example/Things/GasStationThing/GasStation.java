@@ -77,8 +77,9 @@ public class GasStation {
 
     public  void featureSimulation(){
         scheduler.scheduleAtFixedRate(() -> {
+            fixInventory();
             setUtilization(calculateUtilization());
-            setGasStationFuelAmount(getGasStationFuelAmount() + 5);
+            setGasStationFuelAmount(getGasStationFuelAmount());
         }, 0, 3, TimeUnit.SECONDS);
     }
 
@@ -189,17 +190,25 @@ public class GasStation {
         double weightFuel = 0.3;
 
 
-        int currentTrucks = trucksInGasStation.size();
-        double truckUtilization = Math.log(currentTrucks + 1) / Math.log(10);
+        double currentTrucks = trucksInGasStation.size();
+        double truckUtilization = currentTrucks / (currentTrucks + 5);
 
 
         double currentFuel = getGasStationFuelAmount();
         double maxCapacity = 5000;
-        double inventoryUtilization = currentFuel / maxCapacity;
+        double inventoryUtilization = 1.0 - currentFuel / maxCapacity;
 
         double combinedUtilization = weightTrucks * truckUtilization + weightFuel * inventoryUtilization;
 
         return Math.min(100.0, Math.max(0.0, combinedUtilization * 100.0));
+    }
+    public void fixInventory(){
+        if(trucksInGasStation.isEmpty()){
+            if(gasStationFuelAmount < 300){
+                setGasStationFuelAmount(gasStationFuelAmount);
+
+            }
+        }
     }
 
 }

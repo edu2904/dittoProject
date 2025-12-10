@@ -9,6 +9,8 @@ import org.example.Things.Location;
 import java.util.Map;
 import java.util.concurrent.*;
 
+
+// all events the truck is able to send. The static values have to be the ones the defined in the corresponding WoT file
 public class TruckEventsActions implements EventActionHandler {
 
 

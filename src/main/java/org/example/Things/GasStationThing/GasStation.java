@@ -83,6 +83,7 @@ public class GasStation {
         }, 0, 3, TimeUnit.SECONDS);
     }
 
+    // starts the refueling process. As the warehouse it can only refuel one truck at a time. Incoming trucks will be placed in a queue.
     public synchronized void startRefuel(Truck truck){
 
         logger.info("Truck {} requested refuel", truck.getThingId());
@@ -136,6 +137,8 @@ public class GasStation {
 
     }
 
+
+    // tire pressure adjustment. Was not used during the simulation of the thesis
     public void startTirePressureAdjustment(Truck truck){
 
         logger.info("Truck {} requested tire pressure adjustment", truck.getThingId());
@@ -151,7 +154,6 @@ public class GasStation {
         }
 
     }
-
     public void startTireAdjustmentProcess(Truck truck){
         truck.setStatus(TruckStatus.ADJUSTINGTIREPRESSURE);
         currentTask = scheduler.scheduleAtFixedRate(() ->
@@ -185,6 +187,8 @@ public class GasStation {
 
     }
 
+
+    // calculates the gas station utilization.
     public double calculateUtilization(){
         double weightTrucks = 0.7;
         double weightFuel = 0.3;

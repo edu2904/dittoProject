@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// all actions the task is able to send. The static values have to be the ones the defined in the corresponding WoT file
 
 public class TaskActions implements EventActionHandler {
     public static final String TASK_LOAD_START = "taskLoadStart";
@@ -20,9 +21,7 @@ public class TaskActions implements EventActionHandler {
 
         Map<String, Double> cargoAllocation = task.getThingAllocation();
         List<String> targetThings = task.getTargetTrucks();
-        System.out.println("ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ");
-        System.out.println(cargoAllocation);
-        System.out.println("ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ");
+
 
         for (String thingId : targetThings) {
             double quantity = 0.0;
@@ -59,9 +58,6 @@ public class TaskActions implements EventActionHandler {
     public void sendUnloadAction(DittoClient dittoClient, Task task) {
 
         Map<String, Double> cargoAllocation = task.getThingAllocation();
-        System.out.println("ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ");
-        System.out.println(cargoAllocation);
-        System.out.println("ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ");
 
         List<String> targetTrucks = task.getTargetTrucks();
 

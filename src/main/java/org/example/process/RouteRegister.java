@@ -3,6 +3,7 @@ package org.example.process;
 import java.util.HashMap;
 import java.util.Map;
 
+// stored routes by their ID
 public class RouteRegister {
     private Map<Object, RouteExecutor> register = new HashMap<>();
 

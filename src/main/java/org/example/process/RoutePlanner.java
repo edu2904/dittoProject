@@ -22,6 +22,7 @@ public class RoutePlanner {
     private final ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 
+    // creates the routes
     public RoutePlanner(TaskManager taskManager, GatewayManager gatewayManager){
         this.taskManager = taskManager;
         this.gatewayManager = gatewayManager;
@@ -33,6 +34,8 @@ public class RoutePlanner {
         private final TaskType taskType;
         private final double quantity;
         private final String setId;
+
+        // Segment hold the information relevant for task creation.
         public Segment(Warehouse from, Warehouse to, TaskType taskType, double quantity, String routeId){
             this.from = from;
             this.to = to;
@@ -65,6 +68,8 @@ public class RoutePlanner {
             return from + " to " + to + " which task: " + taskType.toString();
         }
     }
+
+    // Routes are combined of 2 or more segments. They have an ID which helps to identify them and get their set of segments
     public static class Route{
         private final List<Segment> segments;
         private List<String> executor;
@@ -123,6 +128,7 @@ public class RoutePlanner {
     }
 
 
+    // creates a fixes set of routes. The number of routes can be chosen arbitrarily. Their order is deterministic.
     public List<Route> createFixedTestRoutes(int numberOfRoutes) {
         List<Warehouse> warehouses = new ArrayList<>(gatewayManager.getWarehouseList());
         List<Route> routes = new ArrayList<>();
@@ -187,6 +193,8 @@ public class RoutePlanner {
         logger.info("Generated {} fixed test routes", routes.size());
         return routes;
     }
+
+    // random route creation. Creates a random route consisting of 2-4 segments
     public Route createRandomRoute(){
         String routeId = "route-" + UUID.randomUUID().toString().substring(0, 6);
         List<Segment> segments = new ArrayList<>();

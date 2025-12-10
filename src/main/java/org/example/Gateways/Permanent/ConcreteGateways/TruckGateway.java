@@ -147,6 +147,8 @@ public class TruckGateway extends AbstractGateway<Truck> {
         });
 
     }
+
+    //subscribe to messages from the task
     public void handleTaskMessage(RepliableMessage<?, Object> message, String action, TaskType tasktype){
         Optional<?> optionalObject = message.getPayload();
         if(optionalObject.isPresent()) {

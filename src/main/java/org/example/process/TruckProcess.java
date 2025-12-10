@@ -52,6 +52,8 @@ public class TruckProcess {
         this.allRoutes = routePlanner.createFixedTestRoutes(Config.NUMBER_OF_ROUTES);
 
     }
+
+    //subscribe for thing changes. Right now it only fulfills a logging purpose.
     public void subscribeForChanges(DittoClient dittoClient) {
         dittoClient.twin().registerForThingChanges(UUID.randomUUID().toString(), thingChange -> {
             CompletableFuture.runAsync(() -> {
@@ -209,6 +211,7 @@ public class TruckProcess {
 
 
 
+    // starts the simulation by initiating the routes. Right now the initial starting routes are 5 with additional 5 routes every 5 minutes
     public void startSimulation(){
         try {
             Thread.sleep(2000);
@@ -238,6 +241,9 @@ public class TruckProcess {
             startFixedProcess(route);
         }
     }
+
+
+    // creation of tasks from the segments by using the data task property
     public void startFixedProcess(RoutePlanner.Route route){
 
         String routeId = route.getRouteId();
@@ -295,6 +301,8 @@ public class TruckProcess {
 
     }
 
+
+    // delete all tasks after a restart to clean up from the old simulation
     public void deleteAllTasksForNewIteration(){
         List<Task> taskList = taskManager.getallTasks();
         for(Task task : taskList){

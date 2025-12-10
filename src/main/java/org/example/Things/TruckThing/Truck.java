@@ -236,6 +236,7 @@ public class Truck {
 
 
 
+    // sets the values transmitted form the task. Afterwards, the execution will begin.
     public void setAssignedTaskValues(String from, String to, double cargoToBeDelivered, TaskType taskType){
         Warehouse fromWarehouse = getWarehouseList().stream().filter(t -> t.getThingId().equals(from)).findFirst().orElse(null);
         setStartWarehouse(fromWarehouse);
@@ -245,6 +246,8 @@ public class Truck {
         setTask(taskType);
 
     }
+
+    // calculates the distance to the target warehouse and all available gas stations
     public Map<String, Double> calculateDistances(Warehouse warehouse){
         Map<String, Double> distances = new HashMap<>();
 
@@ -257,6 +260,9 @@ public class Truck {
         }
         return distances;
     }
+
+    //
+    // calculate the truck utilization values
 
     public double calculateUtilization(){
         double fuelNorm = 1.0 - Math.min(1.0, Math.max(0.0, getFuel() / Config.FUEL_MAX_VALUE_STANDARD_TRUCK));

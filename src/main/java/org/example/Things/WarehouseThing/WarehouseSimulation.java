@@ -28,6 +28,8 @@ public class WarehouseSimulation {
         this.warehouseTruckManager = warehouseTruckManager;
     }
 
+
+    // starts loading the truck. It differentiates between LOAD and UNLOAD
     public void startLoading(Truck truck, TaskType taskType,  Consumer<Truck> onComplete){
         setTruckStatus(truck, taskType);
         warehouseTruckManager.setActiveTruck(truck);
@@ -86,6 +88,7 @@ public class WarehouseSimulation {
         else return truck.getInventory() <= 0;
     }
 
+    // performs after a truck finished its LOADING/UNLOADING process
     public void finishTruck(Truck truck, Consumer<Truck> onComplete){
         TruckStatus truckStatus = truck.getStatus();
         logger.info("Cancel Task for {}" , truck.getThingId());

@@ -116,6 +116,8 @@ public class Warehouse {
         this.warehouseTruckManager = new WarehouseTruckManager();
         this.warehouseSimulation = new WarehouseSimulation(warehouseInventory, warehouseTruckManager);
     }
+
+    // checks if the warehouse processes a truck at the moment. If so, the incoming truck will be stored in a queue
     public void arriveTruck(Truck truck, TaskType taskType, Consumer<Truck> onComplete){
         synchronized (warehouseTruckManager){
             if(!warehouseTruckManager.hasActiveTruck()){
@@ -139,8 +141,10 @@ public class Warehouse {
 
 
         double currentTrucks = trucksInWarehouse.size();
-        double truckUtilization = currentTrucks / (currentTrucks + 5);
 
+
+        // utilization of the current trucks in the warehouse (loading and waiting)
+        double truckUtilization = currentTrucks / (currentTrucks + 5);
 
         double currentInventory = getInventory();
         double midCapacity = getCapacity() / 2;
@@ -155,6 +159,7 @@ public class Warehouse {
     }
 
 
+    // fix the inventory to prevent that a truck is not able to load or unload due to space issues. The amount of workers can influence the speed of the inventory recovery.
     public void fixInventory(){
         if(trucksInWarehouse.isEmpty()){
             if(warehouseInventory.getInventory() < 2000){

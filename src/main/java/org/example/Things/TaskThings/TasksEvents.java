@@ -9,6 +9,7 @@ import org.example.Things.EventActionHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+// all actions the task is able to send. The static values have to be the ones the defined in the corresponding WoT file
 
 public class TasksEvents implements EventActionHandler {
     private final Map<String, Boolean> refuelStarted = new ConcurrentHashMap<>();

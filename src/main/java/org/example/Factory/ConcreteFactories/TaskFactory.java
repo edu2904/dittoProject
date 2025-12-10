@@ -23,7 +23,8 @@ public class TaskFactory {
     }
 
 
-    // starts the task. The WoT for each task type is individual and is therefore stored within the task object.
+    // starts the task. The WoT for each task type is individual and is therefore stored within the task object in the "TastType" enum.
+    // Afterwards it will be visible in the Eclipse Ditto UI
     public void startTask(Task task){
         try {
             thingHandler.createTwinAndPolicy(dittoClient, task.getTaskType().getWot(), task.getTaskType().getPolicy(), task.getThingId()).toCompletableFuture();
@@ -31,6 +32,8 @@ public class TaskFactory {
             throw new RuntimeException(e);
         }
     }
+
+    // creates a task object that can be started when neeeded
     public Task createTask(TaskType taskType, Map<String, Object> useCaseData){
         String thingId = "task:" + taskType + "_" + UUID.randomUUID().toString().substring(0,6);
         Task task = new Task(thingId, taskType);

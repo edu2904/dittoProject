@@ -7,6 +7,9 @@ import org.example.Things.TaskThings.TaskType;
 
 public class TaskMapper {
 
+    // builds truck from a json.
+    // This is needed when whole things are requested from ditto. The information ditto sends is a JSON file.
+    // The values inside the JSON file have to be extracted in this mapper
     public static Task fromThing(Thing thing){
         Task task = new Task();
         task.setThingId(thing.getEntityId().map(Object::toString).orElse(null));

@@ -16,6 +16,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
+
+// simple GUI to perform tests
 public class TruckControllerGUI implements ActionListener {
     private JButton createNewRouteButton;
     private JButton addTruckButton;

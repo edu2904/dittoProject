@@ -11,6 +11,8 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 
+
+// handles the tasks inside the routes to ensure they get executed in the right order
 public class RouteExecutor {
 
     private final TaskManager taskManager;
@@ -30,13 +32,17 @@ public class RouteExecutor {
 
     }
     public synchronized void startNewTask(){
+
+        // if no route exists nothing happens
         if(route == null){
             logger.warn("No route found");
             return;
         }
 
+        // otherwise the new task will be fetched from the route
         Task task = taskQueue.peek();
 
+        // if no tasks exists anymore that means the route has finished. Therefore, the time will be logged
         if(task == null){
             long endTime = System.currentTimeMillis();
             double minutes = (endTime-startTime) / 60000.0;
@@ -48,12 +54,14 @@ public class RouteExecutor {
 
         try {
 
+            //otherwise the task will be started
+
             //There exist an assigned Truck for the route.
             if(route.getExecutor() != null && !route.getExecutor().isEmpty()){
                task.setTargetTrucks(new ArrayList<>(route.getExecutor()));
 
             }
-
+            // otherwise start the task without target trucks (They will later get assigned in the TaskGateway)
             taskManager.startTask(task);
 
 
@@ -67,8 +75,9 @@ public class RouteExecutor {
         }
     }
 
+    // delays the task after it could not find enough suitable trucks
     public void delayTask(){
-        logger.info("TASK FAILED, try again in 2 minutes");
+        logger.info("TASK FAILED, try again in 1 minute");
         try {
             Thread.sleep(60000);
         } catch (InterruptedException e) {

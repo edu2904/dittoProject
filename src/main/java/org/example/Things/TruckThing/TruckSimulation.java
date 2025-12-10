@@ -16,6 +16,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+
+// simulated the behavior of the truck
 public class TruckSimulation {
     Truck truck;
     private final Logger logger = LoggerFactory.getLogger(TruckSimulation.class);
@@ -30,7 +32,10 @@ public class TruckSimulation {
         this.truck = truck;
     }
 
+    // the target destination might not be the one the target goes for initially. Therefore, there exists the recommendedTarget value
     public void updateTarget(GatewayManager gatewayManager){
+        // if there exists a targetWarehouse but no target was stored in the target String of the warehouse,
+        // the recommended target has to be calculated in the gatewayManager
         if(truck.getTargetWarehouse() != null && truck.getTarget() == null){
             try {
                 gatewayManager.setDecisionForNextDestination(truck, truck.getTargetWarehouse());
@@ -38,6 +43,8 @@ public class TruckSimulation {
                 throw new RuntimeException(e);
             }
         }
+        // this calculation will store a recommendedTarget inside the truck object, which will then be set as the "target". The "target" property is the actual operation the truck will perform.
+        // So if the recommendTarget is a gas station, it will at first drive to the gas station, before going to the target warehouse.
         if(truck.getTarget() == null && truck.getRecommendedTarget() != null){
             truck.setTarget(truck.getRecommendedTarget());
             truck.setProgress(0);
@@ -46,6 +53,7 @@ public class TruckSimulation {
     }
 
 
+    // main simulation. If a target is available, "drive()" will be executed, otherwise "stopTruck()"
     public void runSimulation(GatewayManager gatewayManager){
         scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -69,6 +77,7 @@ public class TruckSimulation {
         }, 0, Config.STANDARD_TICK_RATE, TimeUnit.SECONDS);
     }
 
+    // drive simulation of the truck. It updates the progress, fuel amount, velocity, etc.
     public void drive(TruckTargetDecision<?> target, DittoClient dittoClient){
 
         if(truck.isTaskActive() || truck.getStatus() == TruckStatus.DISABLED) return;
@@ -101,15 +110,20 @@ public class TruckSimulation {
         */
     }
 
+    // sets the stop value
     public void stopTruck(){
+        // The truck can't recover tire pressure is DISABLED or WAITING.
         if(!truck.getStatus().equals(TruckStatus.DISABLED) || truck.getStatus().equals(TruckStatus.WAITING)) {
             truck.setStatus(TruckStatus.IDLE);
             truck.setVelocity(0);
+
+            //the tire pressure recovers in this state
             recoverTirePressure();
             logger.warn("Drive stopped for {}", truck.getThingId());
         }
     }
 
+    // initiates the information the truck needs to now for the task.
     public void startTask(DittoClient dittoClient, TruckTargetDecision<?> target){
         if(target.getDecidedTarget() instanceof GasStation){
             if(truck.getStatus() != TruckStatus.REFUELING && !truck.isTaskActive()) {
@@ -137,6 +151,7 @@ public class TruckSimulation {
             }
         }
     }
+    // tire pressure will decrease while driving
     public void tirePressureDecreases(double tirePressure){
         //if(Math.random() <= Config.TIRE_PRESSURE_DECREASE_RATE){
             double tirePressureReduction = 3;//Math.random() * 100;
@@ -144,6 +159,7 @@ public class TruckSimulation {
         //}
     }
 
+    //recover tire pressure when in an IDLE state
     public void recoverTirePressure(){
         if(truck.getTirePressure() >= Config.TIRE_PRESSURE_MAX_VALUE_STANDARD_TRUCK){
             return;
@@ -163,6 +179,7 @@ public class TruckSimulation {
 
     }
 
+    // checks every tick if the tire pressure reached a critical limit.
     public void checkTirePressure(){
         if(truck.getTirePressure() <= Config.TIRE_PRESSURE_MIN_VALUE_STANDARD_TRUCK){
             logger.info("TIRE PRESSURE LOW FOR TRUCK {}" , truck.getThingId());
@@ -201,6 +218,8 @@ public class TruckSimulation {
             }
         }
     }
+
+    // resets truck after it ran out of fuel
     public void resetTruck(){
         if(truck.getStatus() == TruckStatus.DISABLED){
             return;

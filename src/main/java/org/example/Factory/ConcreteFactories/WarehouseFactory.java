@@ -10,7 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
+// Creates the Warehouse that will send data to Ditto and be present in the scenario.
+// They can be added, removed, and altered as long as they correspond to its WoT
 public class WarehouseFactory implements DigitalTwinFactory<Warehouse> {
 
     ThingHandler thingHandler;

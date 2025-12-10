@@ -12,6 +12,10 @@ import java.util.Objects;
 
 public class TruckMapper implements ThingMapper<Truck>{
 
+
+    // builds truck from a json.
+    // This is needed when whole things are requested from ditto. The information ditto sends is a JSON file.
+    // The values inside the JSON file have to be extracted in this mapper
     @Override
     public Truck fromThing(Thing thing) {
         Truck truck = new Truck();

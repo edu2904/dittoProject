@@ -57,6 +57,8 @@ public class GatewayManager {
     }
 
 
+
+    // creates the permanent thing in ditto
     public void createPermanentThings() throws ExecutionException, InterruptedException {
         digitalTwinFactoryMain.getTruckFactory().initializeThings();
         digitalTwinFactoryMain.getTruckFactory().createTwinsForDitto();
@@ -68,7 +70,9 @@ public class GatewayManager {
     public void startGateways() throws ExecutionException, InterruptedException {
 
 
+        // before restarting, all things have to be initialized again, therefore their instances before have to be deleted
         deleteAllTrucks();
+
         createPermanentThings();
 
         truckList = digitalTwinFactoryMain.getTruckFactory().getThings();
@@ -80,6 +84,7 @@ public class GatewayManager {
         warehouseGateway = new WarehouseGateway(thingClient, listenerClient, influxDBClient, warehouseList);
 
 
+        // start the simulation for each thing. After that updated values will appear on the ditto UI
         for (GasStation gasStation : gasStationList) {
             gasStation.featureSimulation();
         }
@@ -94,6 +99,7 @@ public class GatewayManager {
             truckSimulation.runSimulation(this);
         }
 
+        // updated the gateway every 3 second with new values
         Runnable updateTask = () -> {
             try {
 
@@ -157,6 +163,9 @@ public class GatewayManager {
     }
 
 
+    // as the gateway combines the values of all available things, the decision logic is set in the GatewayManager.
+    // Here the trucks selects the bestTarget after evaluating a score for each potential destination.
+    // The lowest score will be set as bestTarget
     public void setDecisionForNextDestination(Truck truck, Warehouse warehouse) throws ExecutionException, InterruptedException {
         double fuel = truckGateway.getFuelFromDitto(truck);
         Map<String, Double> distances = truck.calculateDistances(warehouse);
@@ -169,6 +178,7 @@ public class GatewayManager {
         double weightFuel = 0.2;
 
 
+        // setup for random decision-making, can be turned on at off in the Config file
         if(Config.RANDOM_DECISION_MAKING){
             GasStation chosenGasstation = null;
             double bestDistanceGasStation = Double.MAX_VALUE;
@@ -194,25 +204,21 @@ public class GatewayManager {
             logger.info("Next Target for {} is {}", truck.getThingId(), bestTarget.getDecidedTarget() instanceof GasStation ? ((GasStation) bestTarget.getDecidedTarget()).getThingId() : ((Warehouse) bestTarget.getDecidedTarget()).getThingId());
 
 
+
+            // regular decision-making
         }else {
 
+            // calculate score for each gas station
             for (GasStation gasStation : gasStationList) {
                 Double distanceGasStation = distances.get(gasStation.getThingId());
                 if (distanceGasStation == null) {
                     continue;
                 }
                 double utilizationGasStation = gasStationGateway.getUtilizationFromDitto(gasStation);
-                //double urgencyLowFuel = fuel < 40 ? (1 - (fuel / Config.FUEL_MAX_VALUE_STANDARD_TRUCK)) * 75 : 0;
-                //double urgencyHighFuel = fuel > 150 ? (fuel / Config.FUEL_MAX_VALUE_STANDARD_TRUCK) * 75 : 0;
 
                 double utilizationTruckFuel = truck.calculateUtilization();
 
-                //double cost = weightDistance * distanceGasStation + weightUtilization * utilizationGasStation - urgencyLowFuel + urgencyHighFuel;
-                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
-                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
-                System.out.println("distance: " + distanceGasStation + "utilgasstation: " + utilizationGasStation + "utilTruck: " + utilizationTruckFuel);
-                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
-                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+                logger.debug("distance: {} utilgasstation: {} utilTruck: {}", distanceGasStation, utilizationGasStation, utilizationTruckFuel);
 
                 double cost = weightFuel * (100.0 - utilizationTruckFuel) + weightDistance * distanceGasStation + weightUtilization * utilizationGasStation;
 
@@ -222,6 +228,8 @@ public class GatewayManager {
                     bestTarget = new TruckTargetDecision<>(gasStation, distanceGasStation, gasStation.getLocation(), gasStation.getThingId());
                 }
             }
+
+            // calculate score for target warehouse
             logger.info("Check for potential travel to {}", warehouse.getThingId());
             Double distanceWarehouse = distances.get(warehouse.getThingId());
             if (distanceWarehouse != null) {
@@ -229,12 +237,7 @@ public class GatewayManager {
                 double utilizationWarehouse = warehouseGateway.getUtilizationFromDitto(warehouse);
                 double utilizationTruckFuel = truck.calculateUtilization();
 
-                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
-                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
-                System.out.println("distance: " + distanceWarehouse + "utilwarehouse: " + utilizationWarehouse + "utilTruck: " + utilizationTruckFuel);
-                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
-                System.out.println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
-
+                logger.debug("distance: {} utilwarehouse: {} utilTruck: {}", distanceWarehouse, utilizationWarehouse, utilizationTruckFuel);
                 double cost = weightFuel * utilizationTruckFuel + weightDistance * distanceWarehouse + weightUtilization * utilizationWarehouse;
 
                 System.out.println(warehouse.getThingId() + " cost: " + cost);
